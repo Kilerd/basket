@@ -57,9 +57,12 @@ struct SettingsView: View {
                     Text(loginItemError).font(.caption).foregroundStyle(.orange)
                 }
             }
+            UpdateSettingsSection()
         }
         .formStyle(.grouped)
         .frame(width: 520)
+        // As tall as the content up to a height that fits a 13-inch display; the form scrolls.
+        .frame(maxHeight: 760)
         .fixedSize(horizontal: false, vertical: true)
         .onDisappear { store.reloadBackend() }
     }

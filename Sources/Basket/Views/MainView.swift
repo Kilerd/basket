@@ -83,6 +83,7 @@ private struct SheetHost: View {
         case .reclaim: ReclaimSheet()
         case .reclaimMemory: ReclaimMemorySheet()
         case .composePlan(let url): ComposePlanSheet(url: url)
+        case .update: UpdateSheet()
         }
     }
 }

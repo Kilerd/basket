@@ -18,6 +18,7 @@ struct BasketApp: App {
         .commands {
             BasketCommands(store: store)
             OnboardingCommands()
+            UpdateCommands(store: store)
         }
 
         Window("Set Up Basket", id: OnboardingWindow.id) {

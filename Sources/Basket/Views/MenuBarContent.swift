@@ -51,6 +51,11 @@ struct MenuBarContent: View {
             NSApp.activate()
         }
         .keyboardShortcut("o")
+        Button(updateTitle) {
+            openWindow(id: "main")
+            NSApp.activate()
+            if store.updates.offer != nil { store.updates.showAvailableUpdate() } else { store.updates.checkForUpdates() }
+        }
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
         Divider()
@@ -60,6 +65,11 @@ struct MenuBarContent: View {
     }
 
     private var stranded: Int64 { store.memoryInsights.totals.strandedBytes }
+
+    private var updateTitle: String {
+        guard let offer = store.updates.offer else { return "Check for Updates…" }
+        return "Update to Basket \(offer.version.description)…"
+    }
 
     private var vmCount: Int {
         store.runningContainers.count + store.machines.filter { $0.state == .running }.count

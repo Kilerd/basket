@@ -9,6 +9,14 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Added
+
+- Signed in-app updates: Basket checks GitHub Releases a minute after launch and then daily
+  (Settings ▸ Updates, on by default) or on “Check for Updates…”, shows the release notes, and
+  installs a new version only after its SHA-256, Ed25519 signature, bundle id, version and
+  Developer ID code signature all check out; the old copy goes to the Trash. Disabled, with the
+  reason, for ad-hoc builds and apps that can't replace themselves.
+
 ### Fixed
 
 - Output of `container` commands could go missing on a heavily loaded Mac (empty error messages,
