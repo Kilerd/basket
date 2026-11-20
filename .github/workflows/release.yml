@@ -1,0 +1,731 @@
+name: Release
+
+# Builds, signs, notarizes and publishes a release of Basket (docs/RELEASING.md).
+#
+# - Release: the maintainer pushes the tag vX.Y.Z of a commit on main (the merge of the release
+#   pull request made with scripts/release-prep.sh). That push runs meta → build → release (the
+#   protected `release` environment, approved by the maintainer) → verify → publish.
+# - Dry run: run this workflow by hand (workflow_dispatch). It never publishes. On main or a
+#   vX.Y.Z tag it also signs with the Developer ID and notarizes (after the same approval), but
+#   the update signature comes from a throwaway key made in the job, and the run keeps reports
+#   only; on main it rehearses scripts/release-prep.sh with the bump/version inputs.
+#
+# Trust boundaries:
+# - `meta`, `build` and `verify` hold no secret and no write token. `build` compiles the app.
+# - `release` is the only job with secrets. It runs in the protected `release` environment (a
+#   required reviewer approves it once per run; tags v* and main only). It runs this
+#   repository's scripts and Apple's tools on the app `build` made, which it never executes;
+#   each step gets only the secrets it uses (the update signing key only when publishing); the
+#   keychain is deleted right after the last codesign. A release without the signing secrets
+#   stops; a dry run without them (forks) is signed ad hoc and has no latest.json.
+# - `publish` is the only job that can write a release (contents: write, plus the OIDC token
+#   for the attestations), and only for a pushed vX.Y.Z tag that still points at the built
+#   commit (scripts/release-publish.sh).
+# - Artifacts are plain tars whose sha256 their job puts out; every job that takes one checks
+#   it and unpacks only the expected members (scripts/unpack-artifact.sh).
+# - Untrusted input (inputs, ref names) reaches `run:` through env only.
+# - Actions are pinned by commit (Dependabot updates them).
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Dry run on main: rehearse release-prep.sh with this bump of the latest vX.Y.Z tag'
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      version:
+        description: 'Dry run on main: this exact X.Y.Z instead of the bump (same major version; a new major only through bump=major)'
+        type: string
+        required: false
+        default: ''
+
+# Nothing by default: each job asks for what it needs.
+permissions: {}
+
+# One release run at a time; a second one waits (never cancelled half-way).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  # What this run builds: the version, the commit, whether it publishes and whether it signs.
+  meta:
+    name: Check the version and the commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # a release waits for a CI run in progress
+    permissions:
+      contents: read
+      actions: read # CI runs of the commit
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      sha: ${{ steps.meta.outputs.sha }}
+      publish: ${{ steps.meta.outputs.publish }}
+      sign: ${{ steps.meta.outputs.sign }}
+      prep: ${{ steps.meta.outputs.prep }}
+      date: ${{ steps.meta.outputs.date }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # origin/main and the tags
+          persist-credentials: false
+
+      - name: Version, commit and mode
+        id: meta
+        env:
+          BUMP: ${{ inputs.bump }}
+          VERSION_INPUT: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source scripts/_common.sh # VERSION, SEMVER_RE
+          sha="$(git rev-parse HEAD)"
+          date="$(date -u +%Y-%m-%d)"
+          prep=""
+          # Only a pushed tag publishes; a run by hand is always a dry run.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = tag ]; then publish=true; else publish=false; fi
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag="$GITHUB_REF_NAME"
+            if [ "${tag:0:1}" != v ] || ! [[ "${tag#v}" =~ $SEMVER_RE ]]; then
+              echo "::error::the tag $tag is not vX.Y.Z (SemVer, no suffix)"
+              exit 1
+            fi
+            version="${tag#v}"
+            if [ "$version" != "$VERSION" ]; then
+              echo "::error::the tag $tag is not VERSION ($VERSION) in scripts/_common.sh at ${sha:0:12}"
+              exit 1
+            fi
+            # Only a commit on main is signed or released.
+            if ! git merge-base --is-ancestor "$sha" origin/main; then
+              echo "::error::$tag (${sha:0:12}) is not on main: only commits merged into main are released"
+              exit 1
+            fi
+            [ -z "$VERSION_INPUT" ] || echo "::notice::the version input applies to dry runs on main; this run is the tag $tag"
+          else
+            version="$VERSION"
+            # A dry run on main rehearses the release pull request: the same release-prep.sh, which
+            # build and verify repeat on their checkout (same arguments, same date).
+            if [ "$GITHUB_REF" = refs/heads/main ]; then
+              target="${VERSION_INPUT:-$BUMP}"
+              if out="$(RELEASE_DATE="$date" scripts/release-prep.sh "$target" 2>"$RUNNER_TEMP/prep.log")"; then
+                prep="$target"
+                version="$out"
+                cat "$RUNNER_TEMP/prep.log"
+              else
+                echo "::warning::release-prep.sh refused this: $(tail -n 1 "$RUNNER_TEMP/prep.log"). The dry run builds VERSION $VERSION as it is."
+              fi
+            fi
+            tag="v$version"
+          fi
+          case "$GITHUB_REF" in refs/heads/main|refs/tags/v*) sign=true ;; *) sign=false ;; esac
+
+          # The release notes: the version's CHANGELOG section.
+          if ! scripts/release-notes.sh "$version" > "$RUNNER_TEMP/notes.md"; then
+            if [ "$publish" = true ]; then
+              echo "::error::CHANGELOG.md at ${sha:0:12} has no release notes for $version"
+              exit 1
+            fi
+            echo "::warning::CHANGELOG.md has no section for $version: a release would stop here"
+          fi
+
+          # CI must have passed on the commit.
+          if [ "$publish" = true ]; then
+            if ! scripts/release-ci-check.sh "$sha" >/dev/null; then
+              echo "::error::CI has not passed on ${sha:0:12} (see above): only a commit with green CI is released"
+              exit 1
+            fi
+          elif ! CI_WAIT_MINUTES=0 CI_START_SECONDS=0 scripts/release-ci-check.sh "$sha" >/dev/null; then
+            echo "::warning::CI has not passed on ${sha:0:12}: a release of it would stop here"
+          fi
+
+          # Releases are immutable: one per version, never replaced.
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if [ "$publish" = true ]; then
+              echo "::error::the release $tag exists already: releases are never changed, fix forward with a new version"
+              exit 1
+            fi
+            echo "::notice::the release $tag exists already"
+          fi
+
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "sha=$sha"
+            echo "publish=$publish"
+            echo "sign=$sign"
+            echo "prep=$prep"
+            echo "date=$date"
+          } | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "### Basket $tag from \`${sha:0:12}\`"
+            echo
+            if [ "$publish" = true ]; then
+              echo "**Release**: publishes once the \`release\` job is approved (the \`release\` environment)."
+            elif [ "$sign" = true ]; then
+              echo "**Dry run**: builds, signs and notarizes once the \`release\` job is approved; the update signature uses a throwaway key; publishes nothing and keeps reports only."
+            else
+              echo "**Dry run** on a branch: builds only (the \`release\` environment allows main and v* tags)."
+            fi
+            if [ -n "$prep" ]; then
+              echo
+              echo "The release pull request (\`scripts/release-prep.sh $prep\`) would change:"
+              echo
+              echo '```diff'
+              git diff
+              echo '```'
+            fi
+            if [ -s "$RUNNER_TEMP/notes.md" ]; then
+              echo
+              echo "#### Release notes"
+              echo
+              cat "$RUNNER_TEMP/notes.md"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # The app, built without secrets and signed ad hoc; `release` signs it with the Developer ID.
+  build:
+    name: Build Basket.app
+    needs: meta
+    if: ${{ !cancelled() && needs.meta.result == 'success' }}
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      VERSION: ${{ needs.meta.outputs.version }}
+      PREP: ${{ needs.meta.outputs.prep }}
+      RELEASE_DATE: ${{ needs.meta.outputs.date }}
+    outputs:
+      sha: ${{ steps.pack.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+          fetch-depth: 0 # tags, for a dry run's release-prep.sh
+          persist-credentials: false
+
+      - name: Select Xcode
+        run: scripts/select-xcode.sh
+
+      - name: Build (ad hoc)
+        env:
+          BASKET_SIGN_IDENTITY: '-'
+        run: |
+          if [ -n "$PREP" ]; then scripts/release-prep.sh "$PREP" >/dev/null; fi
+          app="$(scripts/build-app.sh release)"
+          plist="$app/Contents/Info.plist"
+          built="$(plutil -extract CFBundleShortVersionString raw -o - "$plist")"
+          id="$(plutil -extract CFBundleIdentifier raw -o - "$plist")"
+          archs="$(lipo -archs "$app/Contents/MacOS/Basket") / $(lipo -archs "$app/Contents/Helpers/basket-docker")"
+          if [ "$built" != "$VERSION" ] || [ "$id" != dev.basket.app ] || [ "$archs" != "arm64 / arm64" ]; then
+            echo "::error::built $id $built ($archs), expected dev.basket.app $VERSION (arm64)"
+            exit 1
+          fi
+          echo "built $id $built ($archs)"
+
+      - name: Pack
+        id: pack
+        run: |
+          COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/app.tar" -C build Basket.app
+          echo "sha=$(shasum -a 256 "$RUNNER_TEMP/app.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app
+          path: ${{ runner.temp }}/app.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  # The only job with secrets (the `release` environment, approved once per run): the Developer
+  # ID signature, notarization and stapling of the app, the DMG (signed, notarized, stapled), the
+  # updater's zip and its Ed25519 signature. Nothing from the artifact is executed here.
+  release:
+    name: Sign, notarize and update-sign
+    needs: [meta, build]
+    if: ${{ !cancelled() && needs.meta.result == 'success' && needs.build.result == 'success' && needs.meta.outputs.sign == 'true' }}
+    runs-on: macos-26
+    timeout-minutes: 120
+    environment: release
+    permissions:
+      contents: read
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      VERSION: ${{ needs.meta.outputs.version }}
+      PUBLISH: ${{ needs.meta.outputs.publish }}
+    outputs:
+      mode: ${{ steps.secrets.outputs.mode }}
+      sha: ${{ steps.pack.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+          persist-credentials: false
+
+      - name: Select Xcode
+        run: scripts/select-xcode.sh
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: app
+          path: ${{ runner.temp }}/dl/app
+
+      - name: Unpack the app
+        env:
+          APP_SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/app/app.tar" "$APP_SHA" "$RUNNER_TEMP/work" '^Basket\.app(/[^/]+)*$'
+          mkdir -p "$RUNNER_TEMP/out"
+          echo "APP=$RUNNER_TEMP/work/Basket.app" >> "$GITHUB_ENV"
+          echo "OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+
+      # All of them (signed, notarized, latest.json) or none (ad hoc: forks, and a repository
+      # whose environment is not set up yet; dry runs only). Never printed; the signing name is
+      # masked too. The update signing key is only tested for presence here.
+      - name: The secrets this run needs
+        id: secrets
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          BASKET_UPDATE_SIGNING_KEY: ${{ secrets.BASKET_UPDATE_SIGNING_KEY != '' && 'set' || '' }}
+        run: |
+          set +x
+          present=""; missing=""
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID KEYCHAIN_PASSWORD APPLE_ID APPLE_PASSWORD BASKET_UPDATE_SIGNING_KEY; do
+            if [ -n "${!name}" ]; then present="$present $name"; else missing="$missing $name"; fi
+          done
+          if [ -z "$present" ]; then
+            if [ "$PUBLISH" = true ]; then
+              echo "::error::the release environment has no signing secrets: a release is only published signed with the Developer ID, notarized and with latest.json (docs/RELEASING.md, \"The release environment\")"
+              exit 1
+            fi
+            echo "::warning::the release environment has no signing secrets: this dry run is signed ad hoc, not notarized, and has no latest.json"
+            echo "mode=adhoc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::the release environment lacks the secrets$missing (docs/RELEASING.md, \"The release environment\")"
+            exit 1
+          fi
+          name="${APPLE_SIGNING_IDENTITY#Developer ID Application: }"
+          name="${name% (*}"
+          [ -z "$name" ] || echo "::add-mask::$name"
+          if ! [[ "$APPLE_TEAM_ID" =~ ^[A-Z0-9]{10}$ ]] || [[ "$APPLE_SIGNING_IDENTITY" != "Developer ID Application: "*" ($APPLE_TEAM_ID)" ]]; then
+            echo "::error::APPLE_SIGNING_IDENTITY must be \"Developer ID Application: <name> (<APPLE_TEAM_ID>)\" and APPLE_TEAM_ID ten characters"
+            exit 1
+          fi
+          echo "mode=signed" >> "$GITHUB_OUTPUT"
+          echo "ok: all signing secrets are set"
+
+      # The keychain has a fixed path in this job's temporary folder; "Delete the signing
+      # keychain" removes exactly that path, whatever happened before.
+      - name: Signing keychain
+        if: steps.secrets.outputs.mode == 'signed'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          # Apple's "Developer ID Certification Authority" (G2) intermediate, for a .p12 without it.
+          G2_URL: https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          G2_SHA256: f16cd3c54c7f83cea4bf1a3e6a0819c8aaa8e4a1528fd144715f350643d2df3a
+        run: |
+          set +x
+          keychain="$RUNNER_TEMP/basket-release.keychain-db"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          (umask 077 && printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/developer-id.p12")
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$keychain" -f pkcs12 -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign >/dev/null
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          curl -fsSL --proto '=https' -o "$RUNNER_TEMP/DeveloperIDG2CA.cer" "$G2_URL"
+          echo "$G2_SHA256  $RUNNER_TEMP/DeveloperIDG2CA.cer" | shasum -a 256 -c - >/dev/null
+          if ! out="$(security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$keychain" -t cert -f x509 2>&1)"; then
+            case "$out" in *"already exists"*) ;; *) echo "$out" >&2; exit 1 ;; esac
+          fi
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain" >/dev/null
+          # First in the search list, so codesign finds the identity.
+          existing="$(security list-keychains -d user | sed -e 's/^[[:space:]]*"//' -e 's/"[[:space:]]*$//')"
+          # shellcheck disable=SC2086 # one keychain path per line, no spaces
+          security list-keychains -d user -s "$keychain" $existing
+          identities="$(security find-identity -v -p codesigning "$keychain")"
+          case "$identities" in
+            *"\"$APPLE_SIGNING_IDENTITY\""*) echo "ok: the signing identity is in the keychain" ;;
+            *) echo "::error::APPLE_CERTIFICATE holds no valid identity named APPLE_SIGNING_IDENTITY"; exit 1 ;;
+          esac
+
+      - name: Sign the app (Developer ID, hardened runtime, timestamp)
+        if: steps.secrets.outputs.mode == 'signed'
+        env:
+          BASKET_SIGN_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BASKET_SIGN_TIMESTAMP: '1'
+        run: |
+          scripts/sign-app.sh "$APP"
+          details="$(codesign -dvv "$APP" 2>&1)"
+          case "$details" in
+            *"TeamIdentifier=$APPLE_TEAM_ID"*) echo "ok: signed by APPLE_TEAM_ID" ;;
+            *) echo "::error::the app's signature is not from APPLE_TEAM_ID"; exit 1 ;;
+          esac
+
+      - name: Notarize and staple the app
+        if: steps.secrets.outputs.mode == 'signed'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize-app.zip"
+          scripts/notarize.sh "$RUNNER_TEMP/notarize-app.zip" "$APP"
+          rm -f "$RUNNER_TEMP/notarize-app.zip"
+
+      # The updater's archive: the notarized, stapled app (docs/updates.md).
+      - name: The update zip and the DMG
+        env:
+          MODE: ${{ steps.secrets.outputs.mode }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          ditto -c -k --keepParent "$APP" "$OUT/Basket-$VERSION-arm64.zip"
+          scripts/make-dmg.sh "$APP" "$OUT/Basket-$VERSION.dmg" "Basket $VERSION"
+          if [ "$MODE" = signed ]; then
+            codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "$OUT/Basket-$VERSION.dmg"
+            codesign --verify --strict "$OUT/Basket-$VERSION.dmg"
+          fi
+
+      # Gone before anything else runs, whatever happened.
+      - name: Delete the signing keychain
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          keychain="$RUNNER_TEMP/basket-release.keychain-db"
+          if [ -e "$keychain" ]; then security delete-keychain "$keychain" || rm -f "$keychain"; fi
+          if [ -e "$keychain" ]; then echo "::error::the signing keychain is still there"; exit 1; fi
+
+      - name: Notarize and staple the DMG
+        if: steps.secrets.outputs.mode == 'signed'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: scripts/notarize.sh "$OUT/Basket-$VERSION.dmg"
+
+      # A release: the production key, which this step alone receives, and only when publishing.
+      # A dry run: a throwaway key made here (its public half travels to `verify`), so nothing a
+      # dry run signs is accepted by an installed Basket.
+      - name: Update signature (Ed25519 over the zip)
+        if: steps.secrets.outputs.mode == 'signed'
+        env:
+          BASKET_UPDATE_SIGNING_KEY: ${{ needs.meta.outputs.publish == 'true' && secrets.BASKET_UPDATE_SIGNING_KEY || '' }}
+        run: |
+          set +x
+          zip="$OUT/Basket-$VERSION-arm64.zip"
+          if [ "$PUBLISH" = true ]; then
+            if [ -z "$BASKET_UPDATE_SIGNING_KEY" ]; then echo "::error::no update signing key"; exit 1; fi
+            swift scripts/update-sign.swift "$zip" > "$OUT/update-signature.txt"
+          else
+            unset BASKET_UPDATE_SIGNING_KEY
+            keydir="$(mktemp -d "$RUNNER_TEMP/dry-run-key.XXXXXX")"
+            swift scripts/update-keygen.swift "$keydir/key" > "$OUT/update-public-key.txt"
+            BASKET_UPDATE_SIGNING_KEY="$(cat "$keydir/key")" swift scripts/update-sign.swift "$zip" > "$OUT/update-signature.txt"
+            rm -rf "$keydir"
+            echo "dry run: signed with a throwaway key ($(cat "$OUT/update-public-key.txt"))"
+          fi
+          echo "update signature: $(cat "$OUT/update-signature.txt")"
+
+      - name: Pack
+        id: pack
+        run: |
+          files=("Basket-$VERSION.dmg" "Basket-$VERSION-arm64.zip")
+          for f in update-signature.txt update-public-key.txt; do
+            if [ -f "$OUT/$f" ]; then files+=("$f"); fi
+          done
+          COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/signed.tar" -C "$OUT" "${files[@]}"
+          echo "sha=$(shasum -a 256 "$RUNNER_TEMP/signed.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+
+      # Hands the signed files to `verify` (and `publish`); a dry run's expire after a day.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed
+          path: ${{ runner.temp }}/signed.tar
+          if-no-files-found: error
+          retention-days: ${{ needs.meta.outputs.publish == 'true' && 3 || 1 }}
+
+  # Checks what `release` made, without secrets, and writes latest.json, SHA256SUMS and the
+  # release page. A dry run keeps only reports (SHA256SUMS, the release page) for two days.
+  verify:
+    name: Verify and write latest.json
+    needs: [meta, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
+    runs-on: macos-26
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      XCODE_APP: /Applications/Xcode_26.6.app
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      VERSION: ${{ needs.meta.outputs.version }}
+      TAG: ${{ needs.meta.outputs.tag }}
+      MODE: ${{ needs.release.outputs.mode }}
+      PUBLISH: ${{ needs.meta.outputs.publish }}
+      PREP: ${{ needs.meta.outputs.prep }}
+      RELEASE_DATE: ${{ needs.meta.outputs.date }}
+    outputs:
+      sha: ${{ steps.pack.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+          fetch-depth: 0 # tags: the previous release's update keys, a dry run's release-prep.sh
+          persist-credentials: false
+
+      - name: Select Xcode
+        run: scripts/select-xcode.sh
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed
+          path: ${{ runner.temp }}/dl/signed
+
+      - name: Unpack
+        env:
+          SIGNED_SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          v="${VERSION//./[.]}"
+          scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/signed/signed.tar" "$SIGNED_SHA" "$RUNNER_TEMP/signed" \
+            "^(Basket-$v\.dmg|Basket-$v-arm64\.zip|update-signature\.txt|update-public-key\.txt)$"
+          s="$RUNNER_TEMP/signed"
+          if [ "$PUBLISH" = true ] && [ "$MODE" != signed ]; then
+            echo "::error::a release must be signed with the Developer ID and notarized (mode: $MODE)"
+            exit 1
+          fi
+          if [ "$MODE" = signed ] && [ ! -s "$s/update-signature.txt" ]; then
+            echo "::error::a signed build without its update signature"
+            exit 1
+          fi
+          if [ "$PUBLISH" = true ] && [ -e "$s/update-public-key.txt" ]; then
+            echo "::error::a release whose update signature comes from a throwaway key"
+            exit 1
+          fi
+          if [ "$PUBLISH" != true ] && [ "$MODE" = signed ] && [ ! -s "$s/update-public-key.txt" ]; then
+            echo "::error::a dry run without its throwaway update key"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/checked"
+
+      # The logs are public: signature details (team, name) are checked, never printed.
+      - name: Check the zip and the DMG
+        run: |
+          fail() { echo "::error::$*"; exit 1; }
+          s="$RUNNER_TEMP/signed"
+          ditto -x -k "$s/Basket-$VERSION-arm64.zip" "$RUNNER_TEMP/zip"
+          app="$RUNNER_TEMP/zip/Basket.app"
+          plist="$app/Contents/Info.plist"
+          [ "$(plutil -extract CFBundleShortVersionString raw -o - "$plist")" = "$VERSION" ] || fail "the zip's app is not version $VERSION"
+          [ "$(plutil -extract CFBundleIdentifier raw -o - "$plist")" = dev.basket.app ] || fail "the zip's app is not dev.basket.app"
+          codesign --verify --deep --strict "$app" || fail "the zip's app has no valid signature"
+          mnt="$RUNNER_TEMP/dmg"
+          mkdir "$mnt"
+          hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$mnt" "$s/Basket-$VERSION.dmg" >/dev/null
+          trap 'hdiutil detach "$mnt" -force >/dev/null 2>&1 || true' EXIT
+          [ "$(readlink "$mnt/Applications")" = /Applications ] || fail "the DMG has no link to /Applications"
+          diff -rq "$mnt/Basket.app" "$app" || fail "the DMG's app is not the zip's"
+          if [ "$MODE" = signed ]; then
+            xcrun stapler validate "$app" || fail "no notarization ticket stapled to the app"
+            xcrun stapler validate "$s/Basket-$VERSION.dmg" || fail "no notarization ticket stapled to the DMG"
+            assessed="$(spctl --assess --type execute -vv "$app" 2>&1 || true)"
+            case "$assessed" in *"source=Notarized Developer ID"*) ;; *) fail "Gatekeeper does not accept the app as notarized" ;; esac
+            assessed="$(spctl --assess --type open --context context:primary-signature -vv "$s/Basket-$VERSION.dmg" 2>&1 || true)"
+            case "$assessed" in *"source=Notarized Developer ID"*) ;; *) fail "Gatekeeper does not accept the DMG as notarized" ;; esac
+            echo "ok: the app and the DMG are signed with a Developer ID, notarized and stapled"
+          else
+            echo "::warning::ad-hoc build (dry run): not notarized, no latest.json"
+          fi
+          echo "MIN_SYSTEM=$(plutil -extract LSMinimumSystemVersion raw -o - "$plist")" >> "$GITHUB_ENV"
+
+      - name: Release notes
+        run: |
+          if [ -n "$PREP" ]; then scripts/release-prep.sh "$PREP" >/dev/null; fi
+          if ! scripts/release-notes.sh "$VERSION" > "$RUNNER_TEMP/notes.md"; then
+            echo "(Dry run: CHANGELOG.md has no section for $VERSION.)" > "$RUNNER_TEMP/notes.md"
+          fi
+
+      # The update signature must verify with the keys installed copies trust: the
+      # trustedPublicKeysBase64 of the previous published release, read from its tag (for the
+      # first release with an updater, this release's own list). This release's own list must be
+      # readable and non-empty. A dry run's throwaway signature is checked against its own key,
+      # and the key selection is reported (docs/updates.md, "Keys").
+      - name: latest.json
+        if: env.MODE == 'signed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          s="$RUNNER_TEMP/signed"
+          zip="$s/Basket-$VERSION-arm64.zip"
+          sig="$(cat "$s/update-signature.txt")"
+          if ! own="$(scripts/update-keys.sh)"; then
+            echo "::error::this release's UpdateVerifier.trustedPublicKeysBase64 is missing, empty or unreadable"
+            exit 1
+          fi
+          prev="$(scripts/published-release.sh --below "$VERSION")"
+          if [ -n "$prev" ]; then
+            if ! git rev-parse -q --verify "refs/tags/$prev^{commit}" >/dev/null; then
+              echo "::error::the tag $prev of the previous release is not in this checkout"
+              exit 1
+            fi
+            rc=0
+            trusted="$(scripts/update-keys.sh "refs/tags/$prev")" || rc=$?
+            case "$rc" in
+              0) from="$prev (the previous published release)" ;;
+              3) trusted="$own"; from="this release ($prev has no updater)" ;;
+              *) echo "::error::cannot read the update keys of $prev"; exit 1 ;;
+            esac
+          else
+            trusted="$own"
+            from="this release (no published release before it)"
+          fi
+          echo "installed copies trust $(printf '%s\n' "$trusted" | grep -c .) update key(s), from $from"
+          if [ "$PUBLISH" = true ]; then
+            # shellcheck disable=SC2086 # base64 keys, one per line
+            swift scripts/update-verify.swift "$zip" "$sig" $trusted
+            # shellcheck disable=SC2086
+            if ! swift scripts/update-verify.swift "$zip" "$sig" $own >/dev/null 2>&1; then
+              echo "::warning::the update signing key is not in this release's own trustedPublicKeysBase64: sign the next release with a key from that list (docs/updates.md, \"Rotating the key\")"
+            fi
+          else
+            swift scripts/update-verify.swift "$zip" "$sig" "$(cat "$s/update-public-key.txt")"
+            echo "::notice::dry run: the update signature comes from a throwaway key; a release would be checked against the keys of $from"
+          fi
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Basket-$VERSION-arm64.zip"
+          scripts/update-manifest.sh "$VERSION" "$zip" "$sig" "$RUNNER_TEMP/notes.md" "$MIN_SYSTEM" "$url" \
+            > "$RUNNER_TEMP/checked/latest.json"
+          cat "$RUNNER_TEMP/checked/latest.json"
+
+      - name: SHA256SUMS and the release page
+        id: pack
+        run: |
+          c="$RUNNER_TEMP/checked"
+          files=("$RUNNER_TEMP/signed/Basket-$VERSION.dmg" "$RUNNER_TEMP/signed/Basket-$VERSION-arm64.zip")
+          if [ -f "$c/latest.json" ]; then files+=("$c/latest.json"); fi
+          for f in "${files[@]}"; do (cd "$(dirname "$f")" && shasum -a 256 "$(basename "$f")"); done > "$c/SHA256SUMS"
+          scripts/release-body.sh "$VERSION" "$MODE" "$RUNNER_TEMP/notes.md" "$c/SHA256SUMS" > "$c/release-body.md"
+          COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/checked.tar" -C "$c" $(cd "$c" && ls)
+          echo "sha=$(shasum -a 256 "$RUNNER_TEMP/checked.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+          mkdir "$RUNNER_TEMP/report"
+          cp "$c/SHA256SUMS" "$c/release-body.md" "$RUNNER_TEMP/report/"
+          {
+            echo "### Basket $TAG ($MODE$([ "$PUBLISH" = true ] || echo ', dry run'))"
+            echo
+            echo '```text'
+            cat "$c/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.meta.outputs.publish == 'true'
+        with:
+          name: checked
+          path: ${{ runner.temp }}/checked.tar
+          if-no-files-found: error
+          retention-days: 3
+
+      # A dry run keeps reports only: no app, zip, DMG or latest.json.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.meta.outputs.publish != 'true'
+        with:
+          name: dry-run-report-${{ needs.meta.outputs.tag }}
+          path: ${{ runner.temp }}/report
+          if-no-files-found: error
+          retention-days: 2
+
+  # The release: attestations for every file, then a draft with every file, checked byte for
+  # byte, then published (scripts/release-publish.sh). Only for a pushed vX.Y.Z tag signed with
+  # the Developer ID; no secrets, only this run's write token and OIDC token.
+  publish:
+    name: Publish the release
+    needs: [meta, release, verify]
+    if: >-
+      ${{ !cancelled() && needs.meta.outputs.publish == 'true' && github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v') && needs.release.outputs.mode == 'signed'
+      && needs.release.result == 'success' && needs.verify.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # the release
+      id-token: write # Sigstore signing of the attestations
+      attestations: write # recording them
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+      TAG: ${{ needs.meta.outputs.tag }}
+      SHA: ${{ needs.meta.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed
+          path: ${{ runner.temp }}/dl/signed
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: checked
+          path: ${{ runner.temp }}/dl/checked
+
+      - name: Unpack and check
+        env:
+          SIGNED_SHA: ${{ needs.release.outputs.sha }}
+          CHECKED_SHA: ${{ needs.verify.outputs.sha }}
+        run: |
+          v="${VERSION//./[.]}"
+          scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/signed/signed.tar" "$SIGNED_SHA" "$RUNNER_TEMP/signed" \
+            "^(Basket-$v\.dmg|Basket-$v-arm64\.zip|update-signature\.txt)$"
+          scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/checked/checked.tar" "$CHECKED_SHA" "$RUNNER_TEMP/checked" \
+            '^(latest\.json|SHA256SUMS|release-body\.md)$'
+          if [ ! -s "$RUNNER_TEMP/checked/latest.json" ]; then
+            echo "::error::no latest.json: only a Developer ID signed, notarized and update-signed build is published"
+            exit 1
+          fi
+          a="$RUNNER_TEMP/assets"
+          mkdir "$a"
+          cp "$RUNNER_TEMP/signed/Basket-$VERSION.dmg" "$RUNNER_TEMP/signed/Basket-$VERSION-arm64.zip" \
+            "$RUNNER_TEMP/checked/SHA256SUMS" "$RUNNER_TEMP/checked/latest.json" "$a/"
+          (cd "$a" && shasum -a 256 -c SHA256SUMS)
+          if [ "$(cd "$a" && ls | grep -cvx SHA256SUMS)" != "$(wc -l < "$a/SHA256SUMS" | tr -d ' ')" ]; then
+            echo "::error::SHA256SUMS does not list exactly the files to publish"
+            exit 1
+          fi
+
+      - id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/assets/*
+
+      # The tag must still point at the built commit (checked before the draft and again before
+      # publishing); everything acts on the id of the release created here; "latest" only when
+      # this version is newer than every published release.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          a="$RUNNER_TEMP/assets"
+          cp "$BUNDLE" "$a/basket-$TAG.sigstore.json"
+          url="$(scripts/release-publish.sh "$TAG" "$SHA" "$a" "$RUNNER_TEMP/checked/release-body.md")"
+          {
+            echo "### Published [Basket $TAG]($url)"
+            echo
+            echo '```text'
+            cat "$a/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

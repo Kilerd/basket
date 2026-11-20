@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # --range needs every commit of the PR and the base branch
           persist-credentials: false
@@ -53,6 +53,20 @@ jobs:
             scripts/check-leaks.sh --range "${BEFORE}..${GITHUB_SHA}"
           fi
 
+  # The release workflow's scripts (release-prep.sh, release-notes.sh, release-ci-check.sh, ...)
+  # in throwaway repositories; macOS-only parts (update signature, DMG) run on a Mac locally.
+  release-scripts:
+    name: Release scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test the release scripts
+        run: scripts/tests/release-prep-test.sh
+
   build-test:
     name: Build, test and self-test
     # macOS 26 on Apple silicon (the package needs the macOS 26 SDK). Image contents:
@@ -65,7 +79,7 @@ jobs:
       # XCODE_APP so `swift` here and in the scripts is the same toolchain (no second build).
       DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -118,7 +132,7 @@ jobs:
 
       - name: Upload self-test reports and screenshots
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: selftest-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/selftest/**

@@ -49,14 +49,7 @@ if [[ "$CONFIG" == debug && "$IDENTITY" != "-" ]]; then
 XML
 fi
 log "codesign ($([[ "$IDENTITY" == "-" ]] && echo ad-hoc || echo "$IDENTITY"))"
-# Inside-out: the helper first (hardened runtime, same identity), then the app seals it.
-HELPER_ARGS=(--force --options runtime --identifier dev.basket.app.docker-shim --sign "$IDENTITY")
-if [[ "$IDENTITY" != "-" ]]; then
-  if [[ "${BASKET_SIGN_TIMESTAMP:-0}" == "1" ]]; then HELPER_ARGS+=(--timestamp); else HELPER_ARGS+=(--timestamp=none); fi
-fi
-codesign "${HELPER_ARGS[@]}" "$APP/Contents/Helpers/basket-docker" >&2
-sign_bundle "$APP" "$IDENTITY" "$ENTITLEMENTS"
-codesign --verify --deep --strict "$APP" || die "codesign --deep verification failed for $APP"
+sign_app "$APP" "$IDENTITY" "$ENTITLEMENTS"
 
 log "built $APP ($(signing_summary "$APP"))"
 echo "$APP"
