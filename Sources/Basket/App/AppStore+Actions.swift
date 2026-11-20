@@ -177,15 +177,31 @@ extension AppStore {
     /// Per-container stop → start (see `MemoryReclaim.restart`), tracked as pending, with skipped and
     /// failed containers reported in the banner.
     func restart(_ ids: [String], onlyRunning: Bool) async -> MemoryReclaim.Outcome {
+        await restart(ids) { await MemoryReclaim.restart(ids, using: $0, onlyRunning: onlyRunning) }
+    }
+
+    /// Tracks `ids` as restarting while `operation` runs, then refreshes and puts skipped and failed
+    /// containers in the banner (or the error, when the run couldn't begin).
+    @discardableResult
+    func restart(
+        _ ids: [String], _ operation: @escaping @Sendable (any ContainerBackend) async throws -> MemoryReclaim.Outcome
+    ) async -> MemoryReclaim.Outcome {
         guard !ids.isEmpty else { return MemoryReclaim.Outcome() }
         for id in ids { pending[id] = "Restarting" }
-        let outcome = await MemoryReclaim.restart(ids, using: backend, onlyRunning: onlyRunning)
+        let result: Result<MemoryReclaim.Outcome, any Error>
+        do { result = .success(try await operation(backend)) } catch { result = .failure(error) }
         for id in ids { pending[id] = nil }
         await refresh([.containers, .stats, .footprints])
-        if let report = outcome.report {
-            banner = BannerMessage(title: report.title, detail: report.detail)
+        switch result {
+        case .success(let outcome):
+            if let report = outcome.report {
+                banner = BannerMessage(title: report.title, detail: report.detail)
+            }
+            return outcome
+        case .failure(let error):
+            showError("Restarting failed", error)
+            return MemoryReclaim.Outcome()
         }
-        return outcome
     }
 
     func killContainers(_ ids: [String]) async {
