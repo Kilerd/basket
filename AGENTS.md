@@ -119,6 +119,7 @@ outside contributor could follow every decision from the repository alone.
   Every user-visible PR adds a line under `## [Unreleased]` in `CHANGELOG.md` (Keep a
   Changelog format). Releases are tags `vX.Y.Z` on `main` with notes taken from the
   changelog; release builds are signed (and notarized once set up) by the maintainer only.
+- **Releasing.** `.github/workflows/release.yml` cuts, signs and publishes releases after the maintainer approves the run; see [docs/RELEASING.md](docs/RELEASING.md).
 - **Security.** Vulnerabilities are reported privately (GitHub Security Advisories, see
   `SECURITY.md`) and never discussed in public issues before a fix ships.
 - **Language.** Code, comments, commit messages, PRs and docs in English so anyone can

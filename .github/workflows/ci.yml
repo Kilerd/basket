@@ -53,6 +53,20 @@ jobs:
             scripts/check-leaks.sh --range "${BEFORE}..${GITHUB_SHA}"
           fi
 
+  # The release workflow's scripts (release-prep.sh, release-notes.sh, release-ci-check.sh, ...)
+  # in throwaway repositories; macOS-only parts (update signature, DMG) run on a Mac locally.
+  release-scripts:
+    name: Release scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Test the release scripts
+        run: scripts/tests/release-prep-test.sh
+
   build-test:
     name: Build, test and self-test
     # macOS 26 on Apple silicon (the package needs the macOS 26 SDK). Image contents:

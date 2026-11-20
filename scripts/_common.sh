@@ -8,9 +8,12 @@ SCRATCH="${BASKET_SCRATCH:-.build}"
 # Where app bundles go (override with BASKET_BUILD_DIR so parallel lanes don't overwrite each other).
 BUILD_DIR="${BASKET_BUILD_DIR:-$ROOT/build}"
 VERSION="0.0.1"
+# A release version: SemVer X.Y.Z, no leading zeros, no pre-release or build suffix (docs/RELEASING.md).
+SEMVER_RE='^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$'
 
 log() { printf '==> %s\n' "$*" >&2; }
-die() { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+# die <message> [exit-code]
+die() { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 # swift_build <config> <product> — builds and prints the bin directory; fails if the build fails.
 swift_build() {
@@ -64,6 +67,20 @@ sign_bundle() {
   [[ -n "$entitlements" ]] && args+=(--entitlements "$entitlements")
   codesign "${args[@]}" "$app" >&2
   codesign --verify --strict "$app" || die "codesign verification failed for $app"
+}
+
+# sign_app <Basket.app> <identity> [entitlements] — inside out: the `basket-docker` helper first
+# (hardened runtime, its own identifier, same identity), then the app seals it. Used by
+# build-app.sh and, for the Developer ID signature of a release, by sign-app.sh.
+sign_app() {
+  local app="$1" identity="$2" entitlements="${3:-}"
+  local args=(--force --options runtime --identifier dev.basket.app.docker-shim --sign "$identity")
+  if [[ "$identity" != "-" ]]; then
+    if [[ "${BASKET_SIGN_TIMESTAMP:-0}" == "1" ]]; then args+=(--timestamp); else args+=(--timestamp=none); fi
+  fi
+  codesign "${args[@]}" "$app/Contents/Helpers/basket-docker" >&2
+  sign_bundle "$app" "$identity" "$entitlements"
+  codesign --verify --deep --strict "$app" || die "codesign --deep verification failed for $app"
 }
 
 # signing_summary <app> — "Authority=…" line (or "adhoc").

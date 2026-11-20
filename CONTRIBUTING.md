@@ -114,6 +114,7 @@ A pull request is merged when all of these hold:
 
 Versions are `0.0.x` for now. Each iteration that lands on `main` is released as the next patch.
 The maintainer tags releases (`vX.Y.Z`) and signs release builds.
+How a release is cut, built, signed and checked: [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Code conventions
 
