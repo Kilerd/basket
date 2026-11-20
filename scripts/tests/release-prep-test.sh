@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Tests the release scripts (docs/RELEASING.md) in throwaway git repositories with a synthetic
-# CHANGELOG.md: release-prep.sh (the first release, patch, minor, major, explicit, invalid input,
-# an empty [Unreleased], idempotence), release-notes.sh, release-ci-check.sh (against a stand-in
-# for gh), unpack-artifact.sh, update-manifest.sh and release-body.sh; on macOS also the update
-# key, signature and check (update-keygen/sign/verify.swift) and make-dmg.sh.
+# CHANGELOG.md: release-prep.sh (the first release, patch, minor, major, explicit, the major
+# version cap, invalid input, an empty [Unreleased], idempotence), release-notes.sh,
+# release-ci-check.sh, update-keys.sh (the trusted update keys of a revision),
+# published-release.sh and release-publish.sh (the tag guard, the release id, "latest") against
+# stand-ins for gh, unpack-artifact.sh, update-manifest.sh and release-body.sh; on macOS also the
+# update key, signature and check (update-keygen/sign/verify.swift) and make-dmg.sh.
 #   scripts/tests/release-prep-test.sh
 # Needs bash, git, awk, sed, jq, tar, gzip and shasum. CI runs it on Linux.
 set -euo pipefail
@@ -58,7 +60,8 @@ new_repo() {
   local dir="$1"
   mkdir -p "$dir/scripts"
   cp -p "$SRC/scripts/_common.sh" "$SRC/scripts/release-prep.sh" "$SRC/scripts/release-notes.sh" \
-    "$SRC/scripts/release-ci-check.sh" "$dir/scripts/"
+    "$SRC/scripts/release-ci-check.sh" "$SRC/scripts/update-keys.sh" "$SRC/scripts/published-release.sh" \
+    "$SRC/scripts/release-publish.sh" "$dir/scripts/"
   sed "s/^VERSION=\"[^\"]*\"\$/VERSION=\"$2\"/" "$SRC/scripts/_common.sh" > "$dir/scripts/_common.sh"
   printf '%s\n' "$3" > "$dir/CHANGELOG.md"
   git -C "$dir" init -q -b main
@@ -99,6 +102,11 @@ expect_rc "first release: a bump without any tag is refused" 1
 expect_contains "first release: the refusal names the version to give" "$ERR" "name the first version explicitly"
 run "$R/scripts/release-prep.sh" 0.0.0
 expect_rc "first release: lower than VERSION is refused" 1
+run "$R/scripts/release-prep.sh" 1.0.0
+expect_rc "first release: an exact 1.0.0 while VERSION is 0.x is refused" 1
+expect_contains "first release: the refusal points to major" "$ERR" "use \`major\`"
+run "$R/scripts/release-prep.sh" 999999999.0.0
+expect_rc "first release: an absurd major version is refused" 1
 [[ "$(snapshot "$R")" == "$before" ]] && pass "first release: refusals change nothing" || fail "first release: refusals change nothing"
 
 run "$R/scripts/release-prep.sh" --dry-run 0.0.1
@@ -203,7 +211,6 @@ expect_out "patch: release notes" "### Changed
 
 - Faster lists."
 commit "$R" "chore(release): v0.0.2"
-PATCH_RELEASE_COMMIT="$(git -C "$R" rev-parse HEAD)"
 add_entry "$R" "- Pending change."
 commit "$R" "docs: pending change"
 run "$R/scripts/release-prep.sh" 0.0.2
@@ -236,11 +243,19 @@ expect_contains "minor: links" "$(cat "$R/CHANGELOG.md")" "[Unreleased]: $URL/co
 [[ "$(version_of "$R")" == 0.1.0 ]] && pass "minor: VERSION 0.1.0" || fail "minor: VERSION 0.1.0"
 commit "$R" "chore(release): v0.1.0"; tag "$R" v0.1.0
 add_entry "$R" "- Breaking change."
+before="$(snapshot "$R")"
+run "$R/scripts/release-prep.sh" 1.0.0
+expect_rc "major cap: an exact 1.0.0 after v0.1.0 is refused" 1
+run "$R/scripts/release-prep.sh" 2.0.0
+expect_rc "major cap: 2.0.0 after v0.1.0 is refused" 1
+[[ "$(snapshot "$R")" == "$before" ]] && pass "major cap: refusals change nothing" || fail "major cap: refusals change nothing"
 run "$R/scripts/release-prep.sh" major
 expect_out "major: 0.1.0 → 1.0.0" 1.0.0
 expect_contains "major: link" "$(cat "$R/CHANGELOG.md")" "[1.0.0]: $URL/compare/v0.1.0...v1.0.0"
 commit "$R" "chore(release): v1.0.0"; tag "$R" v1.0.0
 add_entry "$R" "- Another change."
+run "$R/scripts/release-prep.sh" 2.0.0
+expect_rc "major cap: an exact 2.0.0 after v1.0.0 is refused" 1
 run "$R/scripts/release-prep.sh" 1.2.0
 expect_out "explicit: 1.2.0" 1.2.0
 expect_contains "explicit: section and link" "$(cat "$R/CHANGELOG.md")" "## [1.2.0] - 2026-12-01"
@@ -343,37 +358,257 @@ INITIAL="$(git -C "$R" rev-list --max-parents=0 HEAD)"
 git -C "$R" checkout -q -b code
 mkdir -p "$R/Sources"; echo "// code" > "$R/Sources/x.swift"; commit "$R" "feat: code"
 CODE_COMMIT="$(git -C "$R" rev-parse HEAD)"
-sed 's/^SCRATCH=/SCRATCH_X=/' "$R/scripts/_common.sh" > "$TMP/c" && cat "$TMP/c" > "$R/scripts/_common.sh"; commit "$R" "chore: not only VERSION"
-OTHER_LINE_COMMIT="$(git -C "$R" rev-parse HEAD)"
 
 runs "$INITIAL" "completed success https://ci/1"
 ci "ci: own run succeeded" "$INITIAL" 0 "$INITIAL"
 runs "$INITIAL" "completed failure https://ci/1"
 ci "ci: own run failed" "$INITIAL" 1
 runs "$INITIAL" "completed success https://ci/1"
+# A release commit (the merged release pull request) needs its own run like any commit.
 noruns "$FIRST_RELEASE_COMMIT"
-ci "ci: release commit (CHANGELOG only) without a run: the parent counts" "$FIRST_RELEASE_COMMIT" 0 "$INITIAL"
-runs "$INITIAL" "completed failure https://ci/1"
-ci "ci: release commit, parent failed" "$FIRST_RELEASE_COMMIT" 1
-runs "$INITIAL" "completed success https://ci/1"
-runs "$FIRST_RELEASE_COMMIT" "completed failure https://ci/2"
-ci "ci: release commit with its own failed run" "$FIRST_RELEASE_COMMIT" 1
+ci "ci: a release commit without its own run fails (the parent's does not count)" "$FIRST_RELEASE_COMMIT" 1
 runs "$FIRST_RELEASE_COMMIT" "in_progress none https://ci/2"
-ci "ci: release commit whose run is still going: the parent counts" "$FIRST_RELEASE_COMMIT" 0 "$INITIAL"
-PATCH_PARENT="$(git -C "$R" rev-parse "$PATCH_RELEASE_COMMIT^")"
-runs "$PATCH_PARENT" "completed success https://ci/3"
-ci "ci: release commit (CHANGELOG and VERSION): the parent counts" "$PATCH_RELEASE_COMMIT" 0 "$PATCH_PARENT"
+ci "ci: a release commit whose run has not finished" "$FIRST_RELEASE_COMMIT" 1
+runs "$FIRST_RELEASE_COMMIT" "completed success https://ci/2"
+ci "ci: a release commit with a passed run" "$FIRST_RELEASE_COMMIT" 0 "$FIRST_RELEASE_COMMIT"
 ci "ci: a code commit without a run" "$CODE_COMMIT" 1
 runs "$CODE_COMMIT" "in_progress none https://ci/4"
 ci "ci: a code commit whose run has not finished" "$CODE_COMMIT" 1
 runs "$CODE_COMMIT" "completed success https://ci/4"
 ci "ci: a code commit with a passed run" "$CODE_COMMIT" 0 "$CODE_COMMIT"
-ci "ci: a change to _common.sh besides VERSION is no release commit" "$OTHER_LINE_COMMIT" 1
 export FAKE_GH_FAIL=1
 ci "ci: gh failing fails" "$INITIAL" 1
 unset FAKE_GH_FAIL
 run env PATH="$TMP/bin:$PATH" GITHUB_REPOSITORY= "$R/scripts/release-ci-check.sh" HEAD
 expect_rc "ci: no repository (64)" 64
+
+# --- update-keys.sh: the update keys a revision trusts ---------------------------------------
+K1="M3D6KG3mzKDpqS1IjpL08pujoEBDtFGGH+ntnICNVcA="
+K2="$(printf 'B%.0s' $(seq 42))w="
+UV="Sources/BasketCore/Update/UpdateVerifier.swift"
+# verifier_swift <list body> — an UpdateVerifier.swift shaped like the real one.
+verifier_swift() {
+  cat <<SWIFT
+public struct UpdateVerifier: Sendable {
+    /// Keys; the release workflow reads trustedPublicKeysBase64 from here.
+    public static let trustedPublicKeysBase64: [String] = [
+$1
+    ]
+    public let publicKeys: [Data]
+}
+SWIFT
+}
+KR="$TMP/keys-repo"
+new_repo "$KR" 0.0.1 "$HEAD_TEXT
+
+## [Unreleased]
+
+- Something."
+run "$KR/scripts/update-keys.sh"
+expect_rc "keys: no UpdateVerifier.swift (no updater) exits 3" 3
+mkdir -p "$KR/$(dirname "$UV")"
+verifier_swift "        \"$K1\"," > "$KR/$UV"
+run "$KR/scripts/update-keys.sh"
+expect_rc "keys: one key" 0
+expect_out "keys: one key printed" "$K1"
+commit "$KR" "feat: one key"; tag "$KR" v0.0.1
+verifier_swift "        \"$K1\", // the first key
+        // added for the rotation:
+        \"$K2\"" > "$KR/$UV"
+run "$KR/scripts/update-keys.sh"
+expect_out "keys: two keys, comments, no trailing comma" "$K1
+$K2"
+commit "$KR" "feat: two keys"; tag "$KR" v0.0.2
+run "$KR/scripts/update-keys.sh" v0.0.1
+expect_out "keys: the list at an older tag" "$K1"
+run "$KR/scripts/update-keys.sh" refs/tags/v0.0.2
+expect_out "keys: the list at refs/tags/…" "$K1
+$K2"
+run "$KR/scripts/update-keys.sh" "$(git -C "$KR" rev-list --max-parents=0 HEAD)"
+expect_rc "keys: a revision without the file exits 3" 3
+run "$KR/scripts/update-keys.sh" v9.9.9
+expect_rc "keys: an unknown revision fails" 1
+run "$KR/scripts/update-keys.sh" '--output=/tmp/x'
+expect_rc "keys: an option-like revision is refused (64)" 64
+for body in "" "        // none yet" "        \"not a key\"" "        \"$K1\" + \"\"" "        UpdateVerifier.extraKey," \
+            "        \"${K1%=}A\"" "        \"$K1\" \"$K2\"x"; do
+  verifier_swift "$body" > "$KR/$UV"
+  run "$KR/scripts/update-keys.sh"
+  expect_rc "keys: refused list body '${body#        }'" 1
+done
+{ verifier_swift "        \"$K1\","; verifier_swift "        \"$K2\","; } > "$KR/$UV"
+run "$KR/scripts/update-keys.sh"
+expect_rc "keys: two lists are refused" 1
+printf 'public let publicKeyBase64 = "%s"\n' "$K1" > "$KR/$UV"
+run "$KR/scripts/update-keys.sh"
+expect_rc "keys: no list (an old single key) is refused" 1
+git -C "$KR" checkout -q -- .
+
+# --- stand-in for gh: releases --------------------------------------------------------------
+mkdir -p "$TMP/ghrel"
+cat > "$TMP/ghrel/gh" <<'GH'
+#!/usr/bin/env bash
+# Stand-in for `gh api` on releases; state in $FAKE_GH:
+#   releases.json  the repository's releases (GET …/releases?per_page=100)
+#   draft/         the files of draft release 77 (POST …/releases makes it)
+#   calls          one line per call: "<METHOD> <endpoint> <fields…>"
+# FAKE_GH_FAIL=1 fails every call; FAKE_GH_TAMPER=1 changes every downloaded file.
+set -euo pipefail
+[[ "${1:-}" == api ]] || exit 2
+shift
+method=GET jq_expr="" input="" endpoint="" fields=()
+while (( $# )); do
+  case "$1" in
+    -X|--method) method="$2"; shift 2 ;;
+    --jq|-q) jq_expr="$2"; shift 2 ;;
+    --input) input="$2"; shift 2 ;;
+    -H|--header) shift 2 ;;
+    -f|-F|--raw-field|--field) fields+=("$2"); shift 2 ;;
+    --paginate) shift ;;
+    -*) echo "fake gh: unknown option $1" >&2; exit 2 ;;
+    *) endpoint="$1"; shift ;;
+  esac
+done
+echo "$method $endpoint ${fields[*]:-}" >> "$FAKE_GH/calls"
+[[ -z "${FAKE_GH_FAIL:-}" ]] || exit 1
+reply() { if [[ -n "$jq_expr" ]]; then jq -r "$jq_expr"; else cat; fi; }
+D="$FAKE_GH/draft"
+assets() { (cd "$D" && ls | LC_ALL=C sort); }
+tag_of() { jq -r .tag_name "$FAKE_GH/create.json"; }
+case "$method $endpoint" in
+  "GET repos/"*"/releases?per_page=100") reply < "$FAKE_GH/releases.json" ;;
+  "POST repos/"*"/releases")
+    repo="${endpoint#repos/}"; repo="${repo%/releases}"
+    if [[ "$input" == - ]]; then cat > "$FAKE_GH/create.json"; else cp "$input" "$FAKE_GH/create.json"; fi
+    mkdir "$D"
+    printf '{"id": 77, "draft": true, "upload_url": "https://uploads.github.com/repos/%s/releases/77/assets{?name,label}"}\n' "$repo" | reply ;;
+  "POST https://uploads.github.com/repos/"*"/releases/77/assets?name="*)
+    name="${endpoint##*name=}"; cp "$input" "$D/$name"; jq -n --arg n "$name" '{name: $n}' | reply ;;
+  "GET repos/"*"/releases/77/assets?per_page=100")
+    assets | jq -R . | jq -s 'to_entries | map({id: (.key + 1000), state: "uploaded", name: .value})' | reply ;;
+  "GET repos/"*"/releases/assets/"*)
+    name="$(assets | sed -n "$(( ${endpoint##*/} - 999 ))p")"
+    if [[ -n "${FAKE_GH_TAMPER:-}" ]]; then printf 'x'; fi
+    cat "$D/$name" ;;
+  "GET repos/"*"/releases/77")
+    if [[ -e "$FAKE_GH/published" ]]; then d=false; else d=true; fi
+    jq -n --arg t "$(tag_of)" --argjson d "$d" '{tag_name: $t, draft: $d}' | reply ;;
+  "PATCH repos/"*"/releases/77")
+    touch "$FAKE_GH/published"
+    jq -n --arg t "$(tag_of)" '{tag_name: $t, draft: false, html_url: "https://github.com/Kilerd/basket/releases/tag/\($t)"}' | reply ;;
+  "DELETE repos/"*"/releases/77") rm -rf "$D"; touch "$FAKE_GH/deleted" ;;
+  *) echo "fake gh: unexpected $method $endpoint" >&2; exit 3 ;;
+esac
+GH
+chmod +x "$TMP/ghrel/gh"
+# releases <json array of {tag_name, draft, prerelease}> — resets the stand-in's state.
+releases() {
+  rm -rf "$TMP/ghstate"; mkdir -p "$TMP/ghstate"
+  printf '%s\n' "$1" > "$TMP/ghstate/releases.json"
+  : > "$TMP/ghstate/calls"
+}
+gh_env=(env PATH="$TMP/ghrel:$PATH" FAKE_GH="$TMP/ghstate" GITHUB_REPOSITORY=Kilerd/basket)
+
+# --- published-release.sh --------------------------------------------------------------------
+releases '[{"tag_name":"v0.0.1","draft":false,"prerelease":false},{"tag_name":"v0.0.10","draft":false,"prerelease":false},
+  {"tag_name":"v0.0.9","draft":false,"prerelease":false},{"tag_name":"v0.1.0","draft":true,"prerelease":false},
+  {"tag_name":"v0.0.11","draft":false,"prerelease":true},{"tag_name":"nightly","draft":false,"prerelease":false},
+  {"tag_name":"v0.0.12-rc.1","draft":false,"prerelease":false}]'
+run "${gh_env[@]}" "$KR/scripts/published-release.sh"
+expect_out "published: the newest (numeric order; drafts, pre-releases and other tags ignored)" v0.0.10
+run "${gh_env[@]}" "$KR/scripts/published-release.sh" --below 0.0.10
+expect_out "published: the newest below a version" v0.0.9
+run "${gh_env[@]}" "$KR/scripts/published-release.sh" --below 0.0.1
+expect_out "published: nothing below the first" ""
+expect_rc "published: nothing is no error" 0
+releases '[]'
+run "${gh_env[@]}" "$KR/scripts/published-release.sh"
+expect_out "published: no releases at all" ""
+run "${gh_env[@]}" FAKE_GH_FAIL=1 "$KR/scripts/published-release.sh"
+expect_rc "published: gh failing fails" 1
+run "${gh_env[@]}" "$KR/scripts/published-release.sh" --below v1.0.0
+expect_rc "published: --below needs X.Y.Z (64)" 64
+
+# --- release-publish.sh: tag guard, release id, latest ----------------------------------------
+P="$TMP/publish"
+new_repo "$P" 0.0.3 "$HEAD_TEXT
+
+## [Unreleased]
+
+## [0.0.3] - 2026-12-01
+
+- Something."
+BUILT="$(git -C "$P" rev-parse HEAD)"
+tag "$P" v0.0.3
+echo other > "$P/other.txt"; commit "$P" "chore: another commit"
+OTHER="$(git -C "$P" rev-parse HEAD)"
+git clone -q --bare "$P" "$TMP/origin.git"
+git -C "$P" remote add origin "$TMP/origin.git"
+A="$TMP/assets"
+mkdir -p "$A"
+printf 'dmg' > "$A/Basket-0.0.3.dmg"; printf 'zip' > "$A/Basket-0.0.3-arm64.zip"; printf '{}' > "$A/latest.json"
+(cd "$A" && shasum -a 256 Basket-0.0.3.dmg Basket-0.0.3-arm64.zip latest.json) > "$A/SHA256SUMS"
+printf 'Notes.\n' > "$TMP/body.md"
+publish() { run "${gh_env[@]}" "$P/scripts/release-publish.sh" "$@"; }
+calls() { cat "$TMP/ghstate/calls"; }
+
+releases '[{"tag_name":"v0.0.2","draft":false,"prerelease":false}]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a newer version" 0
+expect_out "publish: prints the release URL" "https://github.com/Kilerd/basket/releases/tag/v0.0.3"
+expect_contains "publish: the draft is made for the tag" "$(jq -c '{tag_name, draft}' "$TMP/ghstate/create.json")" '{"tag_name":"v0.0.3","draft":true}'
+expect_contains "publish: uploads to the release id" "$(calls)" "POST https://uploads.github.com/repos/Kilerd/basket/releases/77/assets?name=Basket-0.0.3.dmg"
+expect_contains "publish: published by id, marked latest" "$(calls)" "PATCH repos/Kilerd/basket/releases/77 draft=false make_latest=true"
+expect_lacks "publish: never addresses a release by tag name" "$(calls)" "releases/tags/"
+[[ "$(cd "$TMP/ghstate/draft" && ls | LC_ALL=C sort | tr '\n' ' ')" == "Basket-0.0.3-arm64.zip Basket-0.0.3.dmg SHA256SUMS latest.json " ]] \
+  && pass "publish: every file uploaded" || fail "publish: every file uploaded" "$(ls "$TMP/ghstate/draft")"
+[[ ! -e "$TMP/ghstate/deleted" ]] && pass "publish: the published release is kept" || fail "publish: the published release is kept"
+
+releases '[{"tag_name":"v0.0.2","draft":false,"prerelease":false},{"tag_name":"v0.1.0","draft":false,"prerelease":false}]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: an older line's patch" 0
+expect_contains "publish: not marked latest below a newer release" "$(calls)" "make_latest=false"
+releases '[{"tag_name":"v0.0.3","draft":true,"prerelease":false},{"tag_name":"v0.0.4","draft":false,"prerelease":true}]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_contains "publish: drafts and pre-releases don't keep it from being latest" "$(calls)" "make_latest=true"
+
+releases '[]'
+publish v0.0.3 "$OTHER" "$A" "$TMP/body.md"
+expect_rc "publish: the tag points at another commit than the built one" 1
+expect_contains "publish: says the tag points elsewhere" "$ERR" "not at the commit that was built"
+expect_lacks "publish: no draft when the tag is wrong" "$(calls)" "POST"
+git -C "$TMP/origin.git" tag -f -a v0.0.3 -m moved "$OTHER" >/dev/null
+releases '[]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a tag moved on origin is refused" 1
+expect_lacks "publish: nothing created for a moved tag" "$(calls)" "POST"
+git -C "$TMP/origin.git" tag -f "v0.0.3" "$BUILT" >/dev/null # lightweight now
+releases '[]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a lightweight tag at the built commit" 0
+git -C "$TMP/origin.git" tag -d v0.0.3 >/dev/null
+releases '[]'
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a tag missing on origin is refused" 1
+git -C "$TMP/origin.git" tag -a v0.0.3 -m v0.0.3 "$BUILT"
+
+releases '[]'
+run "${gh_env[@]}" FAKE_GH_TAMPER=1 "$P/scripts/release-publish.sh" v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a draft whose files differ is refused" 1
+expect_contains "publish: says which file differs" "$ERR" "differs from the file that was checked"
+expect_lacks "publish: a refused draft is never published" "$(calls)" "PATCH"
+[[ -e "$TMP/ghstate/deleted" ]] && pass "publish: the refused draft is deleted (by id)" || fail "publish: the refused draft is deleted (by id)"
+expect_contains "publish: deleted by id" "$(calls)" "DELETE repos/Kilerd/basket/releases/77"
+
+releases '[]'
+publish 0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a tag without v (64)" 64
+publish v0.0.3 "${BUILT:0:12}" "$A" "$TMP/body.md"
+expect_rc "publish: a short commit (64)" 64
+mkdir "$A/sub"
+publish v0.0.3 "$BUILT" "$A" "$TMP/body.md"
+expect_rc "publish: a folder among the assets is refused" 1
+rmdir "$A/sub"
 
 # --- unpack-artifact.sh --------------------------------------------------------------------
 U="$TMP/unpack"
@@ -456,8 +691,16 @@ if [[ "$(uname -s)" == Darwin ]] && command -v swift >/dev/null 2>&1; then
   run swift "$SRC/scripts/update-verify.swift" "$M/other.zip" "$USIG" "$PUB"
   expect_rc "update: not for other bytes" 1
   run swift "$SRC/scripts/update-keygen.swift" "$K/other.key"
-  run swift "$SRC/scripts/update-verify.swift" "$M/Basket-0.0.1-arm64.zip" "$USIG" "$OUT"
+  OTHER_PUB="$OUT"
+  run swift "$SRC/scripts/update-verify.swift" "$M/Basket-0.0.1-arm64.zip" "$USIG" "$OTHER_PUB"
   expect_rc "update: not with another key" 1
+  run swift "$SRC/scripts/update-verify.swift" "$M/Basket-0.0.1-arm64.zip" "$USIG" "$OTHER_PUB" "$PUB"
+  expect_rc "update: with any key of a list (rotation)" 0
+  expect_contains "update: names the key that verified it" "$OUT" "$PUB"
+  run swift "$SRC/scripts/update-verify.swift" "$M/Basket-0.0.1-arm64.zip" "$USIG" "$OTHER_PUB" "$K1"
+  expect_rc "update: not with a list without the signing key" 1
+  run swift "$SRC/scripts/update-verify.swift" "$M/Basket-0.0.1-arm64.zip" "$USIG" "$PUB" "not a key"
+  expect_rc "update: a malformed key in the list is refused (64)" 64
   run env UPDATE_PUB_DATE=2026-12-01T10:00:00Z "$SRC/scripts/update-manifest.sh" 0.0.1 "$M/Basket-0.0.1-arm64.zip" "$USIG" "$M/notes.md" 26.0 "$MURL"
   expect_rc "update: a real signature fits the manifest" 0
 

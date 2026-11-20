@@ -18,11 +18,14 @@ next patch. Expect breaking changes until `0.1.0`.
   all check out. The code signature is checked again right before and right after the app is
   replaced, and the old copy is put back if either check fails; otherwise it goes to the Trash.
   Disabled, with the reason, for ad-hoc builds and apps that can't replace themselves.
-- Release workflow (`.github/workflows/release.yml`): semver releases from a `vX.Y.Z` tag or one
-  click on `main`, built on GitHub's runners and published with a signed, notarized DMG, the
-  update zip, `latest.json` for in-app updates, `SHA256SUMS` and build provenance attestations.
-  Signing happens in one job of the protected `release` environment; dry runs publish nothing.
-  See `docs/RELEASING.md`.
+- Release workflow (`.github/workflows/release.yml`): semver releases from a `vX.Y.Z` tag the
+  maintainer pushes after a release pull request (`scripts/release-prep.sh`), built on GitHub's
+  runners and published with a signed, notarized DMG, the update zip, `latest.json` for in-app
+  updates, `SHA256SUMS` and build provenance attestations. Signing happens in one job of the
+  protected `release` environment; the update signature is checked against the keys the previous
+  release trusts; the release is published only while its tag still points at the built commit.
+  Dry runs publish nothing, never use the update signing key and keep reports only. Actions are
+  pinned by commit. See `docs/RELEASING.md`.
 
 ### Fixed
 

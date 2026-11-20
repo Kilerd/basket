@@ -8,7 +8,8 @@
 #
 # - patch/minor/major bump the latest vX.Y.Z tag. Without any tag, name the first version
 #   explicitly (e.g. 0.0.1).
-# - X.Y.Z must be greater than the latest tag and not lower than VERSION.
+# - X.Y.Z must be greater than the latest tag, not lower than VERSION, and keep the major
+#   version of VERSION and the latest tag: only `major` starts a new major version.
 # - A new section needs entries under [Unreleased]. If CHANGELOG.md already has the version's
 #   section (prepared in a pull request), nothing is moved: only VERSION and the links are made
 #   to match. A second run therefore changes nothing.
@@ -37,17 +38,6 @@ done
 # safe <text> — for messages: input comes from a workflow form, so no control characters.
 safe() { local s="$1"; s="${s//[^A-Za-z0-9._+-]/?}"; printf '%s' "${s:0:40}"; }
 is_semver() { [[ "$1" =~ $SEMVER_RE ]]; }
-# semver_cmp <a> <b> — prints -1, 0 or 1.
-semver_cmp() {
-  local a b i
-  IFS=. read -r -a a <<<"$1"
-  IFS=. read -r -a b <<<"$2"
-  for i in 0 1 2; do
-    if (( a[i] > b[i] )); then echo 1; return; fi
-    if (( a[i] < b[i] )); then echo -1; return; fi
-  done
-  echo 0
-}
 has_tag() { git -C "$ROOT" rev-parse -q --verify "refs/tags/v$1" >/dev/null; }
 has_section() { grep -qE "^## \[${1//./[.]}\]( |$)" "$CHANGELOG"; }
 
@@ -80,7 +70,14 @@ case "$ARG" in
   *)
     is_semver "$ARG" \
       || die "invalid version '$(safe "$ARG")': expected patch, minor, major or X.Y.Z (no leading zeros, no suffix)" 64
-    TARGET="$ARG" ;;
+    TARGET="$ARG"
+    # An exact version stays in the current major version: a new major version is the
+    # deliberate `major` bump (or a VERSION raised in a reviewed commit), never a typo.
+    BASE="$CURRENT"
+    if [[ -n "$LAST" && "$(semver_cmp "$LAST" "$BASE")" == 1 ]]; then BASE="$LAST"; fi
+    if (( ${TARGET%%.*} > ${BASE%%.*} )); then
+      die "$TARGET would start a new major version (VERSION is $CURRENT${LAST:+, the latest tag v$LAST}): use \`major\` for that"
+    fi ;;
 esac
 
 if [[ -n "$LAST" && "$(semver_cmp "$TARGET" "$LAST")" != 1 ]]; then

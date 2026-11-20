@@ -15,6 +15,18 @@ log() { printf '==> %s\n' "$*" >&2; }
 # die <message> [exit-code]
 die() { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
+# semver_cmp <a> <b> — two X.Y.Z versions (SEMVER_RE): prints -1, 0 or 1.
+semver_cmp() {
+  local a b i
+  IFS=. read -r -a a <<<"$1"
+  IFS=. read -r -a b <<<"$2"
+  for i in 0 1 2; do
+    if (( a[i] > b[i] )); then echo 1; return; fi
+    if (( a[i] < b[i] )); then echo -1; return; fi
+  done
+  echo 0
+}
+
 # swift_build <config> <product> — builds and prints the bin directory; fails if the build fails.
 swift_build() {
   local config="$1" product="$2"

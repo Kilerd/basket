@@ -2,44 +2,42 @@ name: Release
 
 # Builds, signs, notarizes and publishes a release of Basket (docs/RELEASING.md).
 #
-# - Push a tag vX.Y.Z of a commit on main (or run this workflow on such a tag with dry_run
-#   unticked): that commit is released.
-# - Run it on main with dry_run unticked: `prepare` cuts the release (scripts/release-prep.sh),
-#   pushes the commit `chore(release): vX.Y.Z` and the tag, and starts this workflow on the tag.
-#   A tag pushed with GITHUB_TOKEN triggers nothing, so the start is a workflow_dispatch.
-# - Any other manual run is a dry run: everything a release does (on main or a tag also the
-#   Developer ID signature, notarization and the update signature), but nothing is published.
+# - Release: the maintainer pushes the tag vX.Y.Z of a commit on main (the merge of the release
+#   pull request made with scripts/release-prep.sh). That push runs meta → build → release (the
+#   protected `release` environment, approved by the maintainer) → verify → publish.
+# - Dry run: run this workflow by hand (workflow_dispatch). It never publishes. On main or a
+#   vX.Y.Z tag it also signs with the Developer ID and notarizes (after the same approval), but
+#   the update signature comes from a throwaway key made in the job, and the run keeps reports
+#   only; on main it rehearses scripts/release-prep.sh with the bump/version inputs.
 #
 # Trust boundaries:
 # - `meta`, `build` and `verify` hold no secret and no write token. `build` compiles the app.
 # - `release` is the only job with secrets. It runs in the protected `release` environment (a
 #   required reviewer approves it once per run; tags v* and main only). It runs this
 #   repository's scripts and Apple's tools on the app `build` made, which it never executes;
-#   each step gets only the secrets it uses; the keychain is deleted right after the last
-#   codesign. Without the secrets (forks) it makes an ad-hoc build without latest.json.
+#   each step gets only the secrets it uses (the update signing key only when publishing); the
+#   keychain is deleted right after the last codesign. A release without the signing secrets
+#   stops; a dry run without them (forks) is signed ad hoc and has no latest.json.
 # - `publish` is the only job that can write a release (contents: write, plus the OIDC token
-#   for the attestations), and only for a vX.Y.Z tag that is not a dry run. `prepare` (one-click
-#   path only) can push the release commit and the tag, and holds no other secret.
+#   for the attestations), and only for a pushed vX.Y.Z tag that still points at the built
+#   commit (scripts/release-publish.sh).
 # - Artifacts are plain tars whose sha256 their job puts out; every job that takes one checks
 #   it and unpacks only the expected members (scripts/unpack-artifact.sh).
 # - Untrusted input (inputs, ref names) reaches `run:` through env only.
+# - Actions are pinned by commit (Dependabot updates them).
 
 on:
   push:
     tags: ['v*.*.*']
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: 'Dry run: build, sign, notarize, update-sign; publish nothing. Untick on main to cut a release (bump/version), or on a vX.Y.Z tag to release that tag.'
-        type: boolean
-        default: true
       bump:
-        description: 'On main: the part of the latest vX.Y.Z tag to bump'
+        description: 'Dry run on main: rehearse release-prep.sh with this bump of the latest vX.Y.Z tag'
         type: choice
         options: [patch, minor, major]
         default: patch
       version:
-        description: 'On main: this exact X.Y.Z instead of the bump (the first release: 0.0.1)'
+        description: 'Dry run on main: this exact X.Y.Z instead of the bump (same major version; a new major only through bump=major)'
         type: string
         required: false
         default: ''
@@ -53,102 +51,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Main, dry_run unticked: the release commit and the tag, then the release run on the tag.
-  prepare:
-    name: Prepare the release commit and tag
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dry_run == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 60 # the CI check waits for a CI run in progress
-    permissions:
-      contents: write # push the release commit to main and the tag
-      actions: write # read CI runs; start this workflow on the new tag
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0 # the vX.Y.Z tags decide the next version
-          persist-credentials: false
-
-      - name: Prepare CHANGELOG.md and VERSION
-        id: prep
-        env:
-          BUMP: ${{ inputs.bump }}
-          VERSION_INPUT: ${{ inputs.version }}
-        run: |
-          target="${VERSION_INPUT:-$BUMP}"
-          scripts/release-prep.sh --dry-run "$target"
-          version="$(scripts/release-prep.sh "$target")"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      # Before anything is pushed (the release commit itself gets no CI run, see the script).
-      - name: CI passed on main
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: scripts/release-ci-check.sh HEAD
-
-      - name: Commit and tag
-        env:
-          VERSION: ${{ steps.prep.outputs.version }}
-          LEAK_DENYLIST: ${{ secrets.LEAK_DENYLIST }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          changes="$(git status --porcelain)"
-          if [ -n "$changes" ]; then
-            other="$(printf '%s\n' "$changes" | grep -vE '^ M (CHANGELOG\.md|scripts/_common\.sh)$' || true)"
-            if [ -n "$other" ]; then
-              echo "::error::release-prep.sh changed more than CHANGELOG.md and scripts/_common.sh"
-              exit 1
-            fi
-            git add CHANGELOG.md scripts/_common.sh
-            git commit -q -m "chore(release): v$VERSION"
-            scripts/check-leaks.sh --range HEAD~1..HEAD
-          else
-            echo "CHANGELOG.md and VERSION describe $VERSION already: the tag goes on $(git rev-parse --short HEAD)"
-          fi
-          git tag -a "v$VERSION" -m "Basket $VERSION"
-
-      # GITHUB_TOKEN may push only if main's and the v* tags' rulesets let GitHub Actions bypass
-      # them (docs/RELEASING.md, "One-click releases"). Both refs or neither (--atomic).
-      - name: Push the commit and the tag
-        env:
-          VERSION: ${{ steps.prep.outputs.version }}
-          TOKEN: ${{ github.token }}
-        run: |
-          set +x
-          auth="$(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
-          echo "::add-mask::$auth"
-          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
-          refs=("refs/tags/v$VERSION")
-          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then refs=("HEAD:refs/heads/main" "${refs[@]}"); fi
-          if ! git push --atomic origin "${refs[@]}"; then
-            echo "::error::GitHub refused the push of v$VERSION: main moved on (run the workflow again) or a ruleset blocks GitHub Actions (docs/RELEASING.md, \"One-click releases\")"
-            exit 1
-          fi
-
-      - name: Start the release of the tag
-        env:
-          VERSION: ${{ steps.prep.outputs.version }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # The new tag may take a moment to be visible to the API.
-          for attempt in 1 2 3 4 5; do
-            if gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "v$VERSION" -f dry_run=false; then break; fi
-            if [ "$attempt" = 5 ]; then
-              echo "::error::could not start the release of v$VERSION: run the workflow on the tag v$VERSION with dry run unticked"
-              exit 1
-            fi
-            sleep 10
-          done
-          {
-            echo "### v$VERSION tagged"
-            echo
-            echo "The release runs in a new run of this workflow on \`v$VERSION\` (Actions → Release); approve its \`release\` job there."
-          } >> "$GITHUB_STEP_SUMMARY"
-
   # What this run builds: the version, the commit, whether it publishes and whether it signs.
   meta:
     name: Check the version and the commit
-    if: ${{ !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dry_run == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 60 # a release waits for a CI run in progress
     permissions:
@@ -163,7 +68,7 @@ jobs:
       prep: ${{ steps.meta.outputs.prep }}
       date: ${{ steps.meta.outputs.date }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # origin/main and the tags
           persist-credentials: false
@@ -171,7 +76,6 @@ jobs:
       - name: Version, commit and mode
         id: meta
         env:
-          DRY_RUN_INPUT: ${{ inputs.dry_run }}
           BUMP: ${{ inputs.bump }}
           VERSION_INPUT: ${{ inputs.version }}
           GH_TOKEN: ${{ github.token }}
@@ -180,6 +84,8 @@ jobs:
           sha="$(git rev-parse HEAD)"
           date="$(date -u +%Y-%m-%d)"
           prep=""
+          # Only a pushed tag publishes; a run by hand is always a dry run.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = tag ]; then publish=true; else publish=false; fi
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             tag="$GITHUB_REF_NAME"
             if [ "${tag:0:1}" != v ] || ! [[ "${tag#v}" =~ $SEMVER_RE ]]; then
@@ -196,12 +102,10 @@ jobs:
               echo "::error::$tag (${sha:0:12}) is not on main: only commits merged into main are released"
               exit 1
             fi
-            if [ "$GITHUB_EVENT_NAME" = push ] || [ "$DRY_RUN_INPUT" = false ]; then publish=true; else publish=false; fi
-            [ -z "$VERSION_INPUT" ] || echo "::notice::the version input applies to runs on main; this run is the tag $tag"
+            [ -z "$VERSION_INPUT" ] || echo "::notice::the version input applies to dry runs on main; this run is the tag $tag"
           else
-            publish=false
             version="$VERSION"
-            # A dry run on main rehearses the one-click release: the same release-prep.sh, which
+            # A dry run on main rehearses the release pull request: the same release-prep.sh, which
             # build and verify repeat on their checkout (same arguments, same date).
             if [ "$GITHUB_REF" = refs/heads/main ]; then
               target="${VERSION_INPUT:-$BUMP}"
@@ -210,7 +114,7 @@ jobs:
                 version="$out"
                 cat "$RUNNER_TEMP/prep.log"
               else
-                echo "::warning::a release from main would stop here: $(tail -n 1 "$RUNNER_TEMP/prep.log"). The dry run builds VERSION $VERSION as it is."
+                echo "::warning::release-prep.sh refused this: $(tail -n 1 "$RUNNER_TEMP/prep.log"). The dry run builds VERSION $VERSION as it is."
               fi
             fi
             tag="v$version"
@@ -226,7 +130,7 @@ jobs:
             echo "::warning::CHANGELOG.md has no section for $version: a release would stop here"
           fi
 
-          # CI must have passed on the commit (or, for the release commit, on its parent).
+          # CI must have passed on the commit.
           if [ "$publish" = true ]; then
             if ! scripts/release-ci-check.sh "$sha" >/dev/null; then
               echo "::error::CI has not passed on ${sha:0:12} (see above): only a commit with green CI is released"
@@ -260,13 +164,13 @@ jobs:
             if [ "$publish" = true ]; then
               echo "**Release**: publishes once the \`release\` job is approved (the \`release\` environment)."
             elif [ "$sign" = true ]; then
-              echo "**Dry run**: builds, signs and notarizes once the \`release\` job is approved; publishes nothing."
+              echo "**Dry run**: builds, signs and notarizes once the \`release\` job is approved; the update signature uses a throwaway key; publishes nothing and keeps reports only."
             else
               echo "**Dry run** on a branch: builds only (the \`release\` environment allows main and v* tags)."
             fi
             if [ -n "$prep" ]; then
               echo
-              echo "As a release, it would commit \`chore(release): $tag\` with:"
+              echo "The release pull request (\`scripts/release-prep.sh $prep\`) would change:"
               echo
               echo '```diff'
               git diff
@@ -298,7 +202,7 @@ jobs:
     outputs:
       sha: ${{ steps.pack.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.meta.outputs.sha }}
           fetch-depth: 0 # tags, for a dry run's release-prep.sh
@@ -329,12 +233,12 @@ jobs:
           COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/app.tar" -C build Basket.app
           echo "sha=$(shasum -a 256 "$RUNNER_TEMP/app.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app
           path: ${{ runner.temp }}/app.tar
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
 
   # The only job with secrets (the `release` environment, approved once per run): the Developer
   # ID signature, notarization and stapling of the app, the DMG (signed, notarized, stapled), the
@@ -352,11 +256,12 @@ jobs:
       XCODE_APP: /Applications/Xcode_26.6.app
       DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
       VERSION: ${{ needs.meta.outputs.version }}
+      PUBLISH: ${{ needs.meta.outputs.publish }}
     outputs:
       mode: ${{ steps.secrets.outputs.mode }}
       sha: ${{ steps.pack.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.meta.outputs.sha }}
           persist-credentials: false
@@ -364,7 +269,7 @@ jobs:
       - name: Select Xcode
         run: scripts/select-xcode.sh
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: app
           path: ${{ runner.temp }}/dl/app
@@ -379,7 +284,8 @@ jobs:
           echo "OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
 
       # All of them (signed, notarized, latest.json) or none (ad hoc: forks, and a repository
-      # whose environment is not set up yet). Never printed; the signing name is masked too.
+      # whose environment is not set up yet; dry runs only). Never printed; the signing name is
+      # masked too. The update signing key is only tested for presence here.
       - name: The secrets this run needs
         id: secrets
         env:
@@ -390,8 +296,7 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          BASKET_UPDATE_SIGNING_KEY: ${{ secrets.BASKET_UPDATE_SIGNING_KEY }}
-          PUBLISH: ${{ needs.meta.outputs.publish }}
+          BASKET_UPDATE_SIGNING_KEY: ${{ secrets.BASKET_UPDATE_SIGNING_KEY != '' && 'set' || '' }}
         run: |
           set +x
           present=""; missing=""
@@ -399,9 +304,11 @@ jobs:
             if [ -n "${!name}" ]; then present="$present $name"; else missing="$missing $name"; fi
           done
           if [ -z "$present" ]; then
-            what="this build"
-            if [ "$PUBLISH" = true ]; then what="this release"; fi
-            echo "::warning::the release environment has no signing secrets: $what is signed ad hoc, not notarized, and has no latest.json"
+            if [ "$PUBLISH" = true ]; then
+              echo "::error::the release environment has no signing secrets: a release is only published signed with the Developer ID, notarized and with latest.json (docs/RELEASING.md, \"The release environment\")"
+              exit 1
+            fi
+            echo "::warning::the release environment has no signing secrets: this dry run is signed ad hoc, not notarized, and has no latest.json"
             echo "mode=adhoc" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -419,6 +326,8 @@ jobs:
           echo "mode=signed" >> "$GITHUB_OUTPUT"
           echo "ok: all signing secrets are set"
 
+      # The keychain has a fixed path in this job's temporary folder; "Delete the signing
+      # keychain" removes exactly that path, whatever happened before.
       - name: Signing keychain
         if: steps.secrets.outputs.mode == 'signed'
         env:
@@ -431,8 +340,7 @@ jobs:
           G2_SHA256: f16cd3c54c7f83cea4bf1a3e6a0819c8aaa8e4a1528fd144715f350643d2df3a
         run: |
           set +x
-          keychain="$RUNNER_TEMP/basket-signing.keychain-db"
-          echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          keychain="$RUNNER_TEMP/basket-release.keychain-db"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
           security set-keychain-settings -lut 3600 "$keychain"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
@@ -498,7 +406,9 @@ jobs:
         if: always()
         run: |
           rm -f "$RUNNER_TEMP/developer-id.p12"
-          if [ -n "${KEYCHAIN:-}" ] && [ -e "$KEYCHAIN" ]; then security delete-keychain "$KEYCHAIN"; fi
+          keychain="$RUNNER_TEMP/basket-release.keychain-db"
+          if [ -e "$keychain" ]; then security delete-keychain "$keychain" || rm -f "$keychain"; fi
+          if [ -e "$keychain" ]; then echo "::error::the signing keychain is still there"; exit 1; fi
 
       - name: Notarize and staple the DMG
         if: steps.secrets.outputs.mode == 'signed'
@@ -508,32 +418,49 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: scripts/notarize.sh "$OUT/Basket-$VERSION.dmg"
 
+      # A release: the production key, which this step alone receives, and only when publishing.
+      # A dry run: a throwaway key made here (its public half travels to `verify`), so nothing a
+      # dry run signs is accepted by an installed Basket.
       - name: Update signature (Ed25519 over the zip)
         if: steps.secrets.outputs.mode == 'signed'
         env:
-          BASKET_UPDATE_SIGNING_KEY: ${{ secrets.BASKET_UPDATE_SIGNING_KEY }}
+          BASKET_UPDATE_SIGNING_KEY: ${{ needs.meta.outputs.publish == 'true' && secrets.BASKET_UPDATE_SIGNING_KEY || '' }}
         run: |
           set +x
-          swift scripts/update-sign.swift "$OUT/Basket-$VERSION-arm64.zip" > "$OUT/update-signature.txt"
+          zip="$OUT/Basket-$VERSION-arm64.zip"
+          if [ "$PUBLISH" = true ]; then
+            if [ -z "$BASKET_UPDATE_SIGNING_KEY" ]; then echo "::error::no update signing key"; exit 1; fi
+            swift scripts/update-sign.swift "$zip" > "$OUT/update-signature.txt"
+          else
+            unset BASKET_UPDATE_SIGNING_KEY
+            keydir="$(mktemp -d "$RUNNER_TEMP/dry-run-key.XXXXXX")"
+            swift scripts/update-keygen.swift "$keydir/key" > "$OUT/update-public-key.txt"
+            BASKET_UPDATE_SIGNING_KEY="$(cat "$keydir/key")" swift scripts/update-sign.swift "$zip" > "$OUT/update-signature.txt"
+            rm -rf "$keydir"
+            echo "dry run: signed with a throwaway key ($(cat "$OUT/update-public-key.txt"))"
+          fi
           echo "update signature: $(cat "$OUT/update-signature.txt")"
 
       - name: Pack
         id: pack
         run: |
           files=("Basket-$VERSION.dmg" "Basket-$VERSION-arm64.zip")
-          if [ -f "$OUT/update-signature.txt" ]; then files+=(update-signature.txt); fi
+          for f in update-signature.txt update-public-key.txt; do
+            if [ -f "$OUT/$f" ]; then files+=("$f"); fi
+          done
           COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/signed.tar" -C "$OUT" "${files[@]}"
           echo "sha=$(shasum -a 256 "$RUNNER_TEMP/signed.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v7
+      # Hands the signed files to `verify` (and `publish`); a dry run's expire after a day.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed
           path: ${{ runner.temp }}/signed.tar
           if-no-files-found: error
-          retention-days: 3
+          retention-days: ${{ needs.meta.outputs.publish == 'true' && 3 || 1 }}
 
   # Checks what `release` made, without secrets, and writes latest.json, SHA256SUMS and the
-  # release page. A dry run keeps everything as the artifact dry-run-vX.Y.Z (two days).
+  # release page. A dry run keeps only reports (SHA256SUMS, the release page) for two days.
   verify:
     name: Verify and write latest.json
     needs: [meta, release]
@@ -548,21 +475,22 @@ jobs:
       VERSION: ${{ needs.meta.outputs.version }}
       TAG: ${{ needs.meta.outputs.tag }}
       MODE: ${{ needs.release.outputs.mode }}
+      PUBLISH: ${{ needs.meta.outputs.publish }}
       PREP: ${{ needs.meta.outputs.prep }}
       RELEASE_DATE: ${{ needs.meta.outputs.date }}
     outputs:
       sha: ${{ steps.pack.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.meta.outputs.sha }}
-          fetch-depth: 0 # tags, for a dry run's release-prep.sh
+          fetch-depth: 0 # tags: the previous release's update keys, a dry run's release-prep.sh
           persist-credentials: false
 
       - name: Select Xcode
         run: scripts/select-xcode.sh
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: signed
           path: ${{ runner.temp }}/dl/signed
@@ -573,9 +501,22 @@ jobs:
         run: |
           v="${VERSION//./[.]}"
           scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/signed/signed.tar" "$SIGNED_SHA" "$RUNNER_TEMP/signed" \
-            "^(Basket-$v\.dmg|Basket-$v-arm64\.zip|update-signature\.txt)$"
-          if [ "$MODE" = signed ] && [ ! -s "$RUNNER_TEMP/signed/update-signature.txt" ]; then
+            "^(Basket-$v\.dmg|Basket-$v-arm64\.zip|update-signature\.txt|update-public-key\.txt)$"
+          s="$RUNNER_TEMP/signed"
+          if [ "$PUBLISH" = true ] && [ "$MODE" != signed ]; then
+            echo "::error::a release must be signed with the Developer ID and notarized (mode: $MODE)"
+            exit 1
+          fi
+          if [ "$MODE" = signed ] && [ ! -s "$s/update-signature.txt" ]; then
             echo "::error::a signed build without its update signature"
+            exit 1
+          fi
+          if [ "$PUBLISH" = true ] && [ -e "$s/update-public-key.txt" ]; then
+            echo "::error::a release whose update signature comes from a throwaway key"
+            exit 1
+          fi
+          if [ "$PUBLISH" != true ] && [ "$MODE" = signed ] && [ ! -s "$s/update-public-key.txt" ]; then
+            echo "::error::a dry run without its throwaway update key"
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/checked"
@@ -606,7 +547,7 @@ jobs:
             case "$assessed" in *"source=Notarized Developer ID"*) ;; *) fail "Gatekeeper does not accept the DMG as notarized" ;; esac
             echo "ok: the app and the DMG are signed with a Developer ID, notarized and stapled"
           else
-            echo "::warning::ad-hoc build: not notarized, no latest.json"
+            echo "::warning::ad-hoc build (dry run): not notarized, no latest.json"
           fi
           echo "MIN_SYSTEM=$(plutil -extract LSMinimumSystemVersion raw -o - "$plist")" >> "$GITHUB_ENV"
 
@@ -617,26 +558,54 @@ jobs:
             echo "(Dry run: CHANGELOG.md has no section for $VERSION.)" > "$RUNNER_TEMP/notes.md"
           fi
 
-      # The signature must verify with the key built into the app (UpdateVerifier.publicKeyBase64),
-      # or no installed Basket would take this update.
+      # The update signature must verify with the keys installed copies trust: the
+      # trustedPublicKeysBase64 of the previous published release, read from its tag (for the
+      # first release with an updater, this release's own list). This release's own list must be
+      # readable and non-empty. A dry run's throwaway signature is checked against its own key,
+      # and the key selection is reported (docs/updates.md, "Keys").
       - name: latest.json
         if: env.MODE == 'signed'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           s="$RUNNER_TEMP/signed"
+          zip="$s/Basket-$VERSION-arm64.zip"
           sig="$(cat "$s/update-signature.txt")"
-          keys=""
-          files="$(grep -rlE 'publicKeyBase64[[:space:]]*=' Sources || true)"
-          if [ -n "$files" ]; then
-            # shellcheck disable=SC2086 # Swift source paths, no spaces
-            keys="$(perl -0777 -ne 'print "$1\n" while /publicKeyBase64\s*=\s*"([A-Za-z0-9+\/]{43}=)"/g' $files </dev/null | sort -u)"
-          fi
-          if [ "$(printf '%s' "$keys" | grep -c . || true)" != 1 ]; then
-            echo "::error::cannot read the one update public key (UpdateVerifier.publicKeyBase64 = \"…\") in Sources/"
+          if ! own="$(scripts/update-keys.sh)"; then
+            echo "::error::this release's UpdateVerifier.trustedPublicKeysBase64 is missing, empty or unreadable"
             exit 1
           fi
-          swift scripts/update-verify.swift "$s/Basket-$VERSION-arm64.zip" "$sig" "$keys"
+          prev="$(scripts/published-release.sh --below "$VERSION")"
+          if [ -n "$prev" ]; then
+            if ! git rev-parse -q --verify "refs/tags/$prev^{commit}" >/dev/null; then
+              echo "::error::the tag $prev of the previous release is not in this checkout"
+              exit 1
+            fi
+            rc=0
+            trusted="$(scripts/update-keys.sh "refs/tags/$prev")" || rc=$?
+            case "$rc" in
+              0) from="$prev (the previous published release)" ;;
+              3) trusted="$own"; from="this release ($prev has no updater)" ;;
+              *) echo "::error::cannot read the update keys of $prev"; exit 1 ;;
+            esac
+          else
+            trusted="$own"
+            from="this release (no published release before it)"
+          fi
+          echo "installed copies trust $(printf '%s\n' "$trusted" | grep -c .) update key(s), from $from"
+          if [ "$PUBLISH" = true ]; then
+            # shellcheck disable=SC2086 # base64 keys, one per line
+            swift scripts/update-verify.swift "$zip" "$sig" $trusted
+            # shellcheck disable=SC2086
+            if ! swift scripts/update-verify.swift "$zip" "$sig" $own >/dev/null 2>&1; then
+              echo "::warning::the update signing key is not in this release's own trustedPublicKeysBase64: sign the next release with a key from that list (docs/updates.md, \"Rotating the key\")"
+            fi
+          else
+            swift scripts/update-verify.swift "$zip" "$sig" "$(cat "$s/update-public-key.txt")"
+            echo "::notice::dry run: the update signature comes from a throwaway key; a release would be checked against the keys of $from"
+          fi
           url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Basket-$VERSION-arm64.zip"
-          scripts/update-manifest.sh "$VERSION" "$s/Basket-$VERSION-arm64.zip" "$sig" "$RUNNER_TEMP/notes.md" "$MIN_SYSTEM" "$url" \
+          scripts/update-manifest.sh "$VERSION" "$zip" "$sig" "$RUNNER_TEMP/notes.md" "$MIN_SYSTEM" "$url" \
             > "$RUNNER_TEMP/checked/latest.json"
           cat "$RUNNER_TEMP/checked/latest.json"
 
@@ -650,41 +619,42 @@ jobs:
           scripts/release-body.sh "$VERSION" "$MODE" "$RUNNER_TEMP/notes.md" "$c/SHA256SUMS" > "$c/release-body.md"
           COPYFILE_DISABLE=1 tar -cf "$RUNNER_TEMP/checked.tar" -C "$c" $(cd "$c" && ls)
           echo "sha=$(shasum -a 256 "$RUNNER_TEMP/checked.tar" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+          mkdir "$RUNNER_TEMP/report"
+          cp "$c/SHA256SUMS" "$c/release-body.md" "$RUNNER_TEMP/report/"
           {
-            echo "### Basket $TAG ($MODE)"
+            echo "### Basket $TAG ($MODE$([ "$PUBLISH" = true ] || echo ', dry run'))"
             echo
             echo '```text'
             cat "$c/SHA256SUMS"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.meta.outputs.publish == 'true'
         with:
           name: checked
           path: ${{ runner.temp }}/checked.tar
           if-no-files-found: error
           retention-days: 3
 
-      # What a dry run made, to look at; short-lived.
-      - uses: actions/upload-artifact@v7
+      # A dry run keeps reports only: no app, zip, DMG or latest.json.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.meta.outputs.publish != 'true'
         with:
-          name: dry-run-${{ needs.meta.outputs.tag }}
-          path: |
-            ${{ runner.temp }}/signed
-            ${{ runner.temp }}/checked
+          name: dry-run-report-${{ needs.meta.outputs.tag }}
+          path: ${{ runner.temp }}/report
           if-no-files-found: error
           retention-days: 2
-          compression-level: 0
 
-  # The release: attestations for every file, then a draft with every file, checked against
-  # SHA256SUMS, then published. Only for a vX.Y.Z tag that is not a dry run; no secrets, only
-  # this run's write token and OIDC token.
+  # The release: attestations for every file, then a draft with every file, checked byte for
+  # byte, then published (scripts/release-publish.sh). Only for a pushed vX.Y.Z tag signed with
+  # the Developer ID; no secrets, only this run's write token and OIDC token.
   publish:
     name: Publish the release
     needs: [meta, release, verify]
     if: >-
-      ${{ !cancelled() && needs.meta.outputs.publish == 'true' && startsWith(github.ref, 'refs/tags/v')
+      ${{ !cancelled() && needs.meta.outputs.publish == 'true' && github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v') && needs.release.outputs.mode == 'signed'
       && needs.release.result == 'success' && needs.verify.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -695,18 +665,19 @@ jobs:
     env:
       VERSION: ${{ needs.meta.outputs.version }}
       TAG: ${{ needs.meta.outputs.tag }}
+      SHA: ${{ needs.meta.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.meta.outputs.sha }}
           persist-credentials: false
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: signed
           path: ${{ runner.temp }}/dl/signed
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: checked
           path: ${{ runner.temp }}/dl/checked
@@ -721,10 +692,14 @@ jobs:
             "^(Basket-$v\.dmg|Basket-$v-arm64\.zip|update-signature\.txt)$"
           scripts/unpack-artifact.sh "$RUNNER_TEMP/dl/checked/checked.tar" "$CHECKED_SHA" "$RUNNER_TEMP/checked" \
             '^(latest\.json|SHA256SUMS|release-body\.md)$'
+          if [ ! -s "$RUNNER_TEMP/checked/latest.json" ]; then
+            echo "::error::no latest.json: only a Developer ID signed, notarized and update-signed build is published"
+            exit 1
+          fi
           a="$RUNNER_TEMP/assets"
           mkdir "$a"
-          cp "$RUNNER_TEMP/signed/Basket-$VERSION.dmg" "$RUNNER_TEMP/signed/Basket-$VERSION-arm64.zip" "$RUNNER_TEMP/checked/SHA256SUMS" "$a/"
-          if [ -f "$RUNNER_TEMP/checked/latest.json" ]; then cp "$RUNNER_TEMP/checked/latest.json" "$a/"; fi
+          cp "$RUNNER_TEMP/signed/Basket-$VERSION.dmg" "$RUNNER_TEMP/signed/Basket-$VERSION-arm64.zip" \
+            "$RUNNER_TEMP/checked/SHA256SUMS" "$RUNNER_TEMP/checked/latest.json" "$a/"
           (cd "$a" && shasum -a 256 -c SHA256SUMS)
           if [ "$(cd "$a" && ls | grep -cvx SHA256SUMS)" != "$(wc -l < "$a/SHA256SUMS" | tr -d ' ')" ]; then
             echo "::error::SHA256SUMS does not list exactly the files to publish"
@@ -732,25 +707,23 @@ jobs:
           fi
 
       - id: attest
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: ${{ runner.temp }}/assets/*
 
+      # The tag must still point at the built commit (checked before the draft and again before
+      # publishing); everything acts on the id of the release created here; "latest" only when
+      # this version is newer than every published release.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
           a="$RUNNER_TEMP/assets"
-          cp "$BUNDLE" "$RUNNER_TEMP/basket-$TAG.sigstore.json"
-          gh release create "$TAG" "$a"/* "$RUNNER_TEMP/basket-$TAG.sigstore.json" --repo "$GITHUB_REPOSITORY" \
-            --draft --verify-tag --title "Basket $VERSION" --notes-file "$RUNNER_TEMP/checked/release-body.md"
-          # What the draft holds is what was attested.
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/draft"
-          (cd "$RUNNER_TEMP/draft" && cmp SHA256SUMS "$a/SHA256SUMS" && shasum -a 256 -c SHA256SUMS)
-          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          cp "$BUNDLE" "$a/basket-$TAG.sigstore.json"
+          url="$(scripts/release-publish.sh "$TAG" "$SHA" "$a" "$RUNNER_TEMP/checked/release-body.md")"
           {
-            echo "### Published [Basket $TAG]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG)"
+            echo "### Published [Basket $TAG]($url)"
             echo
             echo '```text'
             cat "$a/SHA256SUMS"

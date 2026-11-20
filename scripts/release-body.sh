@@ -2,8 +2,9 @@
 # Writes the GitHub release page of a version (docs/RELEASING.md) to stdout: an "early release"
 # note, the CHANGELOG notes, how to install and how to check the download.
 #   scripts/release-body.sh <version> <signed|adhoc> <notes-file> <SHA256SUMS>
-# signed: Developer ID, notarized, with latest.json. adhoc: no secrets were available, so the
-# page explains Gatekeeper. The repository comes from GITHUB_REPOSITORY (default Kilerd/basket).
+# signed: Developer ID, notarized, with latest.json. adhoc: no secrets were available (a dry run;
+# a release is never ad hoc), so the page explains Gatekeeper. The repository comes from
+# GITHUB_REPOSITORY (default Kilerd/basket).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
