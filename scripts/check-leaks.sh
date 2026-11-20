@@ -9,7 +9,8 @@
 #   scripts/check-leaks.sh --message <f>   # a commit message file (commit-msg hook)
 #
 # Private words come from `.leak-denylist` (gitignored; one case-insensitive ERE per line,
-# `#` comments) and/or the LEAK_DENYLIST environment variable (newline-separated; CI secret).
+# `#` comments) in this checkout or the main checkout of a linked worktree, from
+# ~/.config/basket/leak-denylist, and/or the LEAK_DENYLIST environment variable (CI secret).
 # Outside CI the local identity (macOS user name, full name, git e-mail) is checked too.
 # Text is scanned after un-escaping JSON `\/`; binary files are scanned through `strings`.
 # A line containing `leak-check: allow` is skipped. Private words and identities are never
@@ -49,12 +50,20 @@ SKIP_PATHS='^(scripts/check-leaks\.sh|\.githooks/(pre-commit|commit-msg))$'
 DENY=()
 load_denylist() {
   local line
-  if [[ -f .leak-denylist ]]; then
+  # The list is gitignored, so a linked worktree (agents commit from those) doesn't have its own
+  # copy: also read the main checkout's, and a per-user one.
+  local common main_root file files=("$ROOT/.leak-denylist")
+  common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  main_root="$(dirname "$common")"
+  [[ -n "$common" && "$main_root" != "$ROOT" ]] && files+=("$main_root/.leak-denylist")
+  files+=("$HOME/.config/basket/leak-denylist")
+  for file in "${files[@]}"; do
+    [[ -f "$file" ]] || continue
     while IFS= read -r line || [[ -n "$line" ]]; do
       line="${line%%#*}"; line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
       [[ -n "$line" ]] && DENY+=("$line")
-    done < .leak-denylist
-  fi
+    done < "$file"
+  done
   if [[ -n "${LEAK_DENYLIST:-}" ]]; then
     while IFS= read -r line; do
       line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
