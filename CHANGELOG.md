@@ -9,6 +9,13 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Output of `container` commands could go missing on a heavily loaded Mac (empty error messages,
+  lost log and progress lines): a command's stdout and stderr are now read to the end before it
+  counts as finished. When a background process it started keeps the output open, Basket stops
+  waiting after 1 s but still keeps everything the command itself wrote (#2).
+
 ## [0.0.1] - 2026-11-20
 
 The first public version.
