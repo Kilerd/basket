@@ -77,6 +77,8 @@ Available in `0.0.1`:
   installer), starts it, offers OrbStack migration and the `docker` command.
 - **Volumes, networks, Linux machines** (`container machine`), a **menu bar extra** and
   **Settings** (CLI path, refresh interval, default memory, launch at login).
+- **Signed updates.** Basket checks GitHub Releases daily (Settings ▸ Updates) and installs a
+  new version only after verifying its signature and code signature ([how](docs/updates.md)).
 - **Accessible by construction.** Every control has an accessible name and a stable
   identifier, and the UI is tested through the accessibility tree; see
   [How the UI is tested](#how-the-ui-is-tested).

@@ -82,6 +82,7 @@ struct SelfTestRunner {
         try? await Task.sleep(for: .milliseconds(900))
         if let settings = NSApp.windows.first(where: { !before.contains(ObjectIdentifier($0)) && $0.isVisible }) {
             await capture(settings, as: "settings")
+            await captureSettingsEnd(settings)
             settings.close()
         } else {
             log("settings window not found: \(NSApp.windows.map { "\($0.className) \($0.identifier?.rawValue ?? "")" })")
@@ -89,6 +90,7 @@ struct SelfTestRunner {
         await captureMigrationExtras(window)
         await captureImageExtras(window)
         await captureComposeExtras(window)
+        await captureUpdateExtras(window)
     }
 
     func capture(_ window: NSWindow, as name: String) async {

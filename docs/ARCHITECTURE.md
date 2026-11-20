@@ -23,6 +23,7 @@ Sources/BasketCore/           Domain model + backends (no UI)
   HostResources*/             phys_footprint of container VMs, OrbStack inspection
   Migration/                  OrbStack → Basket: read-only docker access, image import, container recreation
   Compose/                    YAML parser, compose loader/planner, project grouping, up/down/start/stop
+  Update/                     Signed self-update: manifest, Ed25519 + code-signature checks, installer, swap helper
 Sources/Basket/               SwiftUI app (window, sections, menu bar extra, settings)
 Sources/BasketAXKit/          Accessibility snapshot model, capture (in-process + AXUIElement), lint rules, reports
 Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; `lint` checks dumped snapshots)
@@ -56,6 +57,10 @@ replace it later without touching the UI.
 | `BASKET_FAKE_BREW` | UI-test/fixture runs only: `1` = pretend Homebrew is installed so the onboarding shows "Install with Homebrew" (a simulated install); fixture runs never look at the real Homebrew |
 | `BASKET_DOCKER_DRYRUN` | `basket-docker` (the `docker` shim): `1` = print the translated `container` command instead of running it |
 | `BASKET_COMPOSE_CLI` | `basket-docker`: program that handles `docker compose …` (otherwise a `basket-compose` next to the shim, else refused with a pointer to Compose Up…) |
+| `BASKET_UPDATE_FEED_URL` | DEBUG builds only (release builds ignore it): `file://` or `https://` URL of a test `latest.json`; archives must sit in the same directory (the only way a `file://` download URL passes validation) |
+| `BASKET_UPDATE_TEST_PUBLIC_KEY` | DEBUG builds only: base64 Ed25519 public key that replaces the built-in list, for archives signed with a throwaway key |
+| `BASKET_UPDATE_ALLOW_UNNOTARIZED` | DEBUG builds only: `1` = an update needs a Developer ID signature of the running app's team but no notarization (the requirement without `and notarized`; local end-to-end test). Compiled out of release builds |
+| `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch, show the update sheet and press Install and Relaunch (local end-to-end test) |
 
 ## Data-safety rules
 
@@ -126,6 +131,7 @@ cross-section consistency contract below holds.
 | Settings controls | `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`) |
 | Compose | header rows `containers.group.<project>` (disclosure `containers.group.<project>.toggle`), service rows keep `containers.row.<id>`; `containers.action.compose-up` (toolbar, ⇧⌘O), project detail `containers.detail` with `containers.action.project-{start,stop,restart,down,reveal}`; sheet `sheet.compose-plan` with `compose-plan.{file,memory,cpus,service-names,existing,services,service.<name>,warning.<n>,commands,progress,error,copy,cancel,up,show,done}` |
 | Onboarding (“Set Up Basket” window) | window `onboarding.window`; one step root `onboarding.step.<welcome|install|system|orbstack|docker|done>`; every button/link `onboarding.action.<verb>` (`back`, `continue`, `skip`, `later`, `not-now`, `install-brew`, `cancel`, `download`, `check-again`, `choose-cli`, `start-system`, `migrate`, `enable-docker`, `disable-docker`, `docs`, `open-basket`); other elements `onboarding.<control>` (`progress`, `title`, `status`, `log`, `error`, `requirement.<name>`, `compare.<memory|disk>`, `planned-change`, `summary`, `memory-saver`). Linted with this contract instead of `basket.main`. Settings: `settings.run-setup`, `settings.docker-command` |
+| Updates | sheet `sheet.update`: title `update.version` (“Basket X.Y.Z is available”), `update.notes`, `update.progress`, `update.error`, buttons `update.{install,later,skip,cancel,retry,done,releases}`; checking / up to date / unavailable / failed-check title `update.status`. Settings: `settings.updates.{automatic,check,status}` |
 | Migration | `section.migration` (title “Migrate from OrbStack”), `migration.tabs`, `migration.summary`, `migration.action.{import,recreate,refresh,select-all,select-none,copy-cleanup}`, rows `migration.row.<image reference or container name>`; sheets `sheet.migration-import` (`migration.import.{cancel,done}`), `sheet.migration-recreate` (`migration.recreate.{name,command,copy,run}`) |
 
 Every list section (`containers`, `images`, `volumes`, `networks`, `machines`, `migration`) must expose
@@ -223,3 +229,42 @@ restarted outside Basket keeps stale entries until the project is started again 
 `BASKET_COMPOSE_LIVE=1 swift test --filter ComposeLiveTests` runs a real redis + alpine project
 (`basket-test-cmp`), proves `app` reaches `db:6379` by name, and takes it down again.
 
+## Updates
+
+Basket updates itself from GitHub Releases with Apple frameworks only; the format, keys and
+checks are specified in [updates.md](updates.md). In code (`BasketCore/Update`):
+
+- `UpdateManifest` decodes `latest.json` strictly (every field required, `X.Y.Z` versions, the
+  `url` must start with `https://github.com/Kilerd/basket/releases/download/`, no query,
+  fragment, `..` or escapes, a `.zip`) into an `UpdateOffer`; `eligibility` never offers the same
+  or an older version and respects `minimum_system_version`.
+- `UpdateInstaller.prepare` streams the zip (256 MB cap, cancellable) into a private directory on
+  the app's own volume (`FileManager.url(for: .itemReplacementDirectory…)`), then `UpdateVerifier`
+  checks SHA-256 and the Ed25519 signature against any of `trustedPublicKeysBase64` (a list, so the
+  key can be rotated), `ditto -x -k` extracts it, and the single `.app` inside must have bundle id
+  `dev.basket.app`, the manifest's version and a code signature satisfying
+  `CodeSignature.requirement(teamID:)` — a notarized Developer ID app of the running app's own
+  team (`SecCodeCopySelf`). Any failure deletes the staging directory.
+- `UpdateSwap` launches a detached `/bin/sh` helper (paths and the requirement as positional
+  parameters) that waits for Basket's pid to exit, runs `codesign --verify --deep --strict -R` with
+  the same requirement on the staged app, renames the old app into the staging directory, renames
+  the new one into place, checks it there again (putting the old one back if a check or a rename
+  fails), clears quarantine only if present, moves the old app to the Trash and opens the new one.
+  Its output goes to `~/Library/Logs/Basket/update.log`.
+- `UpdateController` (app) checks a minute after launch and then daily when Settings ▸ Updates ▸
+  “Automatically check for updates” is on (default), and from “Check for Updates…” in the app
+  menu and the menu bar extra. Updates are disabled, with the reason shown, for ad-hoc or unsigned
+  builds, translocated apps and folders Basket can't write to. A checksum, signature, bundle or
+  code-signature mismatch is shown as a security error with no way to install anyway.
+
+Local end-to-end check (no `/Applications`; needs a Developer ID identity, since ad-hoc builds
+can't update): build version A with `scripts/build-app.sh debug` and B with
+`scripts/build-app.sh release` (temporarily raise `VERSION` in `scripts/_common.sh`),
+`ditto -c -k --keepParent` B, sign the zip with a key from `swift scripts/update-keygen.swift
+/tmp/<dir>/test.key` (`swift scripts/update-sign.swift`), write a `latest.json` next to it with a
+`file://` URL, copy A to a temporary folder and run it with `BASKET_UPDATE_FEED_URL`,
+`BASKET_UPDATE_TEST_PUBLIC_KEY`, `BASKET_UPDATE_ALLOW_UNNOTARIZED=1` (local builds aren't
+notarized) and `BASKET_UPDATE_AUTO_INSTALL=1`. The bundle in that folder becomes B and
+relaunches; the old copy is in the Trash as “Basket A.app”, and `~/Library/Logs/Basket/update.log`
+shows the helper's checks. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same run must stop with a
+code-signature security error.

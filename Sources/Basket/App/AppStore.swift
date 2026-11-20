@@ -52,6 +52,8 @@ enum ActiveSheet: Identifiable {
     case reclaimMemory
     /// "Compose Up…": the plan for a compose file, then `up` (see `ComposePlanSheet`).
     case composePlan(URL)
+    /// A newer Basket, the result of "Check for Updates…" or an error (see `UpdateSheet`).
+    case update
 
     var id: String {
         switch self {
@@ -63,6 +65,7 @@ enum ActiveSheet: Identifiable {
         case .reclaim: "reclaim"
         case .reclaimMemory: "reclaimMemory"
         case .composePlan: "composePlan"
+        case .update: "update"
         }
     }
 }
@@ -90,7 +93,9 @@ final class AppStore {
 
     // MARK: UI state
     var selectedSection: AppSection
-    var activeSheet: ActiveSheet?
+    var activeSheet: ActiveSheet? {
+        didSet { if activeSheet == nil, oldValue != nil { updates.sheetClosed() } }
+    }
     var confirmation: Confirmation?
     var banner: BannerMessage?
     var searchText: [AppSection: String] = [:]
@@ -140,6 +145,8 @@ final class AppStore {
     private(set) var statsSamples = 0
     /// Idle tracking, exemptions and activity log (see AppStore+Memory).
     let memorySaver: MemorySaverState
+    /// Signed self-updates from GitHub Releases (see `UpdateController`, docs/updates.md).
+    let updates: UpdateController
 
     // MARK: Window & polling
     @ObservationIgnored weak var mainWindow: NSWindow?
@@ -169,7 +176,10 @@ final class AppStore {
         self.migration = MigrationModel(migrator: options.makeMigrator())
         self.selectedSection = options.initialSection ?? .overview
         self.memorySaver = MemorySaverState(persistent: !options.isUITest)
+        self.updates = UpdateController(isUITest: options.isUITest)
         migration.store = self
+        updates.store = self
+        updates.start()
         BasketAppDelegate.store = self
         cleanUpAfterPreviousRun()
         // Starts background sampling even if the window never opens (launched at login, closed).
