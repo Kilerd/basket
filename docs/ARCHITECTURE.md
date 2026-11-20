@@ -77,7 +77,8 @@ Basket manages state the user cares about, so destructive operations follow fixe
   every item in full, defaults stopped containers to off, and has no Return shortcut on Delete.
   If any machine's base image is unknown (inspect failed), no image counts as unused anywhere.
 - **Restarts are per container**: stop → start one at a time, re-reading `removeOnStop` right
-  before each stop; failures and skips are reported, the rest continue.
+  before each stop; failures and skips are reported, the rest continue (`MemoryReclaim.restart`).
+  Compose project restarts follow the same rule, service by service in dependency order.
 - **Quitting mid-operation** (slim, import, recreate) asks first, then cancels children and
   removes temp folders; leftover slim archives appear in Images with Restore/Delete.
 - **Confirmations name what is lost** (containers using an image, in-memory state on restart),
@@ -207,7 +208,9 @@ frameworks only):
   is the limit plus ≈ 240–290 MB of VM overhead (`MemoryInsights.Model`).
 - `ComposeOperations` — `up` (create missing networks/volumes, run services in order, reuse existing
   project containers), `down` (containers and the project's labelled networks; volumes only when
-  asked), `start`/`stop`/`restart` in dependency order. `ComposeProject.group` turns the container
+  asked), `start`/`stop` in dependency order, `restart` one service at a time in dependency order
+  (stop → start each, `--rm` services skipped, failures don't stop the rest; the outcome lists
+  failures and skips, then /etc/hosts is refreshed). `ComposeProject.group` turns the container
   list into projects (by label) for the Containers table.
 
 **Service discovery.** Containers on the same apple/container network can't resolve each other by

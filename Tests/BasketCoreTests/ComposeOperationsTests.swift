@@ -173,6 +173,152 @@ struct ComposeOperationsTests {
     }
 }
 
+/// Regression for #1: a project restart stopped every service, then started them all, so one failing
+/// start (e.g. a `--rm` service the stop had deleted) left the remaining services down.
+@Suite("Compose restart per service")
+struct ComposeRestartTests {
+    static let project = "basket-test-rst"
+
+    struct Service {
+        var name: String
+        var dependsOn: String? = nil
+        var state = "running"
+        /// Its bundle's options.json says `autoRemove` (started with `--rm`): `stop` deletes it.
+        var removeOnStop = false
+        /// `start` fails for it.
+        var startFails = false
+        var id: String { "\(ComposeRestartTests.project)-\(name)-1" }
+    }
+
+    /// Fake `container`: `state/<id>` holds the state, `labels/<id>` the labels JSON and
+    /// `root/containers/<id>/options.json` the `--rm` flag (the app root comes from `system status`).
+    func fakeCLI(_ directory: TemporaryDirectory, _ services: [Service]) async throws -> CLIBackend {
+        let files = FileManager.default
+        let state = directory.url.appendingPathComponent("state"), labels = directory.url.appendingPathComponent("labels")
+        let broken = directory.url.appendingPathComponent("broken"), root = directory.url.appendingPathComponent("root")
+        for folder in [state, labels, broken] { try files.createDirectory(at: folder, withIntermediateDirectories: true) }
+        for service in services {
+            var serviceLabels = [
+                ComposeLabels.project: Self.project, ComposeLabels.service: service.name, ComposeLabels.basket: "1",
+            ]
+            if let dependency = service.dependsOn { serviceLabels[ComposeLabels.dependsOn] = "\(dependency):service_started:false" }
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            try encoder.encode(serviceLabels).write(to: labels.appendingPathComponent(service.id))
+            try Data(service.state.utf8).write(to: state.appendingPathComponent(service.id))
+            let bundle = root.appendingPathComponent("containers").appendingPathComponent(service.id)
+            try files.createDirectory(at: bundle, withIntermediateDirectories: true)
+            try Data(#"{"autoRemove":\#(service.removeOnStop)}"#.utf8).write(to: bundle.appendingPathComponent("options.json"))
+            if service.startFails { try Data().write(to: broken.appendingPathComponent(service.id)) }
+        }
+        let log = shellQuote(directory.url.appendingPathComponent("calls.log").path)
+        let (s, l, b, r) = (shellQuote(state.path), shellQuote(labels.path), shellQuote(broken.path), shellQuote(root.path))
+        let script = try directory.script("container", #"""
+            case "$1" in exec) echo "exec $4" >> \#(log) ;; *) echo "$*" >> \#(log) ;; esac
+            case "$1" in
+              system) printf '{"status":"running","paths":{"appRoot":"%s/"}}\n' \#(r) ;;
+              list)
+                printf '['; sep=''
+                for f in \#(s)/*; do
+                  [ -e "$f" ] || continue
+                  id=$(basename "$f")
+                  printf '%s{"id":"%s","configuration":{"id":"%s","labels":%s},"status":{"state":"%s"}}' \
+                    "$sep" "$id" "$id" "$(cat \#(l)/"$id")" "$(cat "$f")"
+                  sep=','
+                done
+                printf ']\n' ;;
+              stop)
+                shift
+                for id in "$@"; do
+                  if grep -q '"autoRemove":true' \#(r)/containers/"$id"/options.json; then rm -f \#(s)/"$id"; else printf stopped > \#(s)/"$id"; fi
+                done ;;
+              start)
+                if [ -e \#(b)/"$2" ]; then echo "Error: failed to bootstrap $2" >&2; exit 1; fi
+                if [ -e \#(s)/"$2" ]; then printf running > \#(s)/"$2"; else echo "Error: container $2 not found" >&2; exit 1; fi ;;
+              exec) ;;
+              *) echo "Error: unexpected $*" >&2; exit 1 ;;
+            esac
+            """#)
+        let backend = CLIBackend(cliPath: script)
+        #expect(try await backend.systemStatus().isRunning)  // learns the app root, so `--rm` is known
+        return backend
+    }
+
+    /// Stops and starts in the order they ran; `exec` = the /etc/hosts refresh.
+    func calls(_ directory: TemporaryDirectory) -> (lifecycle: [String], hosts: [String]) {
+        let lines = ((try? String(contentsOf: directory.url.appendingPathComponent("calls.log"), encoding: .utf8)) ?? "")
+            .split(separator: "\n").map(String.init)
+        return (lines.filter { $0.hasPrefix("stop ") || $0.hasPrefix("start ") },
+                lines.filter { $0.hasPrefix("exec ") }.map { String($0.dropFirst(5)) })
+    }
+
+    @Test func oneServiceFailingToStartNeverLeavesTheOthersDown() async throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.cleanup() }
+        // Dependency order (db → api → web) differs from name order (api, db, web).
+        let db = Service(name: "db"), api = Service(name: "api", dependsOn: "db", startFails: true)
+        let web = Service(name: "web", dependsOn: "api")
+        let backend = try await fakeCLI(directory, [web, api, db])
+        let log = ProgressLog()
+
+        let outcome = try await ComposeOperations(backend: backend).restart(project: Self.project, progress: log.append)
+
+        #expect(outcome.restarted == [db.id, web.id])
+        #expect(outcome.failed == [.init(
+            id: api.id, reason: "starting failed: `container start \(api.id)` failed (exit 1): failed to bootstrap \(api.id)")])
+        #expect(outcome.skipped.isEmpty)
+        // One service at a time, dependencies first, and the failure doesn't stop the run.
+        #expect(calls(directory).lifecycle == [
+            "stop \(db.id)", "start \(db.id)", "stop \(api.id)", "start \(api.id)", "stop \(web.id)", "start \(web.id)",
+        ])
+        let after = try await backend.listContainers()
+        #expect(after.filter { $0.state == .running }.map(\.id).sorted() == [db.id, web.id])
+        // /etc/hosts is rewritten afterwards in the services that are running.
+        #expect(calls(directory).hosts.sorted() == [db.id, web.id])
+        let report = try #require(outcome.report)
+        #expect(report.title == "1 of 3 containers couldn't be restarted")
+        #expect(report.detail.contains(api.id))
+        #expect(log.lines.first == "Restarting \(db.id)")
+        #expect(log.lines.contains { $0.hasPrefix("Couldn't restart \(api.id): starting failed") })
+        #expect(log.lines.last == report.title)
+    }
+
+    @Test func removeOnStopServicesAreSkippedAndReported() async throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.cleanup() }
+        // `jobs` turned out to be started with --rm after the user confirmed: it's never stopped.
+        let db = Service(name: "db"), jobs = Service(name: "jobs", dependsOn: "db", removeOnStop: true)
+        let web = Service(name: "web", dependsOn: "db", state: "stopped"), late = Service(name: "late")
+        let backend = try await fakeCLI(directory, [db, jobs, web, late])
+
+        // `late` joined the project after the confirmation: left alone.
+        let outcome = try await ComposeOperations(backend: backend)
+            .restart(project: Self.project, only: [db.id, jobs.id, web.id])
+
+        #expect(outcome.restarted == [db.id, web.id])
+        #expect(outcome.skipped == [.init(id: jobs.id, reason: "it was started with --rm, so stopping would delete it")])
+        #expect(outcome.failed.isEmpty)
+        // A stopped service just starts.
+        #expect(calls(directory).lifecycle == ["stop \(db.id)", "start \(db.id)", "start \(web.id)"])
+        let after = Dictionary(uniqueKeysWithValues: try await backend.listContainers().map { ($0.id, $0.state) })
+        #expect(after == [db.id: .running, jobs.id: .running, web.id: .running, late.id: .running])
+        #expect(calls(directory).hosts.sorted() == [db.id, jobs.id, late.id, web.id])
+        let report = try #require(outcome.report)
+        #expect(report.title == "Restarted 2 of 3 containers")
+        #expect(report.detail == "\(jobs.id) was skipped: it was started with --rm, so stopping would delete it")
+    }
+
+    @Test func listingFailureThrowsBeforeAnythingIsTouched() async throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.cleanup() }
+        let cli = try directory.script("container", "echo \"$*\" >> \(shellQuote(directory.url.appendingPathComponent("calls.log").path)); echo 'Error: internal error' >&2; exit 1\n")
+        await #expect(throws: BackendError.self) {
+            try await ComposeOperations(backend: CLIBackend(cliPath: cli)).restart(project: Self.project)
+        }
+        #expect(calls(directory).lifecycle.isEmpty)
+    }
+}
+
 @Suite("Compose /etc/hosts script")
 struct ComposeHostsScriptTests {
     /// Runs the real script with /bin/sh against a temporary hosts file.

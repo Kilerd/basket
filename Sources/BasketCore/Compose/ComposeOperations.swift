@@ -135,9 +135,23 @@ public struct ComposeOperations: Sendable {
         try await backend.stopContainers(running.map(\.id))
     }
 
-    public func restart(project: String, only: Set<String>? = nil, progress: Progress = { _ in }) async throws {
-        try await stop(project: project, only: only, progress: progress)
-        try await start(project: project, only: only, progress: progress)
+    /// Restarts services (all, or those in `only`) one at a time in dependency order, by the same
+    /// rules as container restarts (`MemoryReclaim.restart`): each is stopped and started before the
+    /// next is touched, its `--rm` status is re-read right before the stop (one started with `--rm`
+    /// is skipped: stopping would delete it), a stopped one just starts, and a failure never leaves
+    /// the rest down. Then /etc/hosts is rewritten in every running service. Throws only when the
+    /// project can't be listed (nothing was touched); failures and skips are in the outcome.
+    @discardableResult
+    public func restart(
+        project: String, only: Set<String>? = nil, progress: Progress = { _ in }
+    ) async throws -> MemoryReclaim.Outcome {
+        let members = try await members(of: project)
+        let ids = ComposeProject(name: project, containers: members).startOrder.map(\.id)
+            .filter { only?.contains($0) ?? true }
+        let outcome = await MemoryReclaim.restart(ids, using: backend, onlyRunning: false, progress: progress)
+        await refreshHosts(project: project, progress: progress)
+        progress(outcome.report?.title ?? "Project \(project) restarted (\(ids.count) service\(ids.count == 1 ? "" : "s"))")
+        return outcome
     }
 
     // MARK: Hosts

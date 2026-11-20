@@ -15,6 +15,9 @@ next patch. Expect breaking changes until `0.1.0`.
   lost log and progress lines): a command's stdout and stderr are now read to the end before it
   counts as finished. When a background process it started keeps the output open, Basket stops
   waiting after 1 s but still keeps everything the command itself wrote (#2).
+- Compose: restarting a project restarts its services one at a time in dependency order, so a
+  service that fails to start no longer leaves the others stopped; services started with `--rm`
+  are skipped, and the banner lists what failed or was skipped (#1).
 
 ## [0.0.1] - 2026-11-20
 

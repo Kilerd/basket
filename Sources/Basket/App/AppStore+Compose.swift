@@ -177,7 +177,8 @@ extension AppStore {
         }
     }
 
-    /// Like restarting containers: services started with `--rm` are skipped (stopping would delete them).
+    /// Like restarting containers: one service at a time, and services started with `--rm` are
+    /// skipped (stopping would delete them); failures and skips end up in the banner.
     func confirmRestartComposeProject(_ project: String) {
         guard let compose = composeProject(named: project) else { return }
         let deleted = compose.containers.filter { $0.state == .running && $0.removeOnStop == true }.map(\.id)
@@ -185,7 +186,7 @@ extension AppStore {
             ? [] : compose.containers.filter { $0.state == .running && $0.removeOnStop == nil }.map(\.id)
         let restartable = compose.containers.map(\.id).filter { !deleted.contains($0) }
         guard !restartable.isEmpty else { return }
-        var message = ["Every service is stopped and started again in dependency order, then Basket rewrites the service names in /etc/hosts. Published ports come back once the services run again; anything kept only in memory is lost."]
+        var message = ["Each service is stopped and started again in turn, in dependency order, then Basket rewrites the service names in /etc/hosts. If one doesn't come back, the others still restart. Published ports come back once the services run again; anything kept only in memory is lost."]
         if !deleted.isEmpty || !unknown.isEmpty {
             message.append(Self.removeOnStopNote(deleted: deleted, unknown: unknown, skipping: true))
         }
@@ -194,7 +195,7 @@ extension AppStore {
             confirmLabel: unknown.isEmpty ? "Restart" : "Restart Anyway", isDestructive: !unknown.isEmpty
         ) { [weak self] in
             Task {
-                await self?.perform("Restarting", ids: restartable, refresh: [.containers, .stats, .footprints]) { backend in
+                await self?.restart(restartable) { backend in
                     try await ComposeOperations(backend: backend).restart(project: project, only: Set(restartable))
                 }
             }
