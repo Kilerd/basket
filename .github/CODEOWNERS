@@ -1,0 +1,4 @@
+* @Kilerd
+/scripts/check-leaks.sh @Kilerd
+/.githooks/ @Kilerd
+/.github/ @Kilerd

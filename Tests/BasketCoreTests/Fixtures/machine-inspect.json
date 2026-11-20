@@ -1,0 +1,32 @@
+[
+  {
+    "containerId" : "basket-test-m-32cb51",
+    "cpus" : 1,
+    "createdDate" : "2026-11-20T04:26:38Z",
+    "diskSize" : 47448064,
+    "homeMount" : "rw",
+    "id" : "basket-test-m",
+    "image" : {
+      "descriptor" : {
+        "digest" : "sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf",
+        "mediaType" : "application\/vnd.oci.image.index.v1+json",
+        "size" : 9218
+      },
+      "reference" : "docker.io\/library\/alpine:latest"
+    },
+    "ipAddress" : "192.168.64.3",
+    "memory" : 1073741824,
+    "platform" : {
+      "architecture" : "arm64",
+      "os" : "linux"
+    },
+    "startedDate" : "2026-11-20T04:26:53Z",
+    "status" : "running",
+    "userSetup" : {
+      "gid" : 20,
+      "home" : "\/home\/demo",
+      "uid" : 501,
+      "username" : "demo"
+    }
+  }
+]

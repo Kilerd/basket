@@ -1,0 +1,11 @@
+Basket
+Copyright 2026 The Basket Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party material:
+- Resources/Branding/basket-star.png (and the AppIcon derived from it): "basket-star" mascot
+  from the IP as Logo collection (https://visualskills.dev/ip-as-logo, cdn.ipaslogo.com),
+  offered free to download and use commercially.
+- Basket drives Apple's container tool (https://github.com/apple/container, Apache-2.0)
+  through its command-line interface; no container source code is included.

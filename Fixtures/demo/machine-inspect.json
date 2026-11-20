@@ -1,0 +1,59 @@
+[
+  {
+    "containerId": "dev-7c1e9a",
+    "cpus": 4,
+    "createdDate": "2026-11-10T07:45:12Z",
+    "diskSize": 1932735283,
+    "homeMount": "rw",
+    "id": "dev",
+    "image": {
+      "descriptor": {
+        "digest": "sha256:eaaca2df1c1ccb9930f884c1e7dff58178e9cc06e310dfe6c07d8b11ac2e9764",
+        "mediaType": "application/vnd.oci.image.index.v1+json",
+        "size": 9218
+      },
+      "reference": "docker.io/library/ubuntu:24.04"
+    },
+    "ipAddress": "192.168.64.10",
+    "memory": 8589934592,
+    "platform": {
+      "architecture": "arm64",
+      "os": "linux"
+    },
+    "startedDate": "2026-11-20T08:01:40Z",
+    "status": "running",
+    "userSetup": {
+      "gid": 20,
+      "home": "/home/demo",
+      "uid": 501,
+      "username": "demo"
+    }
+  },
+  {
+    "cpus": 2,
+    "createdDate": "2026-11-16T21:03:37Z",
+    "diskSize": 47448064,
+    "homeMount": "ro",
+    "id": "alpine-lab",
+    "image": {
+      "descriptor": {
+        "digest": "sha256:5c47b8c19bf499f91f40c420e714de869b67b467192604c455091b7da6ba3bb3",
+        "mediaType": "application/vnd.oci.image.index.v1+json",
+        "size": 9218
+      },
+      "reference": "docker.io/library/alpine:3.22"
+    },
+    "memory": 2147483648,
+    "platform": {
+      "architecture": "arm64",
+      "os": "linux"
+    },
+    "status": "stopped",
+    "userSetup": {
+      "gid": 20,
+      "home": "/home/demo",
+      "uid": 501,
+      "username": "demo"
+    }
+  }
+]

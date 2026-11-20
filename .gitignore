@@ -1,0 +1,9 @@
+.build/
+.build-*/
+build/
+*.xcodeproj/
+.swiftpm/
+DerivedData/
+.DS_Store
+/artifacts/
+.leak-denylist

@@ -1,0 +1,63 @@
+name: Feature request
+description: Propose a feature or an improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Basket focuses on **memory and disk** and on replacing OrbStack with Apple's `container`.
+        Check the roadmap in `docs/EVOLUTION.md` first; your idea may already be planned.
+
+        This issue is public. Use public images and placeholder names in examples.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should Basket behave? Mock-ups, CLI commands (`container …`) and OrbStack or Docker equivalents help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today, or other ways to solve the problem.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Overview (memory, disk, system status)
+        - Containers
+        - Images
+        - Volumes
+        - Networks
+        - Linux machines
+        - Migration from OrbStack
+        - Memory Saver
+        - Menu bar
+        - Settings
+        - Accessibility / VoiceOver
+        - Build, scripts or tests
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Memory, disk or safety impact
+      description: |
+        Would this change memory or disk use, or could it delete or modify data? (Destructive
+        actions must state exactly what is lost and act only on approved items.)
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to work on this myself (see CONTRIBUTING.md).

@@ -1,0 +1,1 @@
+[{"cpus":4,"createdDate":"2026-11-10T07:45:12Z","default":true,"diskSize":1932735283,"id":"dev","ipAddress":"192.168.64.10","memory":8589934592,"status":"running"},{"cpus":2,"createdDate":"2026-11-16T21:03:37Z","default":false,"diskSize":47448064,"id":"alpine-lab","memory":2147483648,"status":"stopped"}]

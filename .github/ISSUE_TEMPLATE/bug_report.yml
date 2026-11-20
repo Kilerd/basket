@@ -1,0 +1,100 @@
+name: Bug report
+description: Something in Basket doesn't work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        **This issue is public.** Don't paste tokens, passwords, private image names, registry
+        hosts, environment variable values, hostnames or IP addresses. Redact `inspect` output and
+        logs before you paste them: replace private names with placeholders such as `my-app` or
+        `registry.example.com`, and home paths with `/Users/demo`.
+        Screenshots from your own machine can show the same data, so crop or blur them.
+
+        Security problems must be reported privately instead: see SECURITY.md or the
+        "Report a vulnerability" link in the issue chooser.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw. Include the exact error message if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, ideally with public images (`alpine`, `nginx`, `redis`, …).
+      placeholder: |
+        1. Run `container run -d --name demo alpine sleep 600`
+        2. Open Basket › Containers and select `demo`
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Overview (memory, disk, system status)
+        - Containers
+        - Images
+        - Volumes
+        - Networks
+        - Linux machines
+        - Migration from OrbStack
+        - Memory Saver
+        - Menu bar
+        - Settings
+        - Accessibility / VoiceOver
+        - Build, scripts or tests
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: basket-version
+    attributes:
+      label: Basket version or commit
+      description: Basket › About Basket, or `git rev-parse --short HEAD` for a source build.
+      placeholder: 0.0.1 or a1b2c3d
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Output of `sw_vers -productVersion`.
+      placeholder: "26.1"
+    validations:
+      required: true
+  - type: input
+    id: container-version
+    attributes:
+      label: container version
+      description: Output of `container --version`.
+      placeholder: container CLI version 1.7.1
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output (redacted)
+      description: |
+        CLI output, `inspect` excerpts or the self-test report. **Redact** tokens, private image
+        names, environment values, hostnames, IP addresses and paths before pasting.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and this hasn't been reported yet.
+          required: true
+        - label: I removed tokens, private image names, environment values and other private data from everything above.
+          required: true

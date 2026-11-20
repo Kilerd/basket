@@ -1,0 +1,20 @@
+{
+  "containers": {
+    "active": 0,
+    "reclaimable": 0,
+    "sizeInBytes": 0,
+    "total": 0
+  },
+  "images": {
+    "active": 0,
+    "reclaimable": 0,
+    "sizeInBytes": 0,
+    "total": 0
+  },
+  "volumes": {
+    "active": 0,
+    "reclaimable": 0,
+    "sizeInBytes": 0,
+    "total": 0
+  }
+}

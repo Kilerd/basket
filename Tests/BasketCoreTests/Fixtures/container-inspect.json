@@ -1,0 +1,119 @@
+[
+  {
+    "configuration" : {
+      "capAdd" : [
+
+      ],
+      "capDrop" : [
+
+      ],
+      "creationDate" : "2026-11-20T04:18:45Z",
+      "dns" : {
+        "nameservers" : [
+
+        ],
+        "options" : [
+
+        ],
+        "searchDomains" : [
+
+        ]
+      },
+      "id" : "probe-alpine",
+      "image" : {
+        "descriptor" : {
+          "digest" : "sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf",
+          "mediaType" : "application/vnd.oci.image.index.v1+json",
+          "size" : 9218
+        },
+        "reference" : "docker.io/library/alpine:latest"
+      },
+      "initProcess" : {
+        "arguments" : [
+          "3600"
+        ],
+        "environment" : [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ],
+        "executable" : "sleep",
+        "rlimits" : [
+
+        ],
+        "supplementalGroups" : [
+
+        ],
+        "terminal" : false,
+        "user" : {
+          "id" : {
+            "gid" : 0,
+            "uid" : 0
+          }
+        },
+        "workingDirectory" : "/"
+      },
+      "labels" : {
+
+      },
+      "mounts" : [
+
+      ],
+      "networks" : [
+        {
+          "network" : "default",
+          "options" : {
+            "hostname" : "probe-alpine",
+            "mtu" : 1280
+          }
+        }
+      ],
+      "platform" : {
+        "architecture" : "arm64",
+        "os" : "linux",
+        "variant" : "v8"
+      },
+      "publishedPorts" : [
+        {
+          "containerPort" : 80,
+          "count" : 1,
+          "hostAddress" : "0.0.0.0",
+          "hostPort" : 18080,
+          "proto" : "tcp"
+        }
+      ],
+      "publishedSockets" : [
+
+      ],
+      "readOnly" : false,
+      "resources" : {
+        "cpuOverhead" : 1,
+        "cpus" : 1,
+        "memoryInBytes" : 268435456
+      },
+      "rosetta" : false,
+      "runtimeHandler" : "container-runtime-linux",
+      "ssh" : false,
+      "sysctls" : {
+
+      },
+      "useInit" : false,
+      "virtualization" : false
+    },
+    "id" : "probe-alpine",
+    "status" : {
+      "networks" : [
+        {
+          "hostname" : "probe-alpine",
+          "ipv4Address" : "192.168.64.2/24",
+          "ipv4Gateway" : "192.168.64.1",
+          "ipv6Address" : "fdd3:eddd:e439:b198:f47f:4cff:fec2:13e6/64",
+          "macAddress" : "f6:7f:4c:c2:13:e6",
+          "mtu" : 1280,
+          "network" : "default",
+          "variant" : "reserved"
+        }
+      ],
+      "startedDate" : "2026-11-20T04:18:51Z",
+      "state" : "running"
+    }
+  }
+]

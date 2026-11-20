@@ -1,0 +1,194 @@
+[
+    {
+        "Id": "sha256:70ebf3916f9a5a1a6e287f68fce45d22492f7ec16dd386d6592eff07922e011d",
+        "RepoTags": [
+            "python:3.12-slim"
+        ],
+        "RepoDigests": [
+            "python@sha256:2c5dccf3d5b8abc5c397e9651e12f5eca30894ea890492809e5cf6ec702446c6"
+        ],
+        "Created": "2026-11-06T02:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "PYTHON_VERSION=3.12.12"
+            ],
+            "Cmd": [
+                "python3"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 176013312,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:4d6948b5676696e995a32806c41966bfd4c3e64a751ffd69972ae47de2326ac7",
+                "sha256:879c484f9d261fcc4990d9c3572ba908bbc6e1b18b169987ee0518ca91914aed"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-06T02:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:70ebf3916f9a5a1a6e287f68fce45d22492f7ec16dd386d6592eff07922e011d",
+            "size": 1410
+        }
+    },
+    {
+        "Id": "sha256:b7b1504536f933b8dccbcd240373cc8f5928cce069bd2725f1cdbbbd55fd6e87",
+        "RepoTags": [
+            "redis:7-alpine"
+        ],
+        "RepoDigests": [
+            "redis@sha256:2e9ece22b1d54eea9a0e355c61b150de2ec9ee6da794a0246bcd2bf31a677a33"
+        ],
+        "Created": "2026-10-30T07:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "REDIS_VERSION=7.4.12"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "redis-server"
+            ],
+            "WorkingDir": "/data",
+            "ExposedPorts": {
+                "6379/tcp": {}
+            },
+            "Volumes": {
+                "/data": {}
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 58419988,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:0c73e96f5b5025b226e59f550f7decc1be7fd30d92801f8fcfe9b09fa0b617df",
+                "sha256:eb07e069c1d4fdcb9d6cdd1614c84a75da6c889fffc2cbaceace3a79b44dd8be"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-30T07:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:b7b1504536f933b8dccbcd240373cc8f5928cce069bd2725f1cdbbbd55fd6e87",
+            "size": 1405
+        }
+    },
+    {
+        "Id": "sha256:97b5147f4a33286ed509a2dd754ca72144bae5bc38f8d217fae2e34aa81313ce",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Created": "2026-10-25T00:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "/bin/sh"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 13418496,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:1af8325477f12e6682f11c6e0aa078d6ac7b3645465e3314f87243ed4725693d",
+                "sha256:ff01e71150dc5a5f73ac61ac7abb5f65f1ad7a054a1207ea2618f7b624f6ec16"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-25T00:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:97b5147f4a33286ed509a2dd754ca72144bae5bc38f8d217fae2e34aa81313ce",
+            "size": 1436
+        }
+    },
+    {
+        "Id": "sha256:5de4f4df53884baa2be4bdae0c1a20be167684ee0b3d7885d215af429bbe26c7",
+        "RepoTags": [
+            "alpine:3.20"
+        ],
+        "RepoDigests": [
+            "alpine@sha256:a6a4c87e28f3ad34a4d4842f0b7dffd8c6f718382175febc8a7734587c9d3bae"
+        ],
+        "Created": "2026-07-23T09:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "/bin/sh"
+            ],
+            "WorkingDir": "/"
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 13104640,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:963c944029e5cb4be3e60e9619be9a04de971ce92ab9525dd71f1cf2c1f1412b",
+                "sha256:5c9e3a53749da1dd8be49d37513d67f4d7d32e7a84fd2f74702a8bcdf38831fb"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-07-23T09:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:5de4f4df53884baa2be4bdae0c1a20be167684ee0b3d7885d215af429bbe26c7",
+            "size": 1403
+        }
+    },
+    {
+        "Id": "sha256:c629baa8f9cc85b3bfa801049aa9b2cc2456057d716e1d5d06ac71e46c78d96e",
+        "RepoTags": [
+            "python@sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec"
+        ],
+        "RepoDigests": [
+            "python@sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec"
+        ],
+        "Created": "2026-10-01T00:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "PYTHON_VERSION=3.11.14"
+            ],
+            "Cmd": [
+                "python3"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 1481502720,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:0a016982f98d8857cac6a511f4bd7a8371e3827ca88947665b685022e5610749",
+                "sha256:4192e740de53d98b6b719719984adc99ae646fa9dac50eaf690628805ee4e9d3"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-01T00:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:c629baa8f9cc85b3bfa801049aa9b2cc2456057d716e1d5d06ac71e46c78d96e",
+            "size": 1412
+        }
+    }
+]

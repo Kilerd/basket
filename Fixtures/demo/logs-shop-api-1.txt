@@ -1,0 +1,7 @@
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Connected to postgresql://shop@db:5432/shop
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     192.168.66.5:41822 - "GET /api/products HTTP/1.1" 200 OK
+INFO:     192.168.66.5:41830 - "GET /api/cart HTTP/1.1" 200 OK

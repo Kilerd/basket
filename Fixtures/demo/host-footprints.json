@@ -1,0 +1,52 @@
+[
+  {
+    "footprintBytes": 1288486912,
+    "ownerID": "postgres",
+    "pid": 41210
+  },
+  {
+    "footprintBytes": 214302720,
+    "ownerID": "redis",
+    "pid": 41288
+  },
+  {
+    "footprintBytes": 198885376,
+    "ownerID": "web",
+    "pid": 41351
+  },
+  {
+    "footprintBytes": 508559360,
+    "ownerID": "minio",
+    "pid": 41420
+  },
+  {
+    "footprintBytes": 243269632,
+    "ownerID": "worker",
+    "pid": 41502
+  },
+  {
+    "footprintBytes": 1181745152,
+    "ownerID": "dev",
+    "pid": 40877
+  },
+  {
+    "footprintBytes": 101187584,
+    "ownerID": null,
+    "pid": 39911
+  },
+  {
+    "footprintBytes": 270532608,
+    "ownerID": "shop-web-1",
+    "pid": 41611
+  },
+  {
+    "footprintBytes": 383778816,
+    "ownerID": "shop-api-1",
+    "pid": 41644
+  },
+  {
+    "footprintBytes": 377487360,
+    "ownerID": "shop-db-1",
+    "pid": 41587
+  }
+]

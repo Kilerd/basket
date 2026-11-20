@@ -1,0 +1,19 @@
+[
+  {
+    "configuration" : {
+      "creationDate" : "2026-11-20T04:20:26Z",
+      "driver" : "local",
+      "format" : "ext4",
+      "labels" : {
+
+      },
+      "name" : "probe-vol",
+      "options" : {
+
+      },
+      "sizeInBytes" : 549755813888,
+      "source" : "/Users/demo/Library/Application Support/com.apple.container/volumes/probe-vol/volume.img"
+    },
+    "id" : "probe-vol"
+  }
+]

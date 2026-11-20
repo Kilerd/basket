@@ -1,0 +1,1595 @@
+[
+    {
+        "Id": "sha256:014a47da47021bd4b32ca765b8b325fe09421b4ff3bb270797da5cdff55ea37e",
+        "RepoTags": [
+            "busybox:stable"
+        ],
+        "RepoDigests": [
+            "busybox@sha256:014a47da47021bd4b32ca765b8b325fe09421b4ff3bb270797da5cdff55ea37e"
+        ],
+        "Created": "2026-05-14T11:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "sh"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 6058112,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:fd7113813bf6f3970f4341f2b9104109b0a8921633ec052c743f2a492fe9c8a7",
+                "sha256:ace06635eb8d0c60ac43b9b1ae4ed25886a6e6404996df4937d7fa97e84fd3a8"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-05-14T11:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:014a47da47021bd4b32ca765b8b325fe09421b4ff3bb270797da5cdff55ea37e",
+            "size": 1037
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/busybox"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:039c341abe2043b6409be4c00752492925ba0e62b4e07a4ff0f07061ccd17ee1",
+        "RepoTags": [
+            "grafana/grafana:latest"
+        ],
+        "RepoDigests": [
+            "grafana/grafana@sha256:039c341abe2043b6409be4c00752492925ba0e62b4e07a4ff0f07061ccd17ee1"
+        ],
+        "Created": "2026-11-12T19:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GF_PATHS_DATA=/var/lib/grafana"
+            ],
+            "Entrypoint": [
+                "/run.sh"
+            ],
+            "User": "472",
+            "WorkingDir": "/usr/share/grafana",
+            "ExposedPorts": {
+                "3000/tcp": {}
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 1878200320,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:c7c271a76b031d17f4ee2bffaf036d4c24d3d423a6b59f750f4ab412f7aad472",
+                "sha256:f78c72d30182801ecfc5ddb3dc5f3a20b45206a626736e55270f4d06b98fe9bd"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-12T19:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:039c341abe2043b6409be4c00752492925ba0e62b4e07a4ff0f07061ccd17ee1",
+            "size": 1629
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/grafana/grafana"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:0471296e297262d28adc2bd365bbafb71fd0aa3159c64dee535fd0ab871012b8",
+        "RepoTags": [
+            "postgres:16-alpine"
+        ],
+        "RepoDigests": [
+            "postgres@sha256:0471296e297262d28adc2bd365bbafb71fd0aa3159c64dee535fd0ab871012b8"
+        ],
+        "Created": "2026-09-21T06:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=en_US.utf8",
+                "PG_MAJOR=16",
+                "PG_VERSION=16.11",
+                "PGDATA=/var/lib/postgresql/data"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "postgres"
+            ],
+            "ExposedPorts": {
+                "5432/tcp": {}
+            },
+            "Volumes": {
+                "/var/lib/postgresql/data": {}
+            },
+            "StopSignal": "SIGINT"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 411017216,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:dd4801e6e763bb3fb5ffa93b66485fb42d53661d56b1812d12b01461c8416d52",
+                "sha256:d1b19883cd580055bd027e54c874406fe13c0dd0adec1823acbe405ebc02d4ab",
+                "sha256:ad3459e47f65a60169378b870c7c73dcacc2e19dd0e276369eeef26faf32ef4c"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-09-21T06:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:0471296e297262d28adc2bd365bbafb71fd0aa3159c64dee535fd0ab871012b8",
+            "size": 1222
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/postgres"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:08d8948628478ec11338db34cd85ce2f7be6d03378d7bac223c300c2bdd7fd98",
+        "RepoTags": [
+            "ghcr.io/gitleaks/gitleaks:v8.30.1",
+            "zricethezav/gitleaks:v8.30.1"
+        ],
+        "RepoDigests": [
+            "ghcr.io/gitleaks/gitleaks@sha256:08d8948628478ec11338db34cd85ce2f7be6d03378d7bac223c300c2bdd7fd98",
+            "zricethezav/gitleaks@sha256:08d8948628478ec11338db34cd85ce2f7be6d03378d7bac223c300c2bdd7fd98"
+        ],
+        "Created": "2026-03-24T13:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "gitleaks"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 79314944,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:90c1ca96378770d6ed534b18a8b30f0cc89ee0efaf27d9cdd1af0fa1e71b495b",
+                "sha256:28e2401f197a2c090ad4ee4cdade6fab84fdc3367c9e89d07ce42d096066fbf9",
+                "sha256:ddec2742e4d51093cb5cb6df1c06f66368faf4d1059642f9e92466251e87f470",
+                "sha256:f34d37e58a7a91cb39be397addf660ed9b69f906c18b06d379a582dca20bd634"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-03-24T13:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:08d8948628478ec11338db34cd85ce2f7be6d03378d7bac223c300c2bdd7fd98",
+            "size": 1851
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "ghcr.io/gitleaks/gitleaks"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:14a5f65bd7d9653a7556ed7bcbab9b530f107ac08a37df2593de1433104648a2",
+        "RepoTags": [
+            "acme/api:1.4.1"
+        ],
+        "RepoDigests": [
+            "acme/api@sha256:14a5f65bd7d9653a7556ed7bcbab9b530f107ac08a37df2593de1433104648a2"
+        ],
+        "Created": "2026-11-03T09:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "APP_ENV=production"
+            ],
+            "Entrypoint": [
+                "/app/api"
+            ],
+            "WorkingDir": "/app",
+            "User": "app",
+            "ExposedPorts": {
+                "8000/tcp": {}
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 662952271,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:cbcfdd557bc16ff8758662594bcda7b9f61324313add9c44842ac7c226717c8c",
+                "sha256:b2b9bb85908e5fbb8a1e01f6940056f31eb30e1e6a8692febdacf35381e2792b",
+                "sha256:ad5d537b1fe121ea4156b8835cf6e72deb07dbe0a51ea0eea4ef611e22e2951e",
+                "sha256:d7a5362cc53bb48fff5deefd97cd7a10476078fba7f70a372ae9b7c7f1c524f0"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-03T09:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:14a5f65bd7d9653a7556ed7bcbab9b530f107ac08a37df2593de1433104648a2",
+            "size": 1999
+        }
+    },
+    {
+        "Id": "sha256:1a910ecc3e19d9340c3aa6d4aa0ed3a2852218872ecd150db89669baf32e7f79",
+        "RepoTags": [
+            "rust:1"
+        ],
+        "RepoDigests": [
+            "rust@sha256:1a910ecc3e19d9340c3aa6d4aa0ed3a2852218872ecd150db89669baf32e7f79"
+        ],
+        "Created": "2026-11-05T22:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "RUSTUP_HOME=/usr/local/rustup",
+                "CARGO_HOME=/usr/local/cargo",
+                "RUST_VERSION=1.99.1"
+            ],
+            "Labels": {
+                "org.opencontainers.image.source": "https://github.com/rust-lang/docker-rust"
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 2204012544,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:5985212614028da0b4771e56cb6ec2663b6f6d231d982f6ed7ab4489c8fc7109",
+                "sha256:ed212bf2310e27feef89ae3723f7ff770d960b9688d0f904ab4d609a48467d7c",
+                "sha256:7ad56d4abbc6e6b184be0c163ffd5d236d941804d8523c9e8f4ceaaa5c3bd023"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-05T22:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:1a910ecc3e19d9340c3aa6d4aa0ed3a2852218872ecd150db89669baf32e7f79",
+            "size": 1518
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/rust"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:2151ac178ef91e2e64e29f27d636ec9fcac65ca1f3134566d49731d7c9c4d949",
+        "RepoTags": [
+            "prom/prometheus:v3.12.0"
+        ],
+        "RepoDigests": [
+            "prom/prometheus@sha256:2151ac178ef91e2e64e29f27d636ec9fcac65ca1f3134566d49731d7c9c4d949"
+        ],
+        "Created": "2026-05-23T18:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/bin/prometheus"
+            ],
+            "Cmd": [
+                "--config.file=/etc/prometheus/prometheus.yml"
+            ],
+            "User": "nobody",
+            "WorkingDir": "/prometheus",
+            "ExposedPorts": {
+                "9090/tcp": {}
+            },
+            "Volumes": {
+                "/prometheus": {}
+            },
+            "Labels": {
+                "maintainer": "The Prometheus Authors <prometheus-developers@googlegroups.com>"
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 544538624,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:92a7d5bd2d9e3f57a275addc255d895aa8d622e9d85fb63df76265455936a0cd",
+                "sha256:7eacbaaba35186ea0e499422d4aa97317eb415b9b3d53bb70c343f2c2ea008b1",
+                "sha256:dce05fa0d592f804042d50bb4ddc6b613654156d25ae4fd8d7404eb6ed0f8327"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-05-23T18:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:2151ac178ef91e2e64e29f27d636ec9fcac65ca1f3134566d49731d7c9c4d949",
+            "size": 1666
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/prom/prometheus"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:2c5dccf3d5b8abc5c397e9651e12f5eca30894ea890492809e5cf6ec702446c6",
+        "RepoTags": [
+            "python:3.12-slim"
+        ],
+        "RepoDigests": [
+            "python@sha256:2c5dccf3d5b8abc5c397e9651e12f5eca30894ea890492809e5cf6ec702446c6"
+        ],
+        "Created": "2026-11-06T02:00:00Z",
+        "Config": {},
+        "Architecture": "",
+        "Os": "",
+        "Size": 0,
+        "RootFS": {
+            "Type": ""
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-06T02:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:2c5dccf3d5b8abc5c397e9651e12f5eca30894ea890492809e5cf6ec702446c6",
+            "size": 1370
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/python"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:2e9ece22b1d54eea9a0e355c61b150de2ec9ee6da794a0246bcd2bf31a677a33",
+        "RepoTags": [
+            "redis:7-alpine"
+        ],
+        "RepoDigests": [
+            "redis@sha256:2e9ece22b1d54eea9a0e355c61b150de2ec9ee6da794a0246bcd2bf31a677a33"
+        ],
+        "Created": "2026-10-30T07:00:00Z",
+        "Config": {},
+        "Architecture": "",
+        "Os": "",
+        "Size": 0,
+        "RootFS": {
+            "Type": ""
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-30T07:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:2e9ece22b1d54eea9a0e355c61b150de2ec9ee6da794a0246bcd2bf31a677a33",
+            "size": 1185
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/redis"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:3cbe63ea0d771437d89300660f79b1ded0c7e8514e771d126a1ab1dff062efb9",
+        "RepoTags": [
+            "acme/worker:dev"
+        ],
+        "RepoDigests": [
+            "acme/worker@sha256:3cbe63ea0d771437d89300660f79b1ded0c7e8514e771d126a1ab1dff062efb9"
+        ],
+        "Created": "2026-11-16T08:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "APP_ENV=development"
+            ],
+            "Entrypoint": [
+                "/app/worker"
+            ],
+            "WorkingDir": "/app"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 158334976,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:cc6fa2b50bd09cd42646adf171726e05401aef4be6dea27591f3d20d44a6205b"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-16T08:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:3cbe63ea0d771437d89300660f79b1ded0c7e8514e771d126a1ab1dff062efb9",
+            "size": 2036
+        }
+    },
+    {
+        "Id": "sha256:4bd979e59c0e0de51e5cc491362cbc5c416233092715bd06c0e866df94ab32db",
+        "RepoTags": [
+            "acme/web@sha256:4bd979e59c0e0de51e5cc491362cbc5c416233092715bd06c0e866df94ab32db"
+        ],
+        "RepoDigests": [
+            "acme/web@sha256:4bd979e59c0e0de51e5cc491362cbc5c416233092715bd06c0e866df94ab32db"
+        ],
+        "Created": "2026-11-18T07:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/app/web"
+            ],
+            "WorkingDir": "/app"
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 76489604,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:637731988ef56e89d28e063c97081ff92c1fb18b1682031ff8a0bf925476650b",
+                "sha256:93b1fb1d9f966f51eaa43b7b38f6b924c589bb73d1c5e959682ad9620dd1c55f"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-18T07:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:4bd979e59c0e0de51e5cc491362cbc5c416233092715bd06c0e866df94ab32db",
+            "size": 2073
+        }
+    },
+    {
+        "Id": "sha256:4c0670b0730625f668cf06e7f58d7aacd8805e32a70da8799bb6bd86e0d4b94d",
+        "RepoTags": [
+            "pytorch/manylinux2_28-builder:cuda12.8"
+        ],
+        "RepoDigests": [
+            "pytorch/manylinux2_28-builder@sha256:4c0670b0730625f668cf06e7f58d7aacd8805e32a70da8799bb6bd86e0d4b94d"
+        ],
+        "Created": "2026-06-22T11:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/cuda/bin:/opt/rh/gcc-toolset-13/root/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LC_ALL=en_US.UTF-8",
+                "LANG=en_US.UTF-8"
+            ],
+            "Cmd": [
+                "/bin/bash"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 26921194755,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:28a9b04fa6e95e98134044ae77dd5165506058b17fb5443fa462e956d3ec04c0",
+                "sha256:a7ffeb591241e65000636052f4f60bed3ab0a7b52cc68d23750189cae5678a37"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-06-22T11:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:4c0670b0730625f668cf06e7f58d7aacd8805e32a70da8799bb6bd86e0d4b94d",
+            "size": 1925
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/pytorch/manylinux2_28-builder"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:4ee010f55c7d45bdc570728b08fa72134d325863bf37e82656f14e9f45e28acf",
+        "RepoTags": [
+            "busybox:latest"
+        ],
+        "RepoDigests": [
+            "busybox@sha256:4ee010f55c7d45bdc570728b08fa72134d325863bf37e82656f14e9f45e28acf"
+        ],
+        "Created": "2026-05-14T12:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "sh"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 6139453,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:d73cbcd3b78fe08125d7687293786ab7737191d24e39b2969339576f4480d1a7"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-05-14T12:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:4ee010f55c7d45bdc570728b08fa72134d325863bf37e82656f14e9f45e28acf",
+            "size": 1000
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/busybox"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:51bb0743c9abd6a61c96cd82452eee0075d947c0ab0d61cc7bda51baf99d6fb5",
+        "RepoTags": [
+            "golang:1.23"
+        ],
+        "RepoDigests": [
+            "golang@sha256:51bb0743c9abd6a61c96cd82452eee0075d947c0ab0d61cc7bda51baf99d6fb5"
+        ],
+        "Created": "2025-10-15T23:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOLANG_VERSION=1.23.12",
+                "GOPATH=/go"
+            ],
+            "WorkingDir": "/go"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 1223000064,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:cb9d8c59605e40c3b7a8878d73f5c87ce23ec63a807c3a04796db2dfd797276f",
+                "sha256:a41e2f787a2f3067404536b5b187ee6660f58025c504ea38415e6c9737345c72"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2025-10-15T23:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:51bb0743c9abd6a61c96cd82452eee0075d947c0ab0d61cc7bda51baf99d6fb5",
+            "size": 1481
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/golang"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:528ecdd381e8caacf74df07ad06989271e2405328350895148da418f0fe55e48",
+        "RepoTags": [
+            "node:22-bookworm"
+        ],
+        "RepoDigests": [
+            "node@sha256:528ecdd381e8caacf74df07ad06989271e2405328350895148da418f0fe55e48"
+        ],
+        "Created": "2026-10-11T04:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=22.23.3",
+                "YARN_VERSION=1.22.22"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "node"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 1614807040,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:d495144c3c68e87341be836f8fd6cd4b9f2128dca2f26e6c736a7faefad4a1ab"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-11T04:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:528ecdd381e8caacf74df07ad06989271e2405328350895148da418f0fe55e48",
+            "size": 1296
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/node"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:5a534982de188dcc9ac8fc02a97ca62cc4b40d9d13fa41b6a4cfb997c0d4408f",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Created": "2026-11-14T02:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 98566144,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:211b86aa1159f19b42a1be9b1c62af0dbb21b7e23a0c50dba48357fce789c230",
+                "sha256:c8ba5efb4d9731ab7187589126dada41b790ff73d7a233f8bb69dbd6f1388c1a",
+                "sha256:ede69f3dbaac4c726baa3cc64caeca6869708227cff7b9e7209e428e28cf52d0"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-14T02:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:5a534982de188dcc9ac8fc02a97ca62cc4b40d9d13fa41b6a4cfb997c0d4408f",
+            "size": 2258
+        }
+    },
+    {
+        "Id": "sha256:5d8b33c8bfe431bf733f31b726077b601528754e281b9ed9c26f86544b25ecc9",
+        "RepoTags": [
+            "debian:bookworm-slim"
+        ],
+        "RepoDigests": [
+            "debian@sha256:5d8b33c8bfe431bf733f31b726077b601528754e281b9ed9c26f86544b25ecc9"
+        ],
+        "Created": "2026-10-20T20:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "bash"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 252313600,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:ae31c9c75dda930559b34ecbcbbfc23cb7981c6aaa29c2f57751753c8544fe3a"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-20T20:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:5d8b33c8bfe431bf733f31b726077b601528754e281b9ed9c26f86544b25ecc9",
+            "size": 1592
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/debian"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:67e31d2ef8ff7944979fc99dc0dc216a97bc5d9fc8dd2d740e713b355c0d6026",
+        "RepoTags": [
+            "ubuntu:24.04"
+        ],
+        "RepoDigests": [
+            "ubuntu@sha256:67e31d2ef8ff7944979fc99dc0dc216a97bc5d9fc8dd2d740e713b355c0d6026"
+        ],
+        "Created": "2026-10-29T21:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "/bin/bash"
+            ],
+            "Labels": {
+                "org.opencontainers.image.version": "24.04"
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 137428992,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:82f1abbc66def666f4965102d9801a35b27c039291ecd4e6464b260c8a720875",
+                "sha256:ce1c7fde014858a877c6e47ec39a966df6c643352511b8e89dbea04f1bf13daf",
+                "sha256:7cf832f94dc5d3c334a57b7256d7d6792cb91a5cd12126e2ed5af6217e6ce389",
+                "sha256:5d2fea08988e3e63410ddd2bc71e5f7b0f0ea2ae5d804af52f827eeaad2f3aac"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-29T21:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:67e31d2ef8ff7944979fc99dc0dc216a97bc5d9fc8dd2d740e713b355c0d6026",
+            "size": 1555
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/ubuntu"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:6b05247ba1bdcb7d84a29e72af048a146f0943f78c88827a45be719e392e550b",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Created": "2026-11-17T03:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 412000256,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:a68b298fd4916a5ba456a9488ba57ee26da4450c3e3b26ac60d7390c2229b5e7",
+                "sha256:429f94dada572f0340c08044f42b75339fcefc0f3a22d67d5281dcc4460d47d7"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-17T03:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:6b05247ba1bdcb7d84a29e72af048a146f0943f78c88827a45be719e392e550b",
+            "size": 2221
+        }
+    },
+    {
+        "Id": "sha256:7715ea6ab99920cd379ae0b6895fe4bdc9dcfbcfb240d53993bde8a84305ab00",
+        "RepoTags": [
+            "traefik/whoami:latest"
+        ],
+        "RepoDigests": [
+            "traefik/whoami@sha256:7715ea6ab99920cd379ae0b6895fe4bdc9dcfbcfb240d53993bde8a84305ab00"
+        ],
+        "Created": "2026-07-22T15:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/whoami"
+            ],
+            "ExposedPorts": {
+                "80/tcp": {}
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 17825792,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:0c9e1660edffb0ea2c25282be6fa478a9325af4d1158ab75b29685ecfd81d1f5",
+                "sha256:b32228d9cfe9959783e87180f291a45d9d80928c52fd19cf23067048a39ce022"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-07-22T15:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:7715ea6ab99920cd379ae0b6895fe4bdc9dcfbcfb240d53993bde8a84305ab00",
+            "size": 1777
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/traefik/whoami"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:777db5eead12494d34965431920a1bd7a6bf46f11be097c63db77b1b6358a8db",
+        "RepoTags": [
+            "acme/api:1.4.2"
+        ],
+        "RepoDigests": [
+            "acme/api@sha256:777db5eead12494d34965431920a1bd7a6bf46f11be097c63db77b1b6358a8db"
+        ],
+        "Created": "2026-11-10T10:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "APP_ENV=production"
+            ],
+            "Entrypoint": [
+                "/app/api"
+            ],
+            "WorkingDir": "/app",
+            "User": "app",
+            "ExposedPorts": {
+                "8000/tcp": {}
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 663228866,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:1ec675e7096c660b273c1b3686f795dee673a5267c0331cbff27b74bf07cd63f",
+                "sha256:11920ea9fce2a0d60a191712e3034c9dee95f0e9e71eda6453203e72ebe4b9cb",
+                "sha256:0999efec431b2ed9c4a24fdc0dd30d717bfe675dcab41dfd533a734467727a18"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-10T10:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:777db5eead12494d34965431920a1bd7a6bf46f11be097c63db77b1b6358a8db",
+            "size": 1962
+        }
+    },
+    {
+        "Id": "sha256:90cb6acec6db524ab06638a309662a277b4c6e75a1bcb37b9961d81ae31f45bd",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Created": "2026-10-25T00:00:00Z",
+        "Config": {},
+        "Architecture": "",
+        "Os": "",
+        "Size": 0,
+        "RootFS": {
+            "Type": ""
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-25T00:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:90cb6acec6db524ab06638a309662a277b4c6e75a1bcb37b9961d81ae31f45bd",
+            "size": 2332
+        }
+    },
+    {
+        "Id": "sha256:945e6454d6aaa71a16ae51b2491a352c9f7e39ab261422bd42695dd7a51431e7",
+        "RepoTags": [
+            "mongodb/mongodb-atlas-local:8.0.6"
+        ],
+        "RepoDigests": [
+            "mongodb/mongodb-atlas-local@sha256:945e6454d6aaa71a16ae51b2491a352c9f7e39ab261422bd42695dd7a51431e7"
+        ],
+        "Created": "2026-10-15T12:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "mongod"
+            ],
+            "ExposedPorts": {
+                "27017/tcp": {}
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 1999634432,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:1cbc379302f8898684739c66f402134455f18fc4042e0e351e9f74a91894bca9"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-15T12:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:945e6454d6aaa71a16ae51b2491a352c9f7e39ab261422bd42695dd7a51431e7",
+            "size": 1888
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/mongodb/mongodb-atlas-local"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:95eecf3e07782cc2b7ecc6ac4f86fdbe3124cb54d32be3cb983786cb4e37ed70",
+        "RepoTags": [
+            "redis:7"
+        ],
+        "RepoDigests": [
+            "redis@sha256:95eecf3e07782cc2b7ecc6ac4f86fdbe3124cb54d32be3cb983786cb4e37ed70"
+        ],
+        "Created": "2026-10-16T08:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOSU_VERSION=1.17",
+                "REDIS_VERSION=7.4.12"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "redis-server"
+            ],
+            "WorkingDir": "/data",
+            "ExposedPorts": {
+                "6379/tcp": {}
+            },
+            "Volumes": {
+                "/data": {}
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 190412800,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:cf05a6f9be897cd7cbf910d87dcd71ce149734a90c5adce9860af37d29a7278c"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-16T08:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:95eecf3e07782cc2b7ecc6ac4f86fdbe3124cb54d32be3cb983786cb4e37ed70",
+            "size": 1148
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/redis"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:96293c4e4fa27f7d2c1c85cb9f7445619ab976d1982957c67b4ccbd071e3e525",
+        "RepoTags": [
+            "prom/prometheus@sha256:96293c4e4fa27f7d2c1c85cb9f7445619ab976d1982957c67b4ccbd071e3e525"
+        ],
+        "RepoDigests": [
+            "prom/prometheus@sha256:96293c4e4fa27f7d2c1c85cb9f7445619ab976d1982957c67b4ccbd071e3e525"
+        ],
+        "Created": "2026-03-04T17:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/bin/prometheus"
+            ],
+            "User": "nobody",
+            "WorkingDir": "/prometheus"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 364101632,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:c669bdbeaf3e2532406138444efbdd733881d83561f7276aff1db6fbaed75673",
+                "sha256:f1daef6440f327ec573889d42148a16db373acf026e3d6029736b24c0f3f97ce",
+                "sha256:271ee516ef12f7576a8bc0a30f895e48ea630fc55924f8882136dd5314455c18",
+                "sha256:23e94449a8f617ee037d94df01dc3624ce3743a5cf20c8f22656d34b405892e2"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-03-04T17:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:96293c4e4fa27f7d2c1c85cb9f7445619ab976d1982957c67b4ccbd071e3e525",
+            "size": 1703
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/prom/prometheus"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:9ed976d99703bd95a942ffac6e8d28e37ee5553455eec856cdf6118d5356fc2c",
+        "RepoTags": [
+            "traefik:v3.6"
+        ],
+        "RepoDigests": [
+            "traefik@sha256:9ed976d99703bd95a942ffac6e8d28e37ee5553455eec856cdf6118d5356fc2c"
+        ],
+        "Created": "2026-04-23T16:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/entrypoint.sh"
+            ],
+            "Cmd": [
+                "traefik"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 222502912,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:6f851f17c4f408d67d4675fa5d323c449a80c514ea143b5736e7849dd5ebd17d"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-04-23T16:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:9ed976d99703bd95a942ffac6e8d28e37ee5553455eec856cdf6118d5356fc2c",
+            "size": 1740
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/traefik"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:a04e478ae0e7279b9ee1d0fc9b7e6d34607beca07843f37743f8b482ffdbe194",
+        "RepoTags": [
+            "acme/web@sha256:a04e478ae0e7279b9ee1d0fc9b7e6d34607beca07843f37743f8b482ffdbe194"
+        ],
+        "RepoDigests": [
+            "acme/web@sha256:a04e478ae0e7279b9ee1d0fc9b7e6d34607beca07843f37743f8b482ffdbe194"
+        ],
+        "Created": "2026-11-13T06:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/app/web"
+            ],
+            "WorkingDir": "/app"
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 76125782,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:fd1d02216b1ea65eb112ce77e367090339cab0720ab21db8c42ef33b2eca81a1",
+                "sha256:26fb1df89630170c70af6aae7df3cb32636740662d038737dc43e453a2332803",
+                "sha256:b9886145c56f09e1c7cb362db88b70296c4b755d69ad44d784a79908fae40a2b"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-13T06:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:a04e478ae0e7279b9ee1d0fc9b7e6d34607beca07843f37743f8b482ffdbe194",
+            "size": 2110
+        }
+    },
+    {
+        "Id": "sha256:a6a4c87e28f3ad34a4d4842f0b7dffd8c6f718382175febc8a7734587c9d3bae",
+        "RepoTags": [
+            "alpine:3.20"
+        ],
+        "RepoDigests": [
+            "alpine@sha256:a6a4c87e28f3ad34a4d4842f0b7dffd8c6f718382175febc8a7734587c9d3bae"
+        ],
+        "Created": "2026-07-23T09:00:00Z",
+        "Config": {},
+        "Architecture": "",
+        "Os": "",
+        "Size": 0,
+        "RootFS": {
+            "Type": ""
+        },
+        "Metadata": {
+            "LastTagTime": "2026-07-23T09:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:a6a4c87e28f3ad34a4d4842f0b7dffd8c6f718382175febc8a7734587c9d3bae",
+            "size": 1111
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/alpine"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:c5680f829b4ee5da5f1f359fbadcb986716588b07d3b2ece482f2c48c130cf9a",
+        "RepoTags": [
+            "demo-app:local"
+        ],
+        "RepoDigests": [
+            "demo-app@sha256:c5680f829b4ee5da5f1f359fbadcb986716588b07d3b2ece482f2c48c130cf9a"
+        ],
+        "Created": "2026-11-15T05:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "python3",
+                "-m",
+                "demo_app"
+            ],
+            "WorkingDir": "/srv"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 798031872,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:e18d2e777a8a8de45e1ce26eff4ef7f65f9c531fbd202292393461f1b91da717",
+                "sha256:95c158bcb832ff74eba2aab7257b047079e477809359b0bad54d7213d2236b1e",
+                "sha256:fe2281fd0a33fa25def6b55dce94fdd5e643d1a42bd2cb0ac06ce5ca003660f7",
+                "sha256:87804ad70dad28b69c920ed87c9cfe87c37850859513c6f01eca1ac05c85e9bb"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-15T05:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:c5680f829b4ee5da5f1f359fbadcb986716588b07d3b2ece482f2c48c130cf9a",
+            "size": 2147
+        }
+    },
+    {
+        "Id": "sha256:c7a3fca67e534bf7085907268b0bcb596f3d71f33efcdc77250beeb759c3f622",
+        "RepoTags": [
+            "node:22-bookworm-slim"
+        ],
+        "RepoDigests": [
+            "node@sha256:c7a3fca67e534bf7085907268b0bcb596f3d71f33efcdc77250beeb759c3f622"
+        ],
+        "Created": "2026-10-11T03:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=22.23.3",
+                "YARN_VERSION=1.22.22"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "node"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 343687168,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:8523d8ff090095580317b7fb91f9aee2e4894712c8cd3b4b52f06cb9f133fc0e",
+                "sha256:81f13ab79dffea5e609bef20f48bd00affe240a4c24f90f4bd345e2f0fda3a06"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-11T03:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:c7a3fca67e534bf7085907268b0bcb596f3d71f33efcdc77250beeb759c3f622",
+            "size": 1333
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/node"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:cd87f82f1c7a7ecb4c553855c8b71f3b6df57c56749feea17cb69ef877fff3be",
+        "RepoTags": [],
+        "RepoDigests": [],
+        "Created": "2026-11-08T01:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 220200960,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:679ed4bf728cd802245153126daff8647b983399ea77c7b4fb2f66c8fa5500a6",
+                "sha256:6657a7371b41b543620e4b1498be87df45c23c381530b1d79a009ec12a4d5062",
+                "sha256:8e1fd6e520535af9252e2e29817c08cea97181962822383594961fc0f6eac598",
+                "sha256:82e4873ec0b5992113dde8a7b52bc8332dac3bca4c67f7d1e823f8a88b582502"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-08T01:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:cd87f82f1c7a7ecb4c553855c8b71f3b6df57c56749feea17cb69ef877fff3be",
+            "size": 2295
+        }
+    },
+    {
+        "Id": "sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec",
+        "RepoTags": [
+            "python@sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec"
+        ],
+        "RepoDigests": [
+            "python@sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec"
+        ],
+        "Created": "2026-10-01T00:00:00Z",
+        "Config": {},
+        "Architecture": "",
+        "Os": "",
+        "Size": 0,
+        "RootFS": {
+            "Type": ""
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-01T00:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:cf6122324658faac07c04797045e66961910a55f4217fa67090736b43287b6ec",
+            "size": 1444
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/python"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:d791ff67639bd9b9278f25285051de7a4a0901693a3ba34e22f6c1d8a8658e3d",
+        "RepoTags": [
+            "nginx:1.27"
+        ],
+        "RepoDigests": [
+            "nginx@sha256:d791ff67639bd9b9278f25285051de7a4a0901693a3ba34e22f6c1d8a8658e3d"
+        ],
+        "Created": "2026-09-01T05:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NGINX_VERSION=1.27.5"
+            ],
+            "Entrypoint": [
+                "/docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "nginx",
+                "-g",
+                "daemon off;"
+            ],
+            "ExposedPorts": {
+                "80/tcp": {}
+            },
+            "StopSignal": "SIGQUIT",
+            "Labels": {
+                "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+            }
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 197632000,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:fcd4e296584ec1c5dbb0cce29ecd4617b3d49ddcc9c30111fcdcf4e16a7a89a7",
+                "sha256:e2beaece378b17098f3cbc281a270f4e72d1263f47108c8af1e84673cdc5f13e",
+                "sha256:22ec68b21ca696abcc306997e1b8c6f25dad8880a5bbf8600cc0028e881ab642",
+                "sha256:788c3a5c805325cd57a7ec4a592e083c06e06f58a1eba27a0c3f8f1d9beb3fff"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-09-01T05:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:d791ff67639bd9b9278f25285051de7a4a0901693a3ba34e22f6c1d8a8658e3d",
+            "size": 1259
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/nginx"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:e21b0c2ea693fc982aeca1d5e43773f5f16281dc1975ec7186f79a8be02d9f8a",
+        "RepoTags": [
+            "curlimages/curl:latest"
+        ],
+        "RepoDigests": [
+            "curlimages/curl@sha256:e21b0c2ea693fc982aeca1d5e43773f5f16281dc1975ec7186f79a8be02d9f8a"
+        ],
+        "Created": "2026-10-20T14:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Entrypoint": [
+                "/entrypoint.sh"
+            ],
+            "Cmd": [
+                "curl"
+            ],
+            "User": "curl_user"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 39207936,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:2fa0a2a2ad7967a8ecb60dff749d4ea42c9257d1eb57e543122cf1f1c54ee68f",
+                "sha256:24e68f473980d9db5a6f9c715fd46f89694256060484472600755e2dccf16d9d",
+                "sha256:e88c1103e10fcf84298d7c74b5abb0cd7274d5c5008531676b9fbef3147a3c57"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-20T14:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:e21b0c2ea693fc982aeca1d5e43773f5f16281dc1975ec7186f79a8be02d9f8a",
+            "size": 1814
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/curlimages/curl"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:e85318f9591b04260b17a6a0dc8ffbd92d5c4dba17e3d98424a602ad2a829f57",
+        "RepoTags": [
+            "python:3.12-slim-bookworm"
+        ],
+        "RepoDigests": [
+            "python@sha256:e85318f9591b04260b17a6a0dc8ffbd92d5c4dba17e3d98424a602ad2a829f57"
+        ],
+        "Created": "2026-11-06T01:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "PYTHON_VERSION=3.12.12"
+            ],
+            "Cmd": [
+                "python3"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 210665472,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:c97c0ca16388d13b4d85efdf925bdf59952c4794f68d44484f84f2368c75403b",
+                "sha256:92763e4714be8d445d4d657cb09c3b8d78d7e30a29194e1d910dc9a6d2619a6d",
+                "sha256:35e842385008151bc437311491468dccd9bd4c9e4cdfb54ef3e72aba9c1f6b29",
+                "sha256:15f22e0847a3d5ebbdc563ac5636cb74684bd086c48a89b95536a2423927622f"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-06T01:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:e85318f9591b04260b17a6a0dc8ffbd92d5c4dba17e3d98424a602ad2a829f57",
+            "size": 1407
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/python"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:f9042c0f2d7753edc2cf2a5fec1b98819337d2417ef82a3229538331082f6f8e",
+        "RepoTags": [
+            "demo-app:amd64"
+        ],
+        "RepoDigests": [
+            "demo-app@sha256:f9042c0f2d7753edc2cf2a5fec1b98819337d2417ef82a3229538331082f6f8e"
+        ],
+        "Created": "2026-11-15T04:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "python3",
+                "-m",
+                "demo_app"
+            ],
+            "WorkingDir": "/srv"
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 812646400,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:f70f583edfbf253a9d924bf3bb3d30585769cac8adcdf33b14897d64d28661a6"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-15T04:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:f9042c0f2d7753edc2cf2a5fec1b98819337d2417ef82a3229538331082f6f8e",
+            "size": 2184
+        }
+    },
+    {
+        "Id": "sha256:fa309db360397c8ba68069d048d851f02add7aa6a1c4357a1d2b9c7caafff591",
+        "RepoTags": [
+            "alpine:latest"
+        ],
+        "RepoDigests": [
+            "alpine@sha256:fa309db360397c8ba68069d048d851f02add7aa6a1c4357a1d2b9c7caafff591"
+        ],
+        "Created": "2026-11-05T10:00:00Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Cmd": [
+                "/bin/sh"
+            ]
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 14612480,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:037e49c63aa160bcaace1b6677ad4b71770bd950c17fdfa65fd44d5d0ea7bd5f",
+                "sha256:89084f91dafba7757c3471c1fc54312daa0d2202baca4461aad9878e06c2a3e4",
+                "sha256:5236cd0263201261a1e83d0ce5dd4a88f4c098dcaae2031e047eda3be5fa61d0"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-05T10:05:00.123456789Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:fa309db360397c8ba68069d048d851f02add7aa6a1c4357a1d2b9c7caafff591",
+            "size": 1074
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/alpine"
+                }
+            ]
+        }
+    }
+]

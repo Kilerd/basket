@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Blocks commits that would publish credentials, personal data or private words (AGENTS.md §1).
+exec "$(git rev-parse --show-toplevel)/scripts/check-leaks.sh" --staged

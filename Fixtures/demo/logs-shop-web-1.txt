@@ -1,0 +1,5 @@
+/docker-entrypoint.sh: Configuration complete; ready for start up
+2026/11/20 08:03:13 [notice] 1#1: nginx/1.27.3
+2026/11/20 08:03:13 [notice] 1#1: start worker processes
+192.168.66.1 - - [20/Nov/2026:08:05:41 +0000] "GET / HTTP/1.1" 200 615 "-" "Mozilla/5.0"
+192.168.66.1 - - [20/Nov/2026:08:05:42 +0000] "GET /api/products HTTP/1.1" 200 1840 "-" "Mozilla/5.0"
