@@ -1,7 +1,13 @@
 import Foundation
 
-/// One child process with stdout and stderr drained concurrently through `DispatchIO`, so a chatty
+/// One child process with stdout and stderr drained concurrently (a read source per pipe), so a chatty
 /// command can never deadlock on a full pipe. All mutable state lives on `queue`.
+///
+/// Completion is reported only after both pipes were drained, normally at EOF. A grandchild that
+/// inherited the pipes (a background job) can keep them open after the child exited; then, after
+/// `Timing.grandchildGrace`, the pipes are read up to what they hold at that moment — all of the
+/// child's own output is in there once it has exited — and closed. A reader that runs late (a loaded
+/// machine) delays completion; it never loses output.
 final class ProcessExecution: @unchecked Sendable {
     enum Stream: Sendable { case stdout, stderr }
 
@@ -11,13 +17,45 @@ final class ProcessExecution: @unchecked Sendable {
         var wasTerminated: Bool
     }
 
+    struct Timing: Sendable {
+        /// How long the pipes may stay open after the child exited; only a grandchild can hold them.
+        var grandchildGrace: DispatchTimeInterval = .seconds(1)
+        /// Test hook: start reading this late, as a reader starved on a loaded machine would.
+        var readerStartDelay: DispatchTimeInterval?
+    }
+
+    /// The read end of one pipe; `source` exists once reading started.
+    private struct Reader {
+        /// Owns the descriptor; closed when the stream is.
+        let handle: FileHandle
+        let descriptor: Int32
+        var source: DispatchSourceRead?
+
+        init(_ handle: FileHandle) {
+            self.handle = handle
+            descriptor = handle.fileDescriptor
+            // An empty pipe answers EAGAIN instead of blocking the queue.
+            _ = fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL) | O_NONBLOCK)
+        }
+    }
+
+    /// At most this much is read per wake-up, so with a fast writer the other pipe and timers get turns.
+    private static let readLimitPerEvent = 1 << 20
+    /// `FIONREAD` (`_IOR('f', 127, int)`), a macro Swift can't import: bytes waiting in a pipe.
+    private static let fionread =
+        UInt(IOC_OUT) | UInt(MemoryLayout<Int32>.size & Int(IOCPARM_MASK)) << 16 | UInt(UInt8(ascii: "f")) << 8 | 127
+
     private let process = Process()
     private let queue: DispatchQueue
+    private let timing: Timing
+    private let deliveryInterval: DispatchTimeInterval?
     private let onOutput: @Sendable (Stream, Data) -> Void
     private var onComplete: (@Sendable (Completion) -> Void)?
 
-    private var channels: [DispatchIO] = []
+    private var readers: [Stream: Reader] = [:]
+    /// Counted rather than `readers.count`: the child can exit before the readers exist.
     private var openStreams = 2
+    private var readBuffer = [UInt8](repeating: 0, count: 64 * 1024)
     /// Coalescing (`deliveryInterval`): output waiting per stream, and when each was last handed over.
     private var pendingOutput: [Stream: Data] = [:]
     private var lastDelivery: [Stream: DispatchTime] = [:]
@@ -30,6 +68,8 @@ final class ProcessExecution: @unchecked Sendable {
 
     /// Test hook: sees every execution launched in the current task (lets tests check it is released).
     @TaskLocal static var launchObserver: (@Sendable (ProcessExecution) -> Void)?
+    /// Read when an execution starts; tests shorten the grace or starve the readers.
+    @TaskLocal static var timing = Timing()
 
     /// Every execution whose process may still run, so quitting Basket can stop them: children of a
     /// GUI app are not terminated when it exits.
@@ -60,6 +100,8 @@ final class ProcessExecution: @unchecked Sendable {
         onComplete: @escaping @Sendable (Completion) -> Void
     ) throws {
         queue = DispatchQueue(label: "basket.process.\(executableURL.lastPathComponent)")
+        timing = Self.timing
+        self.deliveryInterval = deliveryInterval
         self.onOutput = onOutput
         self.onComplete = onComplete
 
@@ -81,10 +123,12 @@ final class ProcessExecution: @unchecked Sendable {
 
         queue.sync {
             keepAlive = self
-            channels = [
-                makeChannel(stdoutPipe.fileHandleForReading, stream: .stdout, interval: deliveryInterval),
-                makeChannel(stderrPipe.fileHandleForReading, stream: .stderr, interval: deliveryInterval),
-            ]
+            readers = [.stdout: Reader(stdoutPipe.fileHandleForReading), .stderr: Reader(stderrPipe.fileHandleForReading)]
+            if let delay = timing.readerStartDelay {
+                queue.asyncAfter(deadline: .now() + delay) { [weak self] in self?.startReading() }
+            } else {
+                startReading()
+            }
         }
         Self.liveLock.withLock { Self.live.add(self) }
         Self.launchObserver?(self)
@@ -105,30 +149,75 @@ final class ProcessExecution: @unchecked Sendable {
         }
     }
 
-    private func makeChannel(_ handle: FileHandle, stream: Stream, interval: DispatchTimeInterval?) -> DispatchIO {
-        // The cleanup handler keeps the FileHandle (which owns the fd) alive until the channel closes.
-        let channel = DispatchIO(type: .stream, fileDescriptor: handle.fileDescriptor, queue: queue) { _ in
-            _ = handle
+    // MARK: Reading
+
+    /// Watches the pipes still open. Event-driven: a silent pipe costs no wake-ups.
+    private func startReading() {
+        for (stream, reader) in readers where reader.source == nil {
+            let source = DispatchSource.makeReadSource(fileDescriptor: reader.descriptor, queue: queue)
+            source.setEventHandler { [weak self] in self?.read(stream, upTo: Self.readLimitPerEvent) }
+            // The descriptor is closed only once the source stopped watching it.
+            let handle = reader.handle
+            source.setCancelHandler { try? handle.close() }
+            readers[stream]?.source = source
+            source.activate()
         }
-        channel.setLimit(lowWater: 1)
-        // Without a high-water mark every read allocates a multi-megabyte buffer, which dominates the
-        // cost of a chatty stream (one read per line written by `logs --follow`).
-        channel.setLimit(highWater: 64 * 1024)
-        // Reads stay event-driven (no channel interval: its timer fires ~20×/s per stream even while a
-        // followed log is silent); with `interval` the output is coalesced and handed over at most
-        // that often, via a one-shot timer that only exists while output is waiting.
-        channel.read(offset: 0, length: Int.max, queue: queue) { [weak self] done, data, _ in
-            guard let self else { return }
-            if let data, !data.isEmpty {
-                if let interval { coalesce(Data(data), stream: stream, interval: interval) } else { onOutput(stream, Data(data)) }
-            }
-            if done {
-                deliverPending(stream)
-                channel.close()
-                streamClosed()
+    }
+
+    /// Reads up to `limit` bytes of what `stream`'s pipe holds now and hands them over; at EOF (every
+    /// copy of the write end is closed) the stream is closed.
+    private func read(_ stream: Stream, upTo limit: Int) {
+        guard let descriptor = readers[stream]?.descriptor else { return }
+        var remaining = limit
+        while remaining > 0 {
+            let count = readBuffer.withUnsafeMutableBytes { Darwin.read(descriptor, $0.baseAddress, min($0.count, remaining)) }
+            if count > 0 {
+                remaining -= count
+                deliver(Data(readBuffer[..<count]), from: stream)
+            } else if count < 0, errno == EINTR {
+                continue
+            } else if count < 0, errno == EAGAIN {
+                return  // empty for now; the source fires again when more arrives
+            } else {
+                closeStream(stream)  // EOF, or a read error: nothing more will come
+                return
             }
         }
-        return channel
+    }
+
+    private func closeStream(_ stream: Stream) {
+        guard let reader = readers.removeValue(forKey: stream) else { return }
+        if let source = reader.source { source.cancel() } else { try? reader.handle.close() }
+        deliverPending(stream)
+        openStreams -= 1
+        finishIfDone()
+    }
+
+    private func processExited(_ status: Int32) {
+        exitCode = status
+        finishIfDone()
+        guard !completed else { return }
+        // Everything the child wrote is in the pipes now and EOF follows once it has been read, unless a
+        // grandchild inherited the pipes and keeps them open. Don't wait for that forever.
+        queue.asyncAfter(deadline: .now() + timing.grandchildGrace) { [weak self] in self?.stopWaitingForGrandchildren() }
+    }
+
+    /// Reads what the pipes hold right now (all of the child's own output, however late the readers
+    /// ran) and closes them, leaving behind a grandchild that still holds them open.
+    private func stopWaitingForGrandchildren() {
+        for stream in [Stream.stdout, .stderr] {
+            guard let reader = readers[stream] else { continue }
+            var waiting: Int32 = 0
+            let readable = ioctl(reader.descriptor, Self.fionread, &waiting) == 0 ? Int(waiting) : Self.readLimitPerEvent
+            if readable > 0 { read(stream, upTo: readable) }
+            closeStream(stream)  // no-op if the read reached EOF
+        }
+    }
+
+    // MARK: Delivery
+
+    private func deliver(_ data: Data, from stream: Stream) {
+        if let deliveryInterval { coalesce(data, stream: stream, interval: deliveryInterval) } else { onOutput(stream, data) }
     }
 
     private func coalesce(_ data: Data, stream: Stream, interval: DispatchTimeInterval) {
@@ -150,25 +239,6 @@ final class ProcessExecution: @unchecked Sendable {
         guard let data = pendingOutput.removeValue(forKey: stream), !data.isEmpty else { return }
         lastDelivery[stream] = .now()
         onOutput(stream, data)
-    }
-
-    private func streamClosed() {
-        openStreams -= 1
-        finishIfDone()
-    }
-
-    private func processExited(_ status: Int32) {
-        exitCode = status
-        finishIfDone()
-        // A grandchild may inherit the pipes and keep them open; don't wait for it forever.
-        queue.asyncAfter(deadline: .now() + 1) { [self] in
-            guard !completed else { return }
-            channels.forEach { $0.close(flags: .stop) }
-            deliverPending(.stdout)
-            deliverPending(.stderr)
-            openStreams = 0
-            finishIfDone()
-        }
     }
 
     private func finishIfDone() {
