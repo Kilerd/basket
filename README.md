@@ -83,7 +83,7 @@ Available in `0.0.1`:
   identifier, and the UI is tested through the accessibility tree; see
   [How the UI is tested](#how-the-ui-is-tested).
 
-Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes, notarized releases and
+Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes and
 optional Docker API compatibility. See the
 [feature map](docs/EVOLUTION.md#orbstack--basket-feature-map) and the open issues.
 
@@ -107,8 +107,14 @@ optional Docker API compatibility. See the
   Start the container system from Basket's Overview (or with `container system start`). Basket
   looks for the CLI in the usual Homebrew locations. You can also choose the path in Settings.
 
-There are no prebuilt releases yet. Build from source as described below. Signed release builds
-will be published on the [Releases](https://github.com/Kilerd/basket/releases) page.
+## Install
+
+Download `Basket-X.Y.Z.dmg` from the [latest release](https://github.com/Kilerd/basket/releases/latest),
+open it and drag Basket to Applications. Releases are signed with a Developer ID, notarized by
+Apple, and carry build provenance attestations; `SHA256SUMS` lets you check the download
+([how](docs/RELEASING.md#verifying-a-download)). Basket then keeps itself up to date: it checks
+daily (Settings ▸ Updates) and installs only updates whose Ed25519 signature and notarized code
+signature check out ([docs/updates.md](docs/updates.md)). Or build from source as described below.
 
 ## Build from source
 
