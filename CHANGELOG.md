@@ -9,34 +9,6 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
-### Added
-
-- Signed in-app updates: Basket checks GitHub Releases a minute after launch and then daily
-  (Settings ▸ Updates, on by default) or on “Check for Updates…”, shows the release notes, and
-  installs a new version only after its SHA-256, Ed25519 signature (from any of the app's trusted
-  keys, so the key can be rotated), bundle id, version and notarized Developer ID code signature
-  all check out. The code signature is checked again right before and right after the app is
-  replaced, and the old copy is put back if either check fails; otherwise it goes to the Trash.
-  Disabled, with the reason, for ad-hoc builds and apps that can't replace themselves.
-- Release workflow (`.github/workflows/release.yml`): semver releases from a `vX.Y.Z` tag the
-  maintainer pushes after a release pull request (`scripts/release-prep.sh`), built on GitHub's
-  runners and published with a signed, notarized DMG, the update zip, `latest.json` for in-app
-  updates, `SHA256SUMS` and build provenance attestations. Signing happens in one job of the
-  protected `release` environment; the update signature is checked against the keys the previous
-  release trusts; the release is published only while its tag still points at the built commit.
-  Dry runs publish nothing, never use the update signing key and keep reports only. Actions are
-  pinned by commit. See `docs/RELEASING.md`.
-
-### Fixed
-
-- Output of `container` commands could go missing on a heavily loaded Mac (empty error messages,
-  lost log and progress lines): a command's stdout and stderr are now read to the end before it
-  counts as finished. When a background process it started keeps the output open, Basket stops
-  waiting after 1 s but still keeps everything the command itself wrote (#2).
-- Compose: restarting a project restarts its services one at a time in dependency order, so a
-  service that fails to start no longer leaves the others stopped; services started with `--rm`
-  are skipped, and the banner lists what failed or was skipped (#1).
-
 ## [0.0.1] - 2026-11-20
 
 The first public version.
@@ -78,6 +50,21 @@ The first public version.
 - Open-source project setup: README, contributing guide, code of conduct, security policy,
   issue and PR templates, CI (build, tests, self-test, leak scan), Dependabot for GitHub
   Actions, CODEOWNERS. Licensed under Apache-2.0.
+- Signed in-app updates: Basket checks GitHub Releases a minute after launch and then daily
+  (Settings ▸ Updates, on by default) or on “Check for Updates…”, shows the release notes, and
+  installs a new version only after its SHA-256, Ed25519 signature (from any of the app's trusted
+  keys, so the key can be rotated), bundle id, version and notarized Developer ID code signature
+  all check out. The code signature is checked again right before and right after the app is
+  replaced, and the old copy is put back if either check fails; otherwise it goes to the Trash.
+  Disabled, with the reason, for ad-hoc builds and apps that can't replace themselves.
+- Release workflow (`.github/workflows/release.yml`): semver releases from a `vX.Y.Z` tag the
+  maintainer pushes after a release pull request (`scripts/release-prep.sh`), built on GitHub's
+  runners and published with a signed, notarized DMG, the update zip, `latest.json` for in-app
+  updates, `SHA256SUMS` and build provenance attestations. Signing happens in one job of the
+  protected `release` environment; the update signature is checked against the keys the previous
+  release trusts; the release is published only while its tag still points at the built commit.
+  Dry runs publish nothing, never use the update signing key and keep reports only. Actions are
+  pinned by commit. See `docs/RELEASING.md`.
 
 ### Security
 
