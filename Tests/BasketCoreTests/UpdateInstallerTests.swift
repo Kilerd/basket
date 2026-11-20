@@ -1,17 +1,64 @@
 import Foundation
+import Security
 import Testing
 @testable import BasketCore
 
 @Suite("Update code signature and location")
 struct UpdateTrustTests {
-    @Test func requirementStringNamesBundleAndTeam() throws {
-        #expect(try CodeSignature.requirement(teamID: "ABCDE12345")
-                == #"anchor apple generic and identifier "dev.basket.app" and certificate leaf[subject.OU] = "ABCDE12345""#)
+    static let developerID = #"anchor apple generic and identifier "dev.basket.app" and certificate leaf[subject.OU] = "ABCDE12345""#
+        + " and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"
+
+    @Test func requirementNeedsANotarizedDeveloperIDAppOfTheTeam() throws {
+        #expect(try CodeSignature.requirement(teamID: "ABCDE12345") == Self.developerID + " and notarized")
+        #expect(try CodeSignature.requirementAllowingUnnotarized(teamID: "ABCDE12345") == Self.developerID)
+    }
+
+    @Test func requirementsCompile() throws {
+        for text in [try CodeSignature.requirement(teamID: "ABCDE12345"),
+                     try CodeSignature.requirementAllowingUnnotarized(teamID: "ABCDE12345")] {
+            var requirement: SecRequirement?
+            #expect(SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, "\(text)")
+            #expect(requirement != nil)
+        }
     }
 
     @Test(arguments: ["", "abcde12345", "ABCDE1234", "ABCDE123456", #"ABCDE1234""#, "ABCDE 1234", "ABCDÉ12345"])
     func rejectsMalformedTeams(_ team: String) {
         #expect(throws: UpdateError.self) { try CodeSignature.requirement(teamID: team) }
+    }
+
+    @Test(arguments: ["", #"dev.basket.app" or anchor apple"#, "dev basket"])
+    func rejectsMalformedIdentifiers(_ identifier: String) {
+        #expect(throws: UpdateError.self) { try CodeSignature.requirement(teamID: "ABCDE12345", identifier: identifier) }
+    }
+
+    /// Opt-in, against real apps on this Mac (their team and bundle id stand in for Basket's):
+    /// `BASKET_TEST_NOTARIZED_APP=<a notarized Developer ID .app>` must pass,
+    /// `BASKET_TEST_UNNOTARIZED_APP=<a Developer ID .app that was never notarized>` (e.g.
+    /// `scripts/build-app.sh release` with a Developer ID identity) must fail, and pass without
+    /// `notarized`.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["BASKET_TEST_NOTARIZED_APP"] != nil))
+    func notarizedDeveloperIDAppsPass() throws {
+        let app = URL(fileURLWithPath: ProcessInfo.processInfo.environment["BASKET_TEST_NOTARIZED_APP"]!)
+        let info = CodeSignature.info(at: app)
+        let team = try #require(info.teamID)
+        let identifier = try #require(info.identifier)
+        try CodeSignature.verify(bundle: app, requirement: CodeSignature.requirement(teamID: team, identifier: identifier))
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["BASKET_TEST_UNNOTARIZED_APP"] != nil))
+    func unnotarizedDeveloperIDAppsFail() throws {
+        let app = URL(fileURLWithPath: ProcessInfo.processInfo.environment["BASKET_TEST_UNNOTARIZED_APP"]!)
+        let info = CodeSignature.info(at: app)
+        let team = try #require(info.teamID)
+        let identifier = try #require(info.identifier)
+        do {
+            try CodeSignature.verify(bundle: app, requirement: CodeSignature.requirement(teamID: team, identifier: identifier))
+            Issue.record("a Developer ID app that isn't notarized passed the update requirement")
+        } catch let error as UpdateError {
+            #expect(error.isSecurityFailure)
+        }
+        try CodeSignature.verify(bundle: app, requirement: CodeSignature.requirementAllowingUnnotarized(teamID: team, identifier: identifier))
     }
 
     @Test func updatesNeedARealTeamSignature() throws {
@@ -262,6 +309,11 @@ struct UpdateSwapTests {
         let staging: URL
         let newApp: URL
         let trash: URL
+        /// Stands in for /usr/bin/codesign (the fake apps aren't signed): records every call in
+        /// `codesign-calls`, fails for a bundle containing `Contents/REJECT`, and plays the swap
+        /// race for one containing `Contents/CHANGE-AFTER-CHECK` (passes, then marks it REJECT).
+        let codesign: String
+        static let requirement = (try? CodeSignature.requirement(teamID: "ABCDE12345")) ?? ""
 
         init(name: String = "Basket.app", parent: String = "Applications") throws {
             dir = try TemporaryDirectory()
@@ -270,6 +322,15 @@ struct UpdateSwapTests {
             newApp = try UpdateFixtures.makeApp(in: staging.appending(path: "new"), version: "0.0.2")
             trash = dir.url.appending(path: "Trash", directoryHint: .isDirectory)
             try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+            codesign = try dir.script("fake-codesign", #"""
+                calls="$(/usr/bin/dirname "$0")/codesign-calls"
+                for arg in "$@"; do printf '%s\n' "$arg"; done >> "$calls"
+                printf '%s\n' '@@end-of-call@@' >> "$calls"
+                for app; do :; done
+                if [ -e "$app/Contents/REJECT" ]; then echo "$app: invalid signature (fake)" >&2; exit 1; fi
+                if [ -e "$app/Contents/CHANGE-AFTER-CHECK" ]; then : > "$app/Contents/REJECT"; fi
+                exit 0
+                """#)
         }
 
         var staged: StagedUpdate {
@@ -278,13 +339,25 @@ struct UpdateSwapTests {
         }
 
         func plan(pid: Int32) -> UpdateSwap.Plan {
-            var plan = UpdateSwap.plan(for: staged, pid: pid, relaunch: false)
+            var plan = UpdateSwap.plan(for: staged, requirement: Self.requirement, pid: pid, relaunch: false)
             plan.trashDirectory = trash
+            plan.codesign = codesign
             return plan
         }
 
         func trashItems() -> [String] {
             ((try? FileManager.default.contentsOfDirectory(atPath: trash.path)) ?? []).sorted()
+        }
+
+        /// The fake codesign's calls, one argument list each.
+        func codesignCalls() -> [[String]] {
+            let text = (try? String(contentsOf: dir.url.appending(path: "codesign-calls"), encoding: .utf8)) ?? ""
+            return text.split(separator: "@@end-of-call@@\n", omittingEmptySubsequences: true)
+                .map { $0.split(separator: "\n", omittingEmptySubsequences: false).map(String.init).filter { !$0.isEmpty } }
+        }
+
+        func expectedCall(_ app: URL) -> [String] {
+            ["--verify", "--deep", "--strict", "-R", "=" + Self.requirement, app.path]
         }
     }
 
@@ -308,6 +381,8 @@ struct UpdateSwapTests {
         #expect(layout.trashItems() == ["Basket 0.0.1.app"])
         #expect(UpdateFixtures.version(of: layout.trash.appending(path: "Basket 0.0.1.app")) == "0.0.1")
         #expect(!FileManager.default.fileExists(atPath: layout.staging.path))
+        // The code signature is checked again right before the swap and once more in place.
+        #expect(layout.codesignCalls() == [layout.expectedCall(layout.newApp), layout.expectedCall(layout.destination)])
     }
 
     @Test func waitsForTheAppToQuit() async throws {
@@ -375,6 +450,89 @@ struct UpdateSwapTests {
         #expect(UpdateFixtures.version(of: layout.destination) == "0.0.2")
         #expect(layout.trashItems() == [#"Bas"ket $(touch pwned) `touch pwned` 0.0.1.app"#])
         #expect(!FileManager.default.fileExists(atPath: layout.dir.url.appending(path: "pwned").path))
+        #expect(layout.codesignCalls() == [layout.expectedCall(layout.newApp), layout.expectedCall(layout.destination)])
+    }
+
+    @Test func refusesAStagedAppThatFailsTheCodeSignatureCheck() async throws {
+        let layout = try Layout()
+        defer { layout.dir.cleanup() }
+        FileManager.default.createFile(atPath: layout.newApp.appending(path: "Contents/REJECT").path, contents: nil)
+        let (status, output) = try await swap(layout.plan(pid: try await exitedPID()))
+        #expect(status == 1)
+        #expect(output.contains("failed the code-signature check; Basket was not changed"), "\(output)")
+        #expect(output.contains("invalid signature (fake)"), "codesign's own message goes to the log")
+        #expect(UpdateFixtures.version(of: layout.destination) == "0.0.1")
+        #expect(layout.trashItems().isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: layout.staging.path))
+        #expect(layout.codesignCalls() == [layout.expectedCall(layout.newApp)])
+    }
+
+    @Test func rollsBackWhenTheAppChangesDuringTheSwap() async throws {
+        let layout = try Layout()
+        defer { layout.dir.cleanup() }
+        // Passes the check before the swap, fails it in place: the old app goes back.
+        FileManager.default.createFile(atPath: layout.newApp.appending(path: "Contents/CHANGE-AFTER-CHECK").path, contents: nil)
+        let (status, output) = try await swap(layout.plan(pid: try await exitedPID()))
+        #expect(status == 1)
+        #expect(output.contains("failed the code-signature check in place; restoring the previous version"), "\(output)")
+        #expect(UpdateFixtures.version(of: layout.destination) == "0.0.1")
+        #expect(!FileManager.default.fileExists(atPath: layout.destination.appending(path: "Contents/REJECT").path))
+        #expect(layout.trashItems().isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: layout.staging.path))
+        #expect(layout.codesignCalls() == [layout.expectedCall(layout.newApp), layout.expectedCall(layout.destination)])
+    }
+
+    @Test func refusesToSwapWithoutARequirement() async throws {
+        let layout = try Layout()
+        defer { layout.dir.cleanup() }
+        var plan = layout.plan(pid: try await exitedPID())
+        plan.requirement = ""
+        #expect(throws: UpdateError.self) { try UpdateSwap.launchDetached(plan, log: nil) }
+        let (status, output) = try await swap(plan)
+        #expect(status == 1)
+        #expect(output.contains("no code requirement"))
+        #expect(UpdateFixtures.version(of: layout.destination) == "0.0.1")
+        #expect(layout.codesignCalls().isEmpty)
+    }
+
+    @Test func plansRunTheRealCodesign() {
+        #expect(UpdateSwap.codesignTool == "/usr/bin/codesign")
+        let plan = UpdateSwap.Plan(pid: 1, destination: URL(fileURLWithPath: "/Applications/Basket.app"),
+                                   newApp: URL(fileURLWithPath: "/tmp/s/new/Basket.app"), backup: URL(fileURLWithPath: "/tmp/s/previous/Basket.app"),
+                                   trashDirectory: nil, trashName: "Basket 0.0.1", stagingDirectory: URL(fileURLWithPath: "/tmp/s"),
+                                   relaunch: true, requirement: Layout.requirement)
+        #expect(UpdateSwap.arguments(plan).suffix(2) == [Layout.requirement, "/usr/bin/codesign"])
+    }
+
+    /// The helper with the real /usr/bin/codesign: an ad-hoc signed bundle satisfies
+    /// `identifier "dev.basket.app"` but not the update requirement (no Apple anchor, no team).
+    @Test func realCodesignEnforcesTheRequirement() async throws {
+        func signedLayout() async throws -> Layout {
+            let layout = try Layout()
+            let executable = layout.newApp.appending(path: "Contents/MacOS/Basket")
+            try FileManager.default.removeItem(at: executable)
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: "/usr/bin/true"), to: executable)
+            let signed = try await UpdateFixtures.run("/usr/bin/codesign", ["--force", "--sign", "-", "--identifier", "dev.basket.app", layout.newApp.path])
+            #expect(signed.status == 0, "\(signed.output)")
+            return layout
+        }
+        let accepted = try await signedLayout()
+        defer { accepted.dir.cleanup() }
+        var plan = accepted.plan(pid: try await exitedPID())
+        plan.codesign = UpdateSwap.codesignTool
+        plan.requirement = #"identifier "dev.basket.app""#
+        var (status, output) = try await swap(plan)
+        #expect(status == 0, "\(output)")
+        #expect(UpdateFixtures.version(of: accepted.destination) == "0.0.2")
+
+        let refused = try await signedLayout()
+        defer { refused.dir.cleanup() }
+        plan = refused.plan(pid: try await exitedPID())
+        plan.codesign = UpdateSwap.codesignTool
+        (status, output) = try await swap(plan)
+        #expect(status == 1)
+        #expect(output.contains("failed the code-signature check; Basket was not changed"), "\(output)")
+        #expect(UpdateFixtures.version(of: refused.destination) == "0.0.1")
     }
 }
 

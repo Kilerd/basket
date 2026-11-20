@@ -40,12 +40,18 @@ struct UpdateFailure: Equatable {
     var retry: Retry?
 }
 
-/// The update source and key: production, or (DEBUG builds only) a local test feed and key.
+/// The update source, keys and code requirement: production, or (DEBUG builds only) a local test
+/// feed and key, and optionally Developer ID builds that aren't notarized.
 struct UpdateSetup {
     var policy = UpdatePolicy.production
-    var publicKeyBase64 = UpdateVerifier.publicKeyBase64
+    var trustedPublicKeysBase64 = UpdateVerifier.trustedPublicKeysBase64
     /// DEBUG `BASKET_UPDATE_AUTO_INSTALL=1` with a test feed: check at launch and press Install.
     var autoInstall = false
+    #if DEBUG
+    /// DEBUG `BASKET_UPDATE_ALLOW_UNNOTARIZED=1`: the update needs a Developer ID signature of the
+    /// same team but no notarization (local end-to-end runs). Release builds always require it.
+    var allowUnnotarized = false
+    #endif
 
     static func fromProcess(_ env: [String: String] = ProcessInfo.processInfo.environment) -> UpdateSetup {
         var setup = UpdateSetup()
@@ -55,10 +61,19 @@ struct UpdateSetup {
             setup.autoInstall = env["BASKET_UPDATE_AUTO_INSTALL"] == "1"
         }
         if let key = env["BASKET_UPDATE_TEST_PUBLIC_KEY"], !key.isEmpty {
-            setup.publicKeyBase64 = key
+            setup.trustedPublicKeysBase64 = [key]
         }
+        setup.allowUnnotarized = env["BASKET_UPDATE_ALLOW_UNNOTARIZED"] == "1"
         #endif
         return setup
+    }
+
+    /// The code requirement an update of `team` must satisfy (docs/updates.md, step 3).
+    func requirement(team: String) throws -> String {
+        #if DEBUG
+        if allowUnnotarized { return try CodeSignature.requirementAllowingUnnotarized(teamID: team) }
+        #endif
+        return try CodeSignature.requirement(teamID: team)
     }
 }
 
@@ -85,6 +100,8 @@ final class UpdateController {
 
     @ObservationIgnored weak var store: AppStore?
     @ObservationIgnored private let installer: UpdateInstaller?
+    /// What the extracted update had to satisfy; the swap helper checks it again (docs/updates.md).
+    @ObservationIgnored private let codeRequirement: String?
     @ObservationIgnored private let setup: UpdateSetup
     @ObservationIgnored private let isUITest: Bool
     /// nil in UI-test runs: nothing is read from or written to the user's defaults.
@@ -123,18 +140,27 @@ final class UpdateController {
             }
         }
         var installer: UpdateInstaller?
+        var requirement: String?
         if reason == nil, let team {
             do {
-                let verifier = try UpdateVerifier(publicKeyBase64: setup.publicKeyBase64)
+                let verifier = try UpdateVerifier(trustedPublicKeysBase64: setup.trustedPublicKeysBase64)
+                let text = try setup.requirement(team: team)
                 installer = UpdateInstaller(policy: setup.policy, verifier: verifier) { app in
-                    try CodeSignature.verify(bundle: app, teamID: team)
+                    try CodeSignature.verify(bundle: app, requirement: text)
                 }
+                requirement = text
             } catch {
                 reason = error.localizedDescription
             }
         }
         self.installer = installer
+        codeRequirement = requirement
         unavailableReason = reason
+        #if DEBUG
+        if installer != nil, setup.allowUnnotarized {
+            logger.notice("BASKET_UPDATE_ALLOW_UNNOTARIZED: updates need no notarization (DEBUG build)")
+        }
+        #endif
     }
 
     var isBusy: Bool { phase.isBusy }
@@ -248,7 +274,7 @@ final class UpdateController {
 
     /// "Install and Relaunch": download → verify → stage → helper → quit.
     func install() {
-        guard let offer, let installer, let currentVersion, work == nil else { return }
+        guard let offer, let installer, let codeRequirement, let currentVersion, work == nil else { return }
         if let busy = busyWork() { return phase = .failed(busy) }
         phase = .downloading(received: 0, expected: offerSize)
         let destination = Bundle.main.bundleURL
@@ -266,7 +292,7 @@ final class UpdateController {
                 }
                 self.phase = .relaunching
                 do {
-                    try UpdateSwap.launchDetached(UpdateSwap.plan(for: staged), log: Self.logFile())
+                    try UpdateSwap.launchDetached(UpdateSwap.plan(for: staged, requirement: codeRequirement), log: Self.logFile())
                 } catch {
                     try? FileManager.default.removeItem(at: staged.stagingDirectory)
                     throw error

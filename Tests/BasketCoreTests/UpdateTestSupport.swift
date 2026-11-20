@@ -116,7 +116,7 @@ enum UpdateFixtures {
         let offer = UpdateOffer(
             version: SemanticVersion(version)!, date: Date(), notes: "", minimumSystemVersion: SystemVersion(26),
             url: url ?? archive, sha256: UpdateVerifier.sha256Hex(data), signature: try key.signature(for: data))
-        let verifier = try UpdateVerifier(publicKeyBase64: key.publicKey.rawRepresentation.base64EncodedString())
+        let verifier = try UpdateVerifier(trustedPublicKeysBase64: [key.publicKey.rawRepresentation.base64EncodedString()])
         return Release(zip: archive, offer: offer, key: key, verifier: verifier)
     }
 

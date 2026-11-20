@@ -12,15 +12,17 @@ public enum UpdateError: Error, Equatable, Sendable {
     case tooLarge(Int64)
     /// The downloaded zip's SHA-256 is not the manifest's `sha256`.
     case checksumMismatch
-    /// The Ed25519 signature doesn't verify with the built-in public key.
+    /// The Ed25519 signature doesn't verify with any of the built-in public keys.
     case badSignature
-    /// The public key compiled into the app (or the DEBUG test key) isn't a valid Ed25519 key.
+    /// The public keys compiled into the app (or the DEBUG test key) are missing or not valid
+    /// Ed25519 keys.
     case invalidPublicKey
     /// The verified zip doesn't extract to exactly one app bundle.
     case invalidArchive(String)
     /// The extracted app isn't the Basket version the manifest announced.
     case bundleMismatch(String)
-    /// The extracted app's code signature is invalid or not from this app's developer team.
+    /// The extracted app's code signature is invalid, not a notarized Developer ID signature, or
+    /// not from this app's developer team.
     case codeSignature(String)
     /// The update isn't newer than the running version.
     case notNewer(current: String, offered: String)
@@ -59,7 +61,7 @@ extension UpdateError: LocalizedError {
         case .bundleMismatch(let reason):
             "The downloaded app isn't the announced Basket version (\(reason)), so it was deleted."
         case .codeSignature(let reason):
-            "The downloaded app's code signature doesn't come from Basket's developer (\(reason)), so it was deleted."
+            "The downloaded app doesn't carry the notarized Developer ID signature of Basket's developer (\(reason)), so it was deleted."
         case .notNewer(let current, let offered):
             "Basket \(offered) isn't newer than the installed \(current)."
         case .requiresNewerSystem(let version):

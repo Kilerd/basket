@@ -13,9 +13,11 @@ next patch. Expect breaking changes until `0.1.0`.
 
 - Signed in-app updates: Basket checks GitHub Releases a minute after launch and then daily
   (Settings ▸ Updates, on by default) or on “Check for Updates…”, shows the release notes, and
-  installs a new version only after its SHA-256, Ed25519 signature, bundle id, version and
-  Developer ID code signature all check out; the old copy goes to the Trash. Disabled, with the
-  reason, for ad-hoc builds and apps that can't replace themselves.
+  installs a new version only after its SHA-256, Ed25519 signature (from any of the app's trusted
+  keys, so the key can be rotated), bundle id, version and notarized Developer ID code signature
+  all check out. The code signature is checked again right before and right after the app is
+  replaced, and the old copy is put back if either check fails; otherwise it goes to the Trash.
+  Disabled, with the reason, for ad-hoc builds and apps that can't replace themselves.
 
 ### Fixed
 

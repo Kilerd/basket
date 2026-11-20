@@ -58,7 +58,8 @@ replace it later without touching the UI.
 | `BASKET_DOCKER_DRYRUN` | `basket-docker` (the `docker` shim): `1` = print the translated `container` command instead of running it |
 | `BASKET_COMPOSE_CLI` | `basket-docker`: program that handles `docker compose …` (otherwise a `basket-compose` next to the shim, else refused with a pointer to Compose Up…) |
 | `BASKET_UPDATE_FEED_URL` | DEBUG builds only (release builds ignore it): `file://` or `https://` URL of a test `latest.json`; archives must sit in the same directory (the only way a `file://` download URL passes validation) |
-| `BASKET_UPDATE_TEST_PUBLIC_KEY` | DEBUG builds only: base64 Ed25519 public key that replaces the built-in one, for archives signed with a throwaway key |
+| `BASKET_UPDATE_TEST_PUBLIC_KEY` | DEBUG builds only: base64 Ed25519 public key that replaces the built-in list, for archives signed with a throwaway key |
+| `BASKET_UPDATE_ALLOW_UNNOTARIZED` | DEBUG builds only: `1` = an update needs a Developer ID signature of the running app's team but no notarization (the requirement without `and notarized`; local end-to-end test). Compiled out of release builds |
 | `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch, show the update sheet and press Install and Relaunch (local end-to-end test) |
 
 ## Data-safety rules
@@ -239,25 +240,31 @@ checks are specified in [updates.md](updates.md). In code (`BasketCore/Update`):
   or an older version and respects `minimum_system_version`.
 - `UpdateInstaller.prepare` streams the zip (256 MB cap, cancellable) into a private directory on
   the app's own volume (`FileManager.url(for: .itemReplacementDirectory…)`), then `UpdateVerifier`
-  checks SHA-256 and the Ed25519 signature (`publicKeyBase64`), `ditto -x -k` extracts it, and the
-  single `.app` inside must have bundle id `dev.basket.app`, the manifest's version and a code
-  signature satisfying `CodeSignature.requirement(teamID:)` with the running app's own team
-  (`SecCodeCopySelf`). Any failure deletes the staging directory.
-- `UpdateSwap` launches a detached `/bin/sh` helper (paths as positional parameters) that waits
-  for Basket's pid to exit, renames the old app into the staging directory, renames the new one
-  into place (renaming the old one back if that fails), clears quarantine only if present, moves
-  the old app to the Trash and opens the new one. Its output goes to
-  `~/Library/Logs/Basket/update.log`.
+  checks SHA-256 and the Ed25519 signature against any of `trustedPublicKeysBase64` (a list, so the
+  key can be rotated), `ditto -x -k` extracts it, and the single `.app` inside must have bundle id
+  `dev.basket.app`, the manifest's version and a code signature satisfying
+  `CodeSignature.requirement(teamID:)` — a notarized Developer ID app of the running app's own
+  team (`SecCodeCopySelf`). Any failure deletes the staging directory.
+- `UpdateSwap` launches a detached `/bin/sh` helper (paths and the requirement as positional
+  parameters) that waits for Basket's pid to exit, runs `codesign --verify --deep --strict -R` with
+  the same requirement on the staged app, renames the old app into the staging directory, renames
+  the new one into place, checks it there again (putting the old one back if a check or a rename
+  fails), clears quarantine only if present, moves the old app to the Trash and opens the new one.
+  Its output goes to `~/Library/Logs/Basket/update.log`.
 - `UpdateController` (app) checks a minute after launch and then daily when Settings ▸ Updates ▸
   “Automatically check for updates” is on (default), and from “Check for Updates…” in the app
   menu and the menu bar extra. Updates are disabled, with the reason shown, for ad-hoc or unsigned
   builds, translocated apps and folders Basket can't write to. A checksum, signature, bundle or
   code-signature mismatch is shown as a security error with no way to install anyway.
 
-Local end-to-end check (no `/Applications`): build version A with `scripts/build-app.sh debug`
-and B with `scripts/build-app.sh release` (temporarily raise `VERSION` in `scripts/_common.sh`),
+Local end-to-end check (no `/Applications`; needs a Developer ID identity, since ad-hoc builds
+can't update): build version A with `scripts/build-app.sh debug` and B with
+`scripts/build-app.sh release` (temporarily raise `VERSION` in `scripts/_common.sh`),
 `ditto -c -k --keepParent` B, sign the zip with a key from `swift scripts/update-keygen.swift
 /tmp/<dir>/test.key` (`swift scripts/update-sign.swift`), write a `latest.json` next to it with a
 `file://` URL, copy A to a temporary folder and run it with `BASKET_UPDATE_FEED_URL`,
-`BASKET_UPDATE_TEST_PUBLIC_KEY` and `BASKET_UPDATE_AUTO_INSTALL=1`. The bundle in that folder
-becomes B and relaunches; the old copy is in the Trash as “Basket A.app”.
+`BASKET_UPDATE_TEST_PUBLIC_KEY`, `BASKET_UPDATE_ALLOW_UNNOTARIZED=1` (local builds aren't
+notarized) and `BASKET_UPDATE_AUTO_INSTALL=1`. The bundle in that folder becomes B and
+relaunches; the old copy is in the Trash as “Basket A.app”, and `~/Library/Logs/Basket/update.log`
+shows the helper's checks. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same run must stop with a
+code-signature security error.

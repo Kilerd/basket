@@ -2,7 +2,8 @@ import Foundation
 import Security
 
 /// Code-signature checks with the Security framework: who signed the running app, and whether an
-/// extracted update is signed by the same Apple developer team (docs/updates.md, step 3).
+/// extracted update is a notarized Developer ID app of the same Apple developer team
+/// (docs/updates.md, step 3).
 public enum CodeSignature {
     public struct Info: Equatable, Sendable {
         /// The signing identifier (normally the bundle id); nil when unsigned.
@@ -71,15 +72,41 @@ public enum CodeSignature {
         team.count == 10 && team.allSatisfy { ($0.isASCII && $0.isUppercase && $0.isLetter) || ($0.isASCII && $0.isNumber) }
     }
 
-    /// The designated requirement an update must satisfy (docs/updates.md).
+    /// The code requirement an update must satisfy (docs/updates.md, step 3): an Apple-anchored
+    /// chain, this bundle id, the running app's team, the Developer ID intermediate
+    /// (1.2.840.113635.100.6.2.6) and leaf (1.2.840.113635.100.6.1.13) markers, and notarization.
     public static func requirement(teamID: String, identifier: String = UpdatePolicy.bundleIdentifier) throws -> String {
-        guard isValidTeamID(teamID) else { throw UpdateError.codeSignature("invalid team identifier") }
-        return "anchor apple generic and identifier \"\(identifier)\" and certificate leaf[subject.OU] = \"\(teamID)\""
+        try developerIDRequirement(teamID: teamID, identifier: identifier) + " and notarized"
     }
 
-    /// Validates the whole bundle (all architectures, nested code, strict) against the requirement.
+    #if DEBUG
+    /// DEBUG builds only (`BASKET_UPDATE_ALLOW_UNNOTARIZED=1`, the local end-to-end run): the same
+    /// requirement without `notarized`, for Developer ID builds that were never notarized.
+    /// Release builds don't contain it.
+    public static func requirementAllowingUnnotarized(teamID: String, identifier: String = UpdatePolicy.bundleIdentifier) throws -> String {
+        try developerIDRequirement(teamID: teamID, identifier: identifier)
+    }
+    #endif
+
+    private static func developerIDRequirement(teamID: String, identifier: String) throws -> String {
+        guard isValidTeamID(teamID) else { throw UpdateError.codeSignature("invalid team identifier") }
+        guard !identifier.isEmpty, identifier.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "-") }) else {
+            throw UpdateError.codeSignature("invalid bundle identifier")
+        }
+        return "anchor apple generic and identifier \"\(identifier)\" and certificate leaf[subject.OU] = \"\(teamID)\""
+            + " and certificate 1[field.1.2.840.113635.100.6.2.6] exists"
+            + " and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"
+    }
+
+    /// Validates the whole bundle (all architectures, nested code, strict) against the update
+    /// requirement for `teamID`.
     public static func verify(bundle: URL, teamID: String) throws {
-        let text = try requirement(teamID: teamID)
+        try verify(bundle: bundle, requirement: requirement(teamID: teamID))
+    }
+
+    /// Validates the whole bundle (all architectures, nested code, strict) against `text`, a
+    /// requirement as `requirement(teamID:)` makes it.
+    public static func verify(bundle: URL, requirement text: String) throws {
         var requirement: SecRequirement?
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, let requirement else {
             throw UpdateError.codeSignature("the signing requirement can't be compiled")

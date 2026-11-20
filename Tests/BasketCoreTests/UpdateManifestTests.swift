@@ -167,18 +167,59 @@ struct UpdateVerifierTests {
     let data = Data("Basket.app zip bytes".utf8)
 
     var verifier: UpdateVerifier {
-        get throws { try UpdateVerifier(publicKeyBase64: key.publicKey.rawRepresentation.base64EncodedString()) }
+        get throws { try UpdateVerifier(trustedPublicKeysBase64: [Self.base64(key)]) }
     }
 
-    @Test func productionKeyIsAValidEd25519Key() throws {
+    static func base64(_ key: Curve25519.Signing.PrivateKey) -> String {
+        key.publicKey.rawRepresentation.base64EncodedString()
+    }
+
+    @Test func productionKeysAreValidEd25519Keys() throws {
         let verifier = try UpdateVerifier()
-        #expect(verifier.publicKey.count == 32)
-        #expect(verifier.publicKey.base64EncodedString() == UpdateVerifier.publicKeyBase64)
+        #expect(!UpdateVerifier.trustedPublicKeysBase64.isEmpty)
+        #expect(verifier.publicKeys.count == UpdateVerifier.trustedPublicKeysBase64.count)
+        #expect(verifier.publicKeys.allSatisfy { $0.count == 32 })
+        #expect(verifier.publicKeys.map { $0.base64EncodedString() } == UpdateVerifier.trustedPublicKeysBase64)
+        #expect(Set(UpdateVerifier.trustedPublicKeysBase64).count == UpdateVerifier.trustedPublicKeysBase64.count)
     }
 
     @Test func rejectsInvalidKeys() {
-        #expect(throws: UpdateError.invalidPublicKey) { try UpdateVerifier(publicKeyBase64: "not a key") }
-        #expect(throws: UpdateError.invalidPublicKey) { try UpdateVerifier(publicKeyBase64: Data(repeating: 1, count: 31).base64EncodedString()) }
+        #expect(throws: UpdateError.invalidPublicKey) { try UpdateVerifier(trustedPublicKeysBase64: ["not a key"]) }
+        #expect(throws: UpdateError.invalidPublicKey) {
+            try UpdateVerifier(trustedPublicKeysBase64: [Data(repeating: 1, count: 31).base64EncodedString()])
+        }
+        // One bad entry spoils the list: it is a build mistake, not something to skip.
+        #expect(throws: UpdateError.invalidPublicKey) { try UpdateVerifier(trustedPublicKeysBase64: [Self.base64(key), "not a key"]) }
+    }
+
+    @Test func refusesAnEmptyKeyList() {
+        #expect(throws: UpdateError.invalidPublicKey) { try UpdateVerifier(trustedPublicKeysBase64: []) }
+    }
+
+    @Test func acceptsASignatureFromAnyTrustedKey() throws {
+        // Rotation: release N trusts [old, new] and is signed with the old key; N+1 is signed with
+        // the new one. Both must install on N.
+        let old = Curve25519.Signing.PrivateKey()
+        let new = Curve25519.Signing.PrivateKey()
+        let both = try UpdateVerifier(trustedPublicKeysBase64: [Self.base64(old), Self.base64(new)])
+        #expect(both.publicKeys.count == 2)
+        let sha = UpdateVerifier.sha256Hex(data)
+        try both.verify(data: data, sha256: sha, signature: try old.signature(for: data))
+        try both.verify(data: data, sha256: sha, signature: try new.signature(for: data))
+        // A key that is in neither list, and a list without the signing key.
+        #expect(throws: UpdateError.badSignature) {
+            try both.verify(data: data, sha256: sha, signature: try key.signature(for: data))
+        }
+        let oldOnly = try UpdateVerifier(trustedPublicKeysBase64: [Self.base64(old)])
+        #expect(throws: UpdateError.badSignature) {
+            try oldOnly.verify(data: data, sha256: sha, signature: try new.signature(for: data))
+        }
+        // The checksum still comes first.
+        var tampered = data
+        tampered[0] ^= 1
+        #expect(throws: UpdateError.checksumMismatch) {
+            try both.verify(data: tampered, sha256: sha, signature: try old.signature(for: tampered))
+        }
     }
 
     @Test func acceptsAGoodSignature() throws {
