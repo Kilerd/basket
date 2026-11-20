@@ -7,3 +7,5 @@ DerivedData/
 .DS_Store
 /artifacts/
 .leak-denylist
+# Agent worktrees and local tool state
+.claude/
