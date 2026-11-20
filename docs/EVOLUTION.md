@@ -75,9 +75,29 @@ and disk first) → implement → verify. Findings and decisions are logged here
   cost −30 % CPU (0.39 s/min with another app in front); log follow 20 % → 9 % CPU at
   ~3,800 lines/s; slim `alpine` 30.4 MB → 4.19 MB; OrbStack `busybox` import 6.14 MB → 1.92 MB.
 - Result: 395 tests green; self-test 0/0 on `demo`, `empty`, `stopped`, `fresh` (17 snapshots);
-  out-of-process E2E 0/0; leak scan clean. Released as `v0.0.1`.
+  out-of-process E2E 0/0; leak scan clean. Shipped in `v0.0.1`.
 - Process lesson: too many parallel lanes pushed the load average past 400 and made subprocess
   tests flaky — keep ≤ 3 build-heavy lanes at once.
+
+### Release engineering and the first release (2026-11-20)
+- Open-source flow in practice: issues #1–#24, every change through a PR with CI (leak scan,
+  build, 395→452 tests, accessibility self-test on GitHub's `macos-26` runner) and squash merges.
+- CI caught a real bug the fast local Mac hid: child output was dropped when readers ran later
+  than a 1 s timer (#2) — fixed by draining to EOF; a delayed-reader test forces the race.
+- Signed auto-update (CryptoKit Ed25519 + notarized Developer ID requirement, key list for
+  rotation, re-verify around the swap) and a SemVer release workflow modelled on a protected
+  environment: one approved job holds the secrets; verify checks the previous release's keys;
+  publish re-checks the tag and attests every asset. An independent security review drove the
+  hardening (SHA-pinned actions, dry runs without the production key, tag ruleset, immutable
+  releases, no admin bypass).
+- Gap found and closed: commits from agent worktrees scanned without the private word list
+  (#23); a full-history rescan was clean.
+- **v0.0.1 released**: DMG + update zip + `latest.json` + `SHA256SUMS` + provenance. Verified
+  from a fresh download: checksums, Ed25519 signature with the production key, deep code
+  signature, stapled notarization, Gatekeeper "Notarized Developer ID", attestations.
+- Lessons: release-only constraints of personal repos (no Actions bypass in rulesets → the
+  maintainer pushes tags); keep CHANGELOG additions conflict-friendly (every PR appends to the
+  same Unreleased block — rebases needed manual merges).
 
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
