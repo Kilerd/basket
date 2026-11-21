@@ -152,26 +152,43 @@ struct JSONFormatterTests {
 
     /// Image inspect output can be hundreds of KB; 5 MB must stay well within interactive time even
     /// in a debug build (release is several times faster).
+    /// Linear time, checked as a ratio so a slow or busy machine (CI runners) doesn't fail it: five
+    /// times the input may take at most ten times as long (linear ≈ 5×, quadratic ≈ 25×).
     @Test func fiveMegabytesInLinearTime() throws {
-        var parts: [String] = []
-        var size = 0
-        var index = 0
-        while size < 5_000_000 {
-            let element = #"{"id":"layer-\#(index)","digest":"sha256:\#(String(repeating: "ab12", count: 16))","#
-                + #""size":\#(index * 4096),"ratio":0.\#(index % 97),"empty":[],"labels":{},"flags":[true,false,null],"#
-                + #""history":[{"created_by":"RUN echo \"step \#(index)\" \/ é 😀","empty_layer":false}]}"#
-            parts.append(element)
-            size += element.utf8.count + 1
-            index += 1
+        func document(bytes: Int) -> (text: String, elements: Int) {
+            var parts: [String] = []
+            var size = 0
+            var index = 0
+            while size < bytes {
+                let element = #"{"id":"layer-\#(index)","digest":"sha256:\#(String(repeating: "ab12", count: 16))","#
+                    + #""size":\#(index * 4096),"ratio":0.\#(index % 97),"empty":[],"labels":{},"flags":[true,false,null],"#
+                    + #""history":[{"created_by":"RUN echo \"step \#(index)\" \/ é 😀","empty_layer":false}]}"#
+                parts.append(element)
+                size += element.utf8.count + 1
+                index += 1
+            }
+            return ("[" + parts.joined(separator: ",") + "]", index)
         }
-        let input = "[" + parts.joined(separator: ",") + "]"
         let clock = ContinuousClock()
-        var formatted: FormattedJSON?
-        let elapsed = clock.measure { formatted = JSONFormatter.format(input) }
+        func fastest(_ input: String) -> (Duration, FormattedJSON?) {
+            var best = Duration.seconds(3600)
+            var result: FormattedJSON?
+            for _ in 0..<2 {
+                let elapsed = clock.measure { result = JSONFormatter.format(input) }
+                best = min(best, elapsed)
+            }
+            return (best, result)
+        }
+        let small = document(bytes: 1_000_000)
+        let large = document(bytes: 5_000_000)
+        let (smallTime, _) = fastest(small.text)
+        let (largeTime, formatted) = fastest(large.text)
         let result = try #require(formatted)
-        #expect(input.utf8.count >= 5_000_000)
-        #expect(result.tokens.count == index * 19)
+        #expect(large.text.utf8.count >= 5_000_000)
+        #expect(result.tokens.count == large.elements * 19)
         #expect(tokens(FormattedJSON(text: result.text, tokens: [result.tokens.last!])).first?.1 == "false")
-        #expect(elapsed < .seconds(3), "formatting 5 MB took \(elapsed)")
+        let ratio = largeTime / smallTime
+        #expect(ratio < 10, "5 MB took \(largeTime), 1 MB took \(smallTime): ×\(ratio), not linear")
+        #expect(largeTime < .seconds(60), "formatting 5 MB took \(largeTime)")
     }
 }
