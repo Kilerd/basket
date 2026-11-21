@@ -117,6 +117,18 @@ and disk first) → implement → verify. Findings and decisions are logged here
   macOS's first-launch check of every new executable serializing fake CLIs (#20) — the whole
   suite went from ~12 s to ~3 s.
 
+### 0.0.3 — feedback round (2026-11-21)
+- Maintainer feedback turned straight into issues and PRs: Settings moved into the sidebar with
+  the language picker first (#30; live switching was tried and rejected — only plain SwiftUI text
+  follows a locale override, ~650 code-built strings and AppKit menus don't, so Basket offers a
+  one-click relaunch instead); the Disk card's breakdown now spans the card (#31) and a new AX
+  rule, `card-trailing-alignment`, catches value columns that stop short of a card's edge;
+  inspect JSON is tidied and highlighted with WCAG-AA system colours and ⌘F (#32).
+- E2E lessons: an installed Basket with the same bundle id makes a second instance hang
+  (issue #29), and a locked screen blocks LaunchServices-launched apps too — both looked alike.
+- CI caught another wall-clock test (5 MB formatting under 3 s): timing tests now check
+  scaling ratios, not absolute time.
+
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
   Third-party: `container-compose` (mcrich23), `apple-compose` (Go). Known gap: service-name DNS on
