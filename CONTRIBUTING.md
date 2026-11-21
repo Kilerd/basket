@@ -52,6 +52,9 @@ list from a repository secret.
 | `scripts/build-app.sh [debug\|release]` | Bundles and signs `build/Basket.app` |
 | `scripts/selftest.sh demo\|empty\|stopped` | In-process accessibility audit and screenshots for one fixture set. Needs no permissions |
 | `scripts/e2e.sh demo` | Out-of-process `AXUIElement` end-to-end test. Needs the Accessibility permission for `BasketE2E.app` |
+| `BASKET_LANGUAGE=de scripts/selftest.sh demo` | Either test in another language (`zh-Hans`, `zh-Hant`, `ja`, `fr`, `de`) |
+| `scripts/sync-strings.sh [--prune]` | Adds new UI strings to the String Catalog and marks (or drops) unused ones |
+| `scripts/check-l10n.sh` | Localization gate: catalog in sync, every language complete, placeholders match |
 | `scripts/check-leaks.sh --all` | Confidentiality scan of the working tree (`--staged` runs in the pre-commit hook) |
 
 Notes:
@@ -79,11 +82,13 @@ Notes:
 
 A pull request is merged when all of these hold:
 
-1. **CI is green.** CI runs the build, `swift test`, the leak scan (full tree plus every commit
-   in the PR), and the self-test on the `demo`, `empty` and `stopped` fixture sets.
+1. **CI is green.** CI runs the build, `swift test`, the localization check, the leak scan (full
+   tree plus every commit in the PR), and the self-test on the `demo`, `empty` and `stopped`
+   fixture sets plus `demo` in Simplified Chinese and German.
 2. **For UI changes:** `scripts/selftest.sh demo|empty|stopped` and `scripts/e2e.sh demo` end
-   with 0 errors and 0 warnings. **Someone has also looked at the PNGs.** Clipped, misaligned or
-   inconsistent UI fails even when the lint passes. Attach fixture screenshots to the PR.
+   with 0 errors and 0 warnings, in English and in German (`BASKET_LANGUAGE=de`, the longest
+   labels). **Someone has also looked at the PNGs.** Clipped, misaligned or inconsistent UI fails
+   even when the lint passes. Attach fixture screenshots to the PR.
    `BASKET_SELFTEST_EXTRAS=1` also captures sheets, detail tabs and Settings.
 3. It has at least one approving review and no unresolved conversations.
 
@@ -148,6 +153,50 @@ UI:
 
 Prefer `.accessibilityElement(children: .combine)` on a real container. Using `.ignore` with a
 label tends to produce role-less (`AXUnknown`) elements.
+
+### Localization
+
+Basket ships in English, 简体中文, 繁體中文, 日本語, Français and Deutsch. All UI text lives in one
+String Catalog, `Resources/Localization/Localizable.xcstrings`, keyed by the English text
+(design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#localization); words and typography:
+[docs/l10n/glossary.md](docs/l10n/glossary.md)).
+
+**Writing UI text**
+
+- SwiftUI literals (`Text("Delete")`, `Button("Cancel")`, `.help("…")`) are localized
+  automatically. Text built in code uses `String(localized: "…")`; in BasketCore,
+  `String(localized: "…", bundle: .main)`. A `String` variable passed to `Text`, `Button`,
+  `Label`, `.help` or `.accessibilityLabel` is shown as is, so it must already be localized.
+- Write whole sentences with interpolations (`"Delete \(name)?"`), never glue translated pieces
+  together or build English plurals in code. For counts, interpolate the number and add plural
+  forms to the catalog; a plural form must contain the number. When the singular has no number
+  ("Delete “web”?"), use a second string and pick it with `count == 1`.
+- Sizes (`Format.memory`, `Format.disk`), percentages, durations and dates come from formatters;
+  lists of names from `.localizedList`. Never write units or separators into a string.
+- Accessibility identifiers, commands, paths and other data are never localized
+  (`Text(verbatim:)` for data).
+- Add a `comment:` to short or ambiguous strings ("Down", "Default") for translators.
+
+**After changing UI text**, run `scripts/sync-strings.sh --prune` (adds the new keys, drops the
+ones no longer used), translate the new keys into every language, and run
+`scripts/check-l10n.sh`. Translations can be edited in Xcode (open the `.xcstrings` file) or as
+JSON:
+
+```sh
+swift scripts/l10n.swift missing Resources/Localization/Localizable.xcstrings de > /tmp/de.json
+# translate: { "<key>": "<translation>" } or { "<key>": { "one": "…", "other": "…" } }
+swift scripts/l10n.swift apply Resources/Localization/Localizable.xcstrings de /tmp/de.json
+```
+
+Look at the result: `BASKET_LANGUAGE=<id> scripts/selftest.sh demo` (and `e2e.sh`) must stay at 0
+errors and 0 warnings, and German is the best test for labels that don't fit.
+
+**Adding a language** is a translation-only change: translate every key into the new language
+(`l10n.swift missing … <id>` lists them all) and apply it. The build compiles every language in
+the catalog into the app and lists it in `CFBundleLocalizations`, the Settings language picker
+offers it, and `check-l10n.sh` then requires it to stay complete. Add a column to the glossary,
+run the self-test and onboarding (`BASKET_ONBOARDING=1 BASKET_FAKE_BREW=1 scripts/selftest.sh fresh`)
+in that language, and look at every screenshot.
 
 ### Fixtures are synthetic
 

@@ -9,10 +9,19 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Added
+
+- Localization: Basket is available in English, Simplified Chinese, Traditional Chinese,
+  Japanese, French and German (#8). It follows the macOS language; Settings ▸ General ▸ Language
+  overrides it. Sizes, numbers, durations, dates and lists follow the language's conventions.
+  A Chinese README (`README.zh-CN.md`) and a terminology glossary (`docs/l10n/glossary.md`).
+
 ### Fixed
 
 - Migration: an image import could report "Exporting" again after it had moved on to loading,
   or even after it had finished (#19).
+- Migration: the "In Basket" column no longer cuts off its label while images are being
+  compared (#17).
 
 ## [0.0.1] - 2026-11-20
 

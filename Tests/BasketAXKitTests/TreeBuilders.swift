@@ -48,6 +48,7 @@ func basketWindow(
     toolbarActionHeight: Double = 36,
     titleRole: String = "AXHeading",
     withTitle: Bool = true,
+    localizedTitle: String? = nil,
     size: (w: Double, h: Double) = (1280, 820)
 ) -> AXNode {
     let ox = origin.x, oy = origin.y
@@ -66,7 +67,8 @@ func basketWindow(
 
     var content: [AXNode] = []
     if withTitle {
-        content.append(text(AXAuditRules.sectionTitles[section] ?? section.capitalized, at(210, 30, 220, 20), role: titleRole))
+        content.append(text(localizedTitle ?? AXAuditRules.sectionTitles[section] ?? section.capitalized,
+                            at(210, 30, 220, 20), role: titleRole))
     }
     if section == "overview" {
         content += ["memory", "disk", "system"].enumerated().map { i, card in
@@ -90,7 +92,9 @@ func basketWindow(
             node("AXOutline", "\(section).list", at(210, 110, 1000, 600), children: rows),
         ]))
     }
-    let sectionGroup = group(content, id: "section.\(section)", frame: at(200, 52, 1080, 768))
+    var sectionGroup = group(content, id: "section.\(section)", frame: at(200, 52, 1080, 768))
+    // The app labels each section root with its (localized) title.
+    sectionGroup.label = localizedTitle
     let toolbar = node("AXToolbar", nil, at(0, 0, size.w, 52), children: [
         button("\(section).action.new", at(1200, 8, 44, toolbarActionHeight), title: nil, label: "New"),
     ])

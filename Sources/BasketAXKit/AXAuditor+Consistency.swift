@@ -138,7 +138,7 @@ extension AXAuditor {
             guard let i = sectionTitle(name, in: tree) else {
                 findings.append(AXFinding(
                     rule: AXAuditRules.consistencyTitle, severity: .info,
-                    message: "[\(name)] no section title found (“\(name).title” or a heading reading “\(displayName(name))”)",
+                    message: "[\(name)] no section title found (“\(name).title” or a heading reading “\(titleCandidates(name, in: tree)[0])”)",
                     path: "\(name):\(tree.root.path)"))
                 continue
             }
@@ -157,22 +157,40 @@ extension AXAuditor {
         return findings
     }
 
-    /// `<section>.title` if present; else the first heading, then static text, that reads the
-    /// section's display name outside the sidebar.
+    /// `<section>.title` if present; else the first heading, then static text, outside the sidebar
+    /// that reads the section's name. The name comes from the tree — the accessible name of
+    /// `section.<name>`, else the sidebar item's text — so the rule works in every language; the
+    /// English display name is the last resort.
     static func sectionTitle(_ section: String, in tree: AXTreeIndex) -> Int? {
         if let i = tree.innermost(identifier: "\(section).title") { return i }
-        let name = displayName(section).lowercased()
+        let names = Set(titleCandidates(section, in: tree).map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
         func outsideSidebar(_ i: Int) -> Bool {
             ([i] + tree.ancestors(of: i)).allSatisfy { tree[$0].node.identifier?.hasPrefix("sidebar.") != true }
         }
         for role in ["AXHeading", "AXStaticText"] {
             if let i = tree.indices.first(where: {
                 let n = tree[$0].node
-                return n.role == role && n.text?.trimmingCharacters(in: .whitespaces).lowercased() == name
-                    && outsideSidebar($0)
+                guard n.role == role, let text = n.text?.trimmingCharacters(in: .whitespaces).lowercased() else { return false }
+                return names.contains(text) && outsideSidebar($0)
             }) { return i }
         }
         return nil
+    }
+
+    /// What the section's title may read: its root's accessible name, the sidebar item's text,
+    /// then the English display name.
+    static func titleCandidates(_ section: String, in tree: AXTreeIndex) -> [String] {
+        var names: [String] = []
+        if let i = tree.innermost(identifier: "section.\(section)"), let name = tree[i].node.accessibleName {
+            names.append(name)
+        }
+        if let i = tree.innermost(identifier: "sidebar.\(section)") {
+            let item = tree[i].node
+            if let text = item.accessibleName ?? item.text { names.append(text) }
+            names += item.allNodes.compactMap { $0.role == "AXStaticText" ? $0.text : nil }
+        }
+        names.append(displayName(section))
+        return names
     }
 
     static func displayName(_ section: String) -> String {

@@ -32,8 +32,38 @@ Fixtures/fresh/               A new Mac: no `container` CLI (`cli-missing`), Orb
 Tests/BasketCoreTests/        Decoder/backend tests; Fixtures/ = container 1.7.1 output from throwaway test
                               containers on public images, scrubbed of host paths and user names
 Tests/BasketAXKitTests/       Lint-rule tests on synthetic AX trees
-scripts/                      build-app.sh, build-e2e-runner.sh, selftest.sh, e2e.sh
+Resources/Localization/       Localizable.xcstrings — every UI string, all languages (see Localization)
+scripts/                      build-app.sh, build-e2e-runner.sh, selftest.sh, e2e.sh, sync-strings.sh, check-l10n.sh
 ```
+
+## Localization
+
+Basket is localized into English (source), Simplified Chinese, Traditional Chinese, Japanese,
+French and German; terms and typography are in [l10n/glossary.md](l10n/glossary.md).
+
+- **One String Catalog**, `Resources/Localization/Localizable.xcstrings`, keyed by the English
+  text. `scripts/build-app.sh` compiles it with `xcrun xcstringstool compile` into
+  `Basket.app/Contents/Resources/<lang>.lproj` (`Localizable.strings`, plus `.stringsdict` for
+  plurals) and lists those languages in `CFBundleLocalizations`; `CFBundleDevelopmentRegion` is
+  `en`. It is not a SwiftPM resource bundle: `Bundle.module` inside a hand-assembled app is fragile,
+  and `Bundle.main` is where SwiftUI and `String(localized:)` look by default.
+- **Keys come from the compiler.** `scripts/sync-strings.sh` builds the `Basket` product with
+  `swiftc -emit-localized-strings` (its own scratch path, `<scratch>-strings`) and merges the
+  `.stringsdata` of the Basket and BasketCore sources with `xcstringstool sync`: new keys are
+  added, unused ones marked stale (`--prune` drops them). `scripts/check-l10n.sh` (CI) fails when
+  the catalog is out of date, a key lacks a translation in any language, placeholders don't match,
+  or the catalog doesn't compile; `scripts/l10n.swift` does the catalog checks and imports/exports
+  translations as JSON.
+- **In code**: SwiftUI literals are `LocalizedStringKey`s; text built in code uses
+  `String(localized:)`. BasketCore uses `String(localized: …, bundle: .main)`, so tests (no app
+  bundle) see the English keys and the `basket-docker` CLI stays English. Plurals are catalog
+  variations (a plural form must contain the number; it varies on the first integer argument);
+  lists use `ListFormatStyle`, and sizes, percentages, durations and dates use formatters.
+  Accessibility identifiers are never localized.
+- **Language**: macOS's preferred languages, or Settings ▸ General ▸ Language, which writes
+  `AppleLanguages` in Basket's own defaults and takes effect after a relaunch. Self-test and E2E
+  pick one with `BASKET_LANGUAGE=<id>` (`-AppleLanguages (<id>)` for that run only; the E2E runner
+  takes `--language <id>`).
 
 ## Why the CLI and not ContainerClient/XPC
 
@@ -109,7 +139,10 @@ The UI is tested the way VoiceOver sees it — through the accessibility tree �
 Rules (BasketAXKit): every interactive element has an accessible name; no element is outside
 its window; sibling interactive elements don't overlap; hit targets are not tiny; buttons in one
 group share a height; identifiers are unique; static text is not obviously truncated; and the
-cross-section consistency contract below holds.
+cross-section consistency contract below holds. No rule depends on the UI language: elements are
+found by identifier, and a section's title by the accessible name of its `section.<name>` root.
+Run both paths in other languages with `BASKET_LANGUAGE` (German has the longest labels, Chinese
+and Japanese text is checked for truncation from two characters on).
 
 ### Accessibility identifier contract
 

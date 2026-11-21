@@ -10,8 +10,10 @@ usage:
       Audit <section>.ax.json snapshots written by the app's self-test (BASKET_SELFTEST_DIR).
       Writes <dir>/report.json and <dir>/report.md. Exit 1 on any error finding.
   basket-ax audit --app <Basket.app> [--fixtures <dir>] --out <dir> [--sections a,b,...] [--deadline seconds]
+                  [--language <id>]
       Launch Basket.app with the fixtures backend, drive it through AXUIElement, capture and
       audit every section out of process. The whole run is capped at --deadline (default 300 s).
+      --language runs the app in that language (e.g. zh-Hans; -AppleLanguages for this run only).
       Exit 0 ok, 1 findings, 2 runner failure, 3 Accessibility permission missing.
 """
 

@@ -195,7 +195,7 @@ func check(_ path: String) {
                 problems.append("[\(source)] plural needs \"one\" and \"other\": \(quote(key))")
             }
             for (category, form) in forms {
-                problems += placeholderProblems(form, keyPlaceholders, language: "\(source):\(category)", key: key, exact: false)
+                problems += placeholderProblems(form, keyPlaceholders, language: "\(source):\(category)", key: key, exact: true)
             }
         case .plain(let value, _):
             sourcePlural = false
@@ -225,7 +225,7 @@ func check(_ path: String) {
                 }
                 if forms["other"] == nil { problems.append("[\(language)] plural needs \"other\": \(quote(key))") }
                 for (category, form) in forms {
-                    problems += placeholderProblems(form, keyPlaceholders, language: "\(language):\(category)", key: key, exact: false)
+                    problems += placeholderProblems(form, keyPlaceholders, language: "\(language):\(category)", key: key, exact: true)
                 }
             }
         }
@@ -241,8 +241,8 @@ func check(_ path: String) {
     fail("\(problems.count) localization problem(s); untranslated per language: \(summary)")
 }
 
-/// A translation must use the key's placeholders with the same types (all of them, unless it is a
-/// plural form, which may leave the number out: "an image").
+/// A translation must use all of the key's placeholders with the same types. Plural forms too:
+/// `xcstringstool compile` rejects a plural form without the number ("an image").
 func placeholderProblems(_ value: String, _ expected: [Int: String], language: String, key: String, exact: Bool) -> [String] {
     guard let found = placeholders(value) else { return ["[\(language)] placeholder types clash in \(quote(value))"] }
     let multiple = expected.count > 1

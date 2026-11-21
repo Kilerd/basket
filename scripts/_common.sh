@@ -35,6 +35,17 @@ swift_build() {
   (cd "$ROOT" && swift build --scratch-path "$SCRATCH" -c "$config" --show-bin-path)
 }
 
+# check_app_language <Basket.app> <language id or empty> — dies unless the built app ships that
+# localization (BASKET_LANGUAGE for selftest.sh / e2e.sh, e.g. zh-Hans).
+check_app_language() {
+  local app="$1" language="$2"
+  [[ -z "$language" ]] && return 0
+  [[ "$language" =~ ^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*$ ]] \
+    || die "BASKET_LANGUAGE must be a language id such as zh-Hans (got '$language')" 64
+  [[ -d "$app/Contents/Resources/$language.lproj" ]] \
+    || die "Basket has no '$language' localization (have: $(cd "$app/Contents/Resources" && ls -d ./*.lproj | sed 's|^\./||; s|\.lproj$||' | tr '\n' ' '))" 64
+}
+
 # developer_id_identity — the first "Developer ID Application" signing identity, or nothing.
 developer_id_identity() {
   security find-identity -v -p codesigning 2>/dev/null \

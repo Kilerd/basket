@@ -32,21 +32,21 @@ extension OrbStackMigrator {
         _ image: OrbStackImage, backend: any ContainerBackend, progress: @escaping @Sendable (ImportProgress) -> Void
     ) async throws {
         guard let reference = image.reference else {
-            throw MigrationError.notImportable("An untagged, unnamed image has no reference to import under.")
+            throw MigrationError.notImportable(String(localized: "An untagged, unnamed image has no reference to import under.", bundle: .main))
         }
         let target = normalizeImageReference(reference)
-        progress(ImportProgress(phase: .checking, message: "Checking Basket for \(target)"))
+        progress(ImportProgress(phase: .checking, message: String(localized: "Checking Basket for \(target)", bundle: .main)))
         // Loading repoints a reference Basket already has: never import over an existing name, and
         // only call it "already in Basket" when the content is the same.
         if Self.basketReferences(try await backend.listImages()).contains(target) {
             switch await comparePresent(image, reference: target, backend: backend) {
             case .identical, .absent: throw MigrationError.alreadyInBasket(target)
             case .nameConflict(let reason): throw MigrationError.nameConflict(reference: target, reason: reason)
-            case .unverified(let reason): throw MigrationError.nameConflict(reference: target, reason: "the two couldn't be compared: \(reason)")
+            case .unverified(let reason): throw MigrationError.nameConflict(reference: target, reason: String(localized: "the two couldn't be compared: \(reason)", bundle: .main))
             }
         }
         try Task.checkCancellation()
-        progress(ImportProgress(phase: .checking, message: "Checking free disk space"))
+        progress(ImportProgress(phase: .checking, message: String(localized: "Checking free disk space", bundle: .main)))
         let directory = try Self.makeImportDirectory(in: temporaryDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -60,12 +60,12 @@ extension OrbStackMigrator {
         try Task.checkCancellation()
 
         let archiveBytes = Self.allocatedSize(of: directory)
-        progress(ImportProgress(phase: .loading(bytes: archiveBytes), message: "Loading into Basket"))
+        progress(ImportProgress(phase: .loading(bytes: archiveBytes), message: String(localized: "Loading into Basket", bundle: .main)))
         let references = try await load(archive, reference: reference, platform: platform, backend: backend)
         try Task.checkCancellation()
         progress(ImportProgress(
             phase: .done(references: references, archiveBytes: archiveBytes),
-            message: "Imported \(references.first ?? normalizeImageReference(reference))"))
+            message: String(localized: "Imported \(references.first ?? normalizeImageReference(reference))", bundle: .main)))
     }
 
     /// Known platform → exactly that (host preferred); unknown → host first, then linux/amd64.
@@ -78,9 +78,9 @@ extension OrbStackMigrator {
         _ reference: String, platforms: [String], to archive: URL, directory: URL,
         progress: @escaping @Sendable (ImportProgress) -> Void
     ) async throws -> String {
-        var lastError: Error = MigrationError.notImportable("Nothing to export.")
+        var lastError: Error = MigrationError.notImportable(String(localized: "Nothing to export.", bundle: .main))
         for platform in platforms {
-            progress(ImportProgress(phase: .exporting(bytes: 0), message: "Exporting \(platform) from OrbStack"))
+            progress(ImportProgress(phase: .exporting(bytes: 0), message: String(localized: "Exporting \(platform) from OrbStack", bundle: .main)))
             let arguments = ["save", "--platform", platform, "-o", archive.path, reference]
             let save = Task { try await docker(arguments, timeout: nil) }
             let stalled = StallFlag()
@@ -96,7 +96,7 @@ extension OrbStackMigrator {
                         lastBytes = bytes
                         lastGrowth = clock.now
                         if bytes > 0 {
-                            progress(ImportProgress(phase: .exporting(bytes: bytes), message: "Exporting \(platform) from OrbStack"))
+                            progress(ImportProgress(phase: .exporting(bytes: bytes), message: String(localized: "Exporting \(platform) from OrbStack", bundle: .main)))
                         }
                     } else if clock.now - lastGrowth > stallTimeout {
                         stalled.set()
@@ -118,7 +118,9 @@ extension OrbStackMigrator {
                 if stalled.isSet, !Task.isCancelled {
                     throw MigrationError.dockerFailed(
                         command: Self.commandLine(arguments),
-                        message: "the export made no progress for \(exportStallTimeout.components.seconds) s and was stopped")
+                        message: String(
+                            localized: "the export made no progress for \(exportStallTimeout.formatted(.units(width: .abbreviated))) and was stopped",
+                            bundle: .main))
                 }
                 throw error
             }
@@ -193,7 +195,7 @@ extension OrbStackMigrator {
                 case .nameConflict(let reason):
                     throw MigrationError.nameConflict(reference: plan.image, reason: reason)
                 case .unverified(let reason):
-                    progress("Using Basket's \(plan.image); it couldn't be compared with OrbStack's (\(reason))")
+                    progress(String(localized: "Using Basket's \(plan.image); it couldn't be compared with OrbStack's (\(reason))", bundle: .main))
                 case .identical, .absent:
                     break
                 }
@@ -202,17 +204,17 @@ extension OrbStackMigrator {
             if let sourceImage, sourceImage.reference != nil {
                 for try await step in importImage(sourceImage, into: backend) { progress(step.message) }
             } else {
-                progress("The image isn't in OrbStack; `container run` will pull it")
+                progress(String(localized: "The image isn't in OrbStack; `container run` will pull it", bundle: .main))
             }
         }
         if !plan.volumes.isEmpty {
             let existing = Set(try await backend.listVolumes().map(\.name))
             for volume in plan.volumes where !existing.contains(volume) {
-                progress("Creating volume \(volume)")
+                progress(String(localized: "Creating volume \(volume)", bundle: .main))
                 try await backend.createVolume(name: volume, size: nil)
             }
         }
-        progress("Starting \(plan.name)")
+        progress(String(localized: "Starting \(plan.name)", bundle: .main))
         guard let cli = backend as? CLIBackend else { return try await backend.run(plan.runSpec) }
         var arguments = plan.runArguments
         if let index = arguments.firstIndex(of: "run") { arguments.insert(contentsOf: ["--progress", "none"], at: index + 1) }

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Permission-free UI check: the app walks its own accessibility tree for every section
 # (BASKET_SELFTEST_DIR), then `basket-ax lint` audits the dumps.
-#   scripts/selftest.sh [demo|empty|stopped]
-# Output: artifacts/selftest/<set>-<timestamp>/{<section>.png,<section>.ax.json,report.md,report.json,app.log}
+#   scripts/selftest.sh [demo|empty|stopped|fresh]
+#   BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo     run the app in another language
+# Output: artifacts/selftest/<set>[-<language>]-<timestamp>/{<section>.png,<section>.ax.json,report.md,report.json,app.log}
 # Exit code: lint's (0 clean, 1 error findings, 2 nothing to lint).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
@@ -11,23 +12,29 @@ SET="${1:-demo}"
 FIXTURES="$ROOT/Fixtures/$SET"
 [[ -d "$FIXTURES" ]] || die "no fixture set at $FIXTURES (try: $(ls "$ROOT/Fixtures" | tr '\n' ' '))" 64
 APP_TIMEOUT="${BASKET_SELFTEST_TIMEOUT:-90}"
+LANGUAGE="${BASKET_LANGUAGE:-}"
 
 "$ROOT/scripts/build-app.sh" debug >/dev/null
 log "swift build (debug) basket-ax"
 AX="$(swift_build debug basket-ax)/basket-ax"
+check_app_language "$BUILD_DIR/Basket.app" "$LANGUAGE"
 
 acquire_gui_lock "self-test"
 
-OUT="$ROOT/artifacts/selftest/$SET-$(date +%Y%m%d-%H%M%S)"
+OUT="$ROOT/artifacts/selftest/$SET${LANGUAGE:+-$LANGUAGE}-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
-log "self-test with Fixtures/$SET → $OUT (timeout ${APP_TIMEOUT}s)"
+log "self-test with Fixtures/$SET${LANGUAGE:+ in $LANGUAGE} → $OUT (timeout ${APP_TIMEOUT}s)"
 
 APP_PID=""
 cleanup() { [[ -n "$APP_PID" ]] && kill -TERM "$APP_PID" 2>/dev/null || true; }
 trap cleanup INT TERM
 
+# The argument domain sets the language for this run only (nothing is written to defaults).
+LANGUAGE_ARGS=()
+[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(-AppleLanguages "($LANGUAGE)")
 env BASKET_BACKEND=fixtures BASKET_FIXTURES_DIR="$FIXTURES" BASKET_UI_TEST=1 BASKET_SELFTEST_DIR="$OUT" \
-  "$BUILD_DIR/Basket.app/Contents/MacOS/Basket" -ApplePersistenceIgnoreState YES >"$OUT/app.log" 2>&1 &
+  "$BUILD_DIR/Basket.app/Contents/MacOS/Basket" -ApplePersistenceIgnoreState YES \
+  ${LANGUAGE_ARGS[@]+"${LANGUAGE_ARGS[@]}"} >"$OUT/app.log" 2>&1 &
 APP_PID=$!
 
 # Watchdog: TERM after the timeout, KILL 5 s later.
