@@ -33,7 +33,7 @@ enum HostActions {
                 }
             }
         } catch {
-            onError("Couldn't open a shell", error)
+            onError(String(localized: "Couldn’t open a shell"), error)
         }
     }
 

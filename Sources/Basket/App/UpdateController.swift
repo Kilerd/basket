@@ -130,7 +130,7 @@ final class UpdateController {
         var team: String?
         if bundle.bundleURL.pathExtension != "app" || bundle.bundleIdentifier != UpdatePolicy.bundleIdentifier || version == nil {
             reason = AppLocation.problem(with: bundle.bundleURL)
-                ?? "This build of Basket has no release version, so it can't update itself."
+                ?? String(localized: "This build of Basket has no release version, so it can't update itself.")
         } else {
             do {
                 team = try CodeSignature.runningApp().updateTeam()
@@ -165,7 +165,9 @@ final class UpdateController {
 
     var isBusy: Bool { phase.isBusy }
     var isAvailable: Bool { unavailableReason == nil }
-    var currentVersionText: String { currentVersion?.description ?? "development build" }
+    var currentVersionText: String {
+        currentVersion?.description ?? String(localized: "development build", comment: "Shown as “Basket development build” instead of a version")
+    }
 
     // MARK: Scheduling
 
@@ -244,9 +246,11 @@ final class UpdateController {
                 phase = userInitiated ? .upToDate : .idle
             case .requiresNewerSystem(let system):
                 self.offer = nil
+                let new = offer.version.description, needed = system.description
+                let running = SystemVersion.current.description, installed = currentVersion.description
                 phase = userInitiated
-                    ? .failed(UpdateFailure(title: "Basket \(offer.version) needs macOS \(system)",
-                                            message: "This Mac runs macOS \(SystemVersion.current). Basket \(currentVersion) stays installed."))
+                    ? .failed(UpdateFailure(title: String(localized: "Basket \(new) needs macOS \(needed)"),
+                                            message: String(localized: "This Mac runs macOS \(running). Basket \(installed) stays installed.")))
                     : .idle
             case .available:
                 if !userInitiated, skippedVersion == offer.version.description {
@@ -401,21 +405,25 @@ final class UpdateController {
     private func busyWork() -> UpdateFailure? {
         let work = store?.longRunningWork ?? []
         guard !work.isEmpty else { return nil }
+        let list = work.joined(separator: "\n")
         return UpdateFailure(
-            title: "Basket is still working",
-            message: work.joined(separator: "\n") + "\n\nInstalling quits Basket, which would stop this. Finish or cancel it, then install the update.",
+            title: String(localized: "Basket is still working"),
+            message: String(localized: "\(list)\n\nInstalling quits Basket, which would stop this. Finish or cancel it, then install the update.",
+                            comment: "The placeholder lists the work in progress, one line each"),
             retry: .install)
     }
 
     func failure(_ error: Error, retry: UpdateFailure.Retry) -> UpdateFailure {
         let updateError = error as? UpdateError
         if let updateError, updateError.isSecurityFailure {
+            let reason = updateError.localizedDescription
             return UpdateFailure(
-                title: "The update failed a security check",
-                message: updateError.localizedDescription + " Basket was not changed. Please report this (see SECURITY.md in the Basket repository).",
+                title: String(localized: "The update failed a security check"),
+                message: String(localized: "\(reason) Basket was not changed. Please report this (see SECURITY.md in the Basket repository).",
+                                comment: "The placeholder is the failed check, a full sentence"),
                 isSecurity: true)
         }
-        let title = retry == .check ? "Couldn't check for updates" : "Couldn't install the update"
+        let title = retry == .check ? String(localized: "Couldn't check for updates") : String(localized: "Couldn't install the update")
         switch updateError {
         case .requiresNewerSystem?, .notNewer?, .unavailable?, .invalidPublicKey?:
             return UpdateFailure(title: title, message: error.localizedDescription)

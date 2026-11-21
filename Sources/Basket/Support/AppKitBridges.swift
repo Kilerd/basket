@@ -60,7 +60,8 @@ struct MonospacedTextView: NSViewRepresentable {
     var text: String
     var followTail = false
     var identifier: String
-    var label: String
+    /// VoiceOver name ("Inspect output for web"); a literal at the call site is localized.
+    var label: LocalizedStringResource
 
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = NSTextView.scrollableTextView()
@@ -79,7 +80,7 @@ struct MonospacedTextView: NSViewRepresentable {
             textView.textColor = .labelColor
             textView.textContainerInset = NSSize(width: 8, height: 8)
             textView.setAccessibilityIdentifier(identifier)
-            textView.setAccessibilityLabel(label)
+            textView.setAccessibilityLabel(String(localized: label))
         }
         return scroll
     }

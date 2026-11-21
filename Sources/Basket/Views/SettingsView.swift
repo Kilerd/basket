@@ -1,6 +1,7 @@
 import SwiftUI
 import ServiceManagement
 import UniformTypeIdentifiers
+import BasketCore
 
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
@@ -60,7 +61,8 @@ struct SettingsView: View {
             UpdateSettingsSection()
         }
         .formStyle(.grouped)
-        .frame(width: 520)
+        // Wide enough for German and French labels next to their controls.
+        .frame(width: 580)
         // As tall as the content up to a height that fits a 13-inch display; the form scrolls.
         .frame(maxHeight: 760)
         .fixedSize(horizontal: false, vertical: true)
@@ -69,8 +71,9 @@ struct SettingsView: View {
 
     private var cliStatus: String {
         let path = cliPath.trimmingCharacters(in: .whitespaces)
-        if path.isEmpty { return "Searches /opt/homebrew/bin, /usr/local/bin and your PATH." }
-        return FileManager.default.isExecutableFile(atPath: path) ? "Found an executable at this path." : "No executable at this path."
+        if path.isEmpty { return String(localized: "Searches /opt/homebrew/bin, /usr/local/bin and your PATH.") }
+        return FileManager.default.isExecutableFile(atPath: path)
+            ? String(localized: "Found an executable at this path.") : String(localized: "No executable at this path.")
     }
 
     private func chooseCLI() {
@@ -78,7 +81,7 @@ struct SettingsView: View {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: "/opt/homebrew/bin")
-        panel.message = "Choose the container executable"
+        panel.message = String(localized: "Choose the container executable")
         panel.allowedContentTypes = [.unixExecutable]
         if panel.runModal() == .OK, let url = panel.url {
             cliPath = url.path
@@ -91,7 +94,7 @@ struct SettingsView: View {
             if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
             loginItemError = nil
         } catch {
-            loginItemError = "Couldn't update the login item: \(error.localizedDescription)"
+            loginItemError = String(localized: "Couldn't update the login item: \(error.localizedDescription)")
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
@@ -123,7 +126,9 @@ private struct MemorySaverSettingsSection: View {
 
     private var exemptionsText: String {
         let exempt = store.memorySaver.exemptions.sorted()
-        let rule = "Never stopped: containers started with --rm (stopping deletes them) and ones you exempt in their context menu or details."
-        return exempt.isEmpty ? rule : rule + " Exempt now: \(exempt.joined(separator: ", "))."
+        guard !exempt.isEmpty else {
+            return String(localized: "Never stopped: containers started with --rm (stopping deletes them) and ones you exempt in their context menu or details.")
+        }
+        return String(localized: "Never stopped: containers started with --rm (stopping deletes them) and ones you exempt in their context menu or details. Exempt now: \(exempt.localizedList).")
     }
 }
