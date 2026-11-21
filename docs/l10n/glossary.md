@@ -47,7 +47,8 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | Overview | 概览 | 概覽 | 概要 | Vue d’ensemble | Übersicht | Sidebar section. |
 | Migrate from OrbStack | 从 OrbStack 迁移 | 從 OrbStack 移轉 | OrbStackから移行 | Migrer depuis OrbStack | Von OrbStack migrieren | Migrate: 迁移 / 移轉 / 移行 / migrer / migrieren (as Migration Assistant). |
 | import | 导入 | 匯入 | 読み込む（ボタン: 読み込む） | importer | importieren | |
-| memory | 内存 | 記憶體 | メモリ | mémoire | Arbeitsspeicher | de: “Speicher” alone means storage; use Arbeitsspeicher. |
+| memory | 内存 | 記憶體 | メモリ | mémoire | Arbeitsspeicher | de: “Speicher” alone means storage; use Arbeitsspeicher. Narrow table columns and tiles use “RAM” (“Host-RAM”, “RAM (Gast)”). |
+| guest (Linux in a VM) / host | 客户机 / 本机 | 客體 / 本機 | ゲスト / このMac | invité / hôte | Gast / Host | “Memory (guest)”: 内存（客户机）, 記憶體（客體）, メモリ（ゲスト）, Mémoire (invité), RAM (Gast). |
 | host memory, memory on this Mac | 本机内存 | 本機記憶體 | このMacのメモリ | mémoire de ce Mac | Arbeitsspeicher dieses Mac | What macOS pays for a VM (its footprint). |
 | stranded memory | 滞留内存 | 滯留記憶體 | 滞留メモリ | mémoire bloquée | blockierter Arbeitsspeicher | Memory a VM holds after its guest freed it. |
 | reclaim | 回收 | 回收 | 解放 | libérer | freigeben | “Reclaim Disk Space”: 回收磁盘空间, 回收磁碟空間, ディスク領域を解放, Libérer de l’espace disque, Speicherplatz freigeben. |
@@ -95,3 +96,17 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | Continue / Back / Skip | 继续 / 返回 / 跳过 | 繼續 / 返回 / 略過 | 続ける / 戻る / スキップ | Continuer / Retour / Ignorer | Fortfahren / Zurück / Überspringen | |
 | Not Now / Later | 以后 / 稍后 | 現在不要 / 稍後 | 今はしない / あとで | Plus tard / Plus tard | Nicht jetzt / Später | |
 | this Mac | 这台 Mac | 這台 Mac | このMac | ce Mac | dieser Mac | |
+| Up / Down (Compose) | Up / Down | Up / Down | 「Up」／「Down」 | Up / Down | Up / Down | `compose up` / `compose down`: command names, untranslated on buttons too (“Down…”); “take down” in a sentence names the action. |
+| kill (SIGKILL) | 强制停止 | 強制結束 | 強制終了 | forcer l’arrêt | sofort beenden | As Force Quit. |
+| exempt (from Memory Saver) | 豁免 | 排除 | 除外 | exclu | ausgenommen | |
+| image tag | 标签 | 標記 | タグ | tag | Tag | zh-Hant keeps 標籤 for labels. |
+| Created (state and date column) | 已创建 | 已建立 | 作成済み | Créé | Erstellt | One key for both uses. |
+| dangling / untagged image | 悬空 / 无标签 | 懸空 / 無標記 | ダングリング / タグなし | orpheline / sans tag | verwaist / ohne Tag | |
+| disk image (sparse) | 磁盘映像（稀疏） | 磁碟映像檔（稀疏） | ディスクイメージ（スパース） | image disque (fragmentée) | Festplattenimage (mitwachsend) | de: never bare “Image”, which is a container image. |
+| file-system volume | 宗卷 | 宗卷 | ボリューム | volume | Volume | The disk, as in Disk Utility — not a container volume. |
+| setup, Setup assistant | 设置、设置助理 | 初始設定、設定輔助程式 | セットアップ、設定アシスタント | configuration, Assistant de configuration | Einrichtung, Einrichtungsassistent | |
+
+Per-language decisions beyond this table (Compose and YAML vocabulary, update and signing terms,
+progress-line style, column abbreviations) are in [terms-zh-Hans.md](terms-zh-Hans.md),
+[terms-zh-Hant.md](terms-zh-Hant.md), [terms-ja.md](terms-ja.md), [terms-fr.md](terms-fr.md) and
+[terms-de.md](terms-de.md). Read the one for your language before translating new strings.

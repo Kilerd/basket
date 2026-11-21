@@ -103,7 +103,7 @@ func languages(_ catalog: JSONObject) -> [String] {
 
 /// printf placeholders of a format string, by position: "%@ has %lld" → [1: "@", 2: "int"].
 func placeholders(_ format: String) -> [Int: String]? {
-    let pattern = #/%(?:(\d+)\$)?[-+ 0#']*(?:\d+|\*)?(?:\.(?:\d+|\*))?(hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGaAcCsSp%])/#
+    let pattern = #/%(?:(\d+)\$)?[-+0#']*(?:\d+|\*)?(?:\.(?:\d+|\*))?(hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGaAcCsSp%])/#
     var result: [Int: String] = [:]
     var next = 1
     for match in format.matches(of: pattern) {
@@ -127,7 +127,7 @@ func placeholders(_ format: String) -> [Int: String]? {
 
 /// Whether some placeholder has no explicit position ("%@" rather than "%1$@").
 func hasImplicitPlaceholders(_ format: String) -> Bool {
-    format.matches(of: #/%(\d+\$)?[-+ 0#']*(?:\d+|\*)?(?:\.(?:\d+|\*))?(?:hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGaAcCsSp%])/#)
+    format.matches(of: #/%(\d+\$)?[-+0#']*(?:\d+|\*)?(?:\.(?:\d+|\*))?(?:hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGaAcCsSp%])/#)
         .contains { $0.output.1 == nil && $0.output.2 != "%" }
 }
 
@@ -136,7 +136,7 @@ func hasImplicitPlaceholders(_ format: String) -> Bool {
 /// "%@: %@" needs a no-break space in French). Bare placeholders and data such as "8080:80" don't.
 func needsTranslation(_ key: String, _ entry: JSONObject) -> Bool {
     if (entry["shouldTranslate"] as? Bool) == false { return false }
-    let stripped = key.replacing(#/%(?:\d+\$)?[-+ 0#']*(?:\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?[@dDiuUxXoOfFeEgGaAcCsSp%]/#, with: "")
+    let stripped = key.replacing(#/%(?:\d+\$)?[-+0#']*(?:\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?[@dDiuUxXoOfFeEgGaAcCsSp%]/#, with: "")
     if stripped.unicodeScalars.contains(where: { CharacterSet.letters.contains($0) }) { return true }
     if key.wholeMatch(of: #/[0-9:./\-]+/#) != nil { return false }
     return stripped.contains { "“”‘’\"'«»「」『』…:;!?()".contains($0) }

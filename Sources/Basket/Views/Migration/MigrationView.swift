@@ -295,14 +295,14 @@ private struct MigrationImagesTable: View {
                     .help(row.image.reference ?? row.image.imageID)
                     .accessibilityIdentifier("migration.row.\(row.id)")
             }
-            .width(min: 140, ideal: 250)
+            .width(min: 140, ideal: 220)
             TableColumn("Tag", value: \.tag) { row in
                 Text(row.image.tag ?? (row.image.isDangling ? "<none>" : Format.shortDigest(row.image.reference.map { String($0.split(separator: "@").last ?? "") } ?? "")))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            .width(min: 60, ideal: 160)
+            .width(min: 60, ideal: 130)
             TableColumn("Size", value: \.size) { row in
                 Text(Format.disk(row.size)).monospacedDigit()
                     .help("Disk used in OrbStack; the import copies the compressed \(row.image.exportPlatform) layers only")
@@ -317,7 +317,8 @@ private struct MigrationImagesTable: View {
                     }
                 }
             }
-            .width(min: 70, ideal: 110)
+            // "amd64" next to the Rosetta pill, neither of which is translated.
+            .width(min: 112, ideal: 120)
             TableColumn("Used By", value: \.usedBy) { row in
                 Group {
                     if row.usedBy == 0 {
