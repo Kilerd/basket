@@ -235,8 +235,11 @@ func check(_ path: String) {
         print("l10n: \(entries.count) keys, languages \(languages(catalog).joined(separator: " ")): complete")
         return
     }
-    for problem in problems.prefix(200) { warn(problem) }
-    if problems.count > 200 { warn("… and \(problems.count - 200) more") }
+    // Untranslated keys last: placeholder and plural problems are the ones to read first.
+    let ordered = problems.filter { !$0.contains("not translated") } + problems.filter { $0.contains("not translated") }
+    let limit = ProcessInfo.processInfo.environment["L10N_ALL"] == nil ? 200 : Int.max
+    for problem in ordered.prefix(limit) { warn(problem) }
+    if problems.count > limit { warn("… and \(problems.count - limit) more (L10N_ALL=1 lists them all)") }
     let summary = targets.map { "\($0) \(missingCount[$0, default: 0])" }.joined(separator: ", ")
     fail("\(problems.count) localization problem(s); untranslated per language: \(summary)")
 }

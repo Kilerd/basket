@@ -28,10 +28,15 @@ dupes="$(for t in "${TARGETS[@]}"; do find "$ROOT/Sources/$t" -name '*.swift' -e
 [[ -z "$dupes" ]] || die "source file names must be unique across ${TARGETS[*]} (string extraction): $dupes"
 
 # Always recompile both modules: an incremental build would skip unchanged files and leave
-# their keys out.
+# their keys out. Removing their object files and dependency records makes the driver compile
+# every file again while SwiftPM's build plan stays valid.
 rm -rf "$DATA"
 mkdir -p "$DATA"
-for t in "${TARGETS[@]}"; do rm -rf "$STRINGS_SCRATCH"/*/debug/"$t".build; done
+for t in "${TARGETS[@]}"; do
+  for dir in "$STRINGS_SCRATCH"/*/debug/"$t".build; do
+    [[ -d "$dir" ]] && find "$dir" \( -name '*.o' -o -name '*.swiftdeps' -o -name '*.priors' -o -name '*.swiftmodule' \) -delete
+  done
+done
 log "extracting strings (swift build --scratch-path ${STRINGS_SCRATCH#"$ROOT"/})"
 (cd "$ROOT" && swift build --scratch-path "$STRINGS_SCRATCH" --product Basket \
   -Xswiftc -emit-localized-strings -Xswiftc -emit-localized-strings-path -Xswiftc "$DATA" >&2) \
