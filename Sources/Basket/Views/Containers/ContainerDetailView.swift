@@ -195,7 +195,7 @@ struct InspectJSONView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             Divider()
-            MonospacedTextView(text: text, identifier: identifier, label: String(localized: "Inspect output for \(subject)"))
+            MonospacedTextView(text: text, identifier: identifier, label: "Inspect output for \(subject)")
         }
         .task(id: subject) {
             error = nil
