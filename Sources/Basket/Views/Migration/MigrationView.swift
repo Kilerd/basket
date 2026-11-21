@@ -302,7 +302,7 @@ private struct MigrationImagesTable: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            .width(min: 60, ideal: 150)
+            .width(min: 60, ideal: 145)
             TableColumn("Size", value: \.size) { row in
                 Text(Format.disk(row.size)).monospacedDigit()
                     .help("Disk used in OrbStack; the import copies the compressed \(row.image.exportPlatform) layers only")
@@ -318,7 +318,7 @@ private struct MigrationImagesTable: View {
                 }
             }
             // "amd64" next to the Rosetta pill, neither of which is translated.
-            .width(min: 112, ideal: 120)
+            .width(min: 112, ideal: 116)
             TableColumn("Used By", value: \.usedBy) { row in
                 Group {
                     if row.usedBy == 0 {
@@ -330,12 +330,12 @@ private struct MigrationImagesTable: View {
                 .foregroundStyle(row.usedBy == 0 ? .secondary : .primary)
                 .lineLimit(1)
             }
-            .width(min: 80, ideal: 100)
+            .width(min: 80, ideal: 95)
             TableColumn("In Basket", value: \.basketOrder) { row in
                 MigrationImageStatus(row: row)
             }
             // Room for the longest status pill in German and French ("Nicht verglichen").
-            .width(min: 120, ideal: 140)
+            .width(min: 120, ideal: 125)
             TableColumn("Created", value: \.created) { row in
                 Text(Format.relative(row.image.createdAt)).foregroundStyle(.secondary)
                     .help(Format.dateTime(row.image.createdAt))
@@ -408,7 +408,7 @@ private struct MigrationContainersTable: View {
             TableColumn("Image", value: \.image) { row in
                 Text(row.image).lineLimit(1).truncationMode(.middle).help(row.image)
             }
-            .width(min: 120, ideal: 270)
+            .width(min: 120, ideal: 230)
             TableColumn("State", value: \.stateOrder) { row in
                 HStack(spacing: 5) {
                     Image(systemName: row.container.isRunning ? "play.circle.fill" : "stop.circle")
@@ -429,7 +429,7 @@ private struct MigrationContainersTable: View {
                     .lineLimit(1)
                     .help(MigrationModel.mountsDetail(row.container.mounts))
             }
-            .width(min: 80, ideal: 170)
+            .width(min: 80, ideal: 200)
             TableColumn("In Basket") { row in
                 if let recreated = model.recreated[row.id] {
                     Pill(text: "\(recreated.basketID)", systemImage: "checkmark.circle.fill", tint: .green)
@@ -460,7 +460,7 @@ private struct MigrationContainersTable: View {
         switch state.lowercased() {
         case "running": String(localized: "Running")
         case "exited": String(localized: "Exited", comment: "Docker container state")
-        case "created": String(localized: "Created", comment: "Docker container state")
+        case "created": String(localized: "Created (state)", defaultValue: "Created", comment: "Container state: created but never started")
         case "paused": String(localized: "Paused", comment: "Docker container state")
         case "restarting": String(localized: "Restarting", comment: "Docker container state")
         case "removing": String(localized: "Removing", comment: "Docker container state")

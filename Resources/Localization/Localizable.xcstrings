@@ -2599,13 +2599,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld montage de liaison"
+                  "value" : "%lld montage lié"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld montages de liaison"
+                  "value" : "%lld montages liés"
                 }
               }
             }
@@ -13306,6 +13306,48 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "作成日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建时间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立時間"
+          }
+        }
+      }
+    },
+    "Created (state)" : {
+      "comment" : "Container state: created but never started",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Created"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créé"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "作成済み"
           }
         },
@@ -17916,7 +17958,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mémoire de ce Mac"
+            "value" : "Mémoire hôte"
           }
         },
         "ja" : {

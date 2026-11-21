@@ -88,7 +88,7 @@ private struct MachinesTable: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .width(min: 120, ideal: 170)
+            .width(min: 120, ideal: 160)
             TableColumn("Image", value: \.image) { row in
                 Text(ImageName(row.image).display).foregroundStyle(.secondary).lineLimit(1).help(row.image)
             }
@@ -104,7 +104,7 @@ private struct MachinesTable: View {
                 NumericCell(row.memory > 0 ? Format.memory(row.memory) : "—", isPlaceholder: row.memory <= 0)
                     .help("Memory limit of the machine's VM")
             }
-            .width(min: 70, ideal: 80)
+            .width(min: 92, ideal: 96)  // "Arbeitsspeicher"
             .alignment(.numeric)
             TableColumn("Host Memory", value: \.hostMemory) { row in
                 NumericCell(row.hostMemory < 0 ? "—" : Format.memory(row.hostMemory), isPlaceholder: row.hostMemory < 0)

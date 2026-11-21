@@ -53,9 +53,14 @@ struct ContainerStatsView: View {
             Chart(points) { p in
                 AreaMark(x: .value("Time", p.date), y: .value(title, value(p)))
                     .foregroundStyle(color.opacity(0.15))
+                    .accessibilityHidden(true)  // the line carries the same values
                 LineMark(x: .value("Time", p.date), y: .value(title, value(p)))
                     .foregroundStyle(color)
                     .lineStyle(StrokeStyle(lineWidth: 2))
+                    // A sample's time and value, short in every language (the default is a
+                    // full date range).
+                    .accessibilityLabel(Text(verbatim: p.date.formatted(date: .omitted, time: .standard)))
+                    .accessibilityValue(Text(verbatim: value(p).formatted(.number.precision(.fractionLength(0...1)))))
             }
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 4)) { _ in

@@ -90,7 +90,7 @@ extension ContainerState {
         case .running: String(localized: "Running", comment: "State of a container, a machine or the container system")
         case .stopped: String(localized: "Stopped", comment: "State of a container, a machine or the container system")
         case .stopping: String(localized: "Stopping", comment: "State of a container, a machine or the container system")
-        case .created: String(localized: "Created", comment: "Container state: created but never started")
+        case .created: String(localized: "Created (state)", defaultValue: "Created", comment: "Container state: created but never started")
         case .unknown: String(localized: "Unknown", comment: "State of a container, a machine or the container system")
         }
     }
