@@ -2,7 +2,8 @@
 # Permission-free UI check: the app walks its own accessibility tree for every section
 # (BASKET_SELFTEST_DIR), then `basket-ax lint` audits the dumps.
 #   scripts/selftest.sh [demo|empty|stopped|fresh]
-#   BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo     run the app in another language
+#   BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo     run the app in another language (and
+#                                                        its region format: app_locale)
 # Output: artifacts/selftest/<set>[-<language>]-<timestamp>/{<section>.png,<section>.ax.json,report.md,report.json,app.log}
 # Exit code: lint's (0 clean, 1 error findings, 2 nothing to lint).
 set -euo pipefail
@@ -29,9 +30,10 @@ APP_PID=""
 cleanup() { [[ -n "$APP_PID" ]] && kill -TERM "$APP_PID" 2>/dev/null || true; }
 trap cleanup INT TERM
 
-# The argument domain sets the language for this run only (nothing is written to defaults).
+# The argument domain sets the language and its region format (-AppleLocale: "4,21 Go" in French)
+# for this run only; nothing is written to defaults.
 LANGUAGE_ARGS=()
-[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(-AppleLanguages "($LANGUAGE)")
+[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(-AppleLanguages "($LANGUAGE)" -AppleLocale "$(app_locale "$LANGUAGE")")
 env BASKET_BACKEND=fixtures BASKET_FIXTURES_DIR="$FIXTURES" BASKET_UI_TEST=1 BASKET_SELFTEST_DIR="$OUT" \
   "$BUILD_DIR/Basket.app/Contents/MacOS/Basket" -ApplePersistenceIgnoreState YES \
   ${LANGUAGE_ARGS[@]+"${LANGUAGE_ARGS[@]}"} >"$OUT/app.log" 2>&1 &

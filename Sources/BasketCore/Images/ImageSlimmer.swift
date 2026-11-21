@@ -262,13 +262,13 @@ public enum SlimError: Error, LocalizedError, Sendable, Equatable {
         case .notEnoughSpace(let needed, let available):
             String(localized: "Not enough free disk space: needs \(Self.size(needed)), \(Self.size(available)) available. Nothing was changed.", bundle: .main)
         case .saveFailed(let message):
-            String(localized: "\(message) Nothing was changed.", bundle: .main, comment: "The argument is the error message (a sentence)")
+            String(localized: "\(message.asSentence) Nothing was changed.", bundle: .main, comment: "The argument is the error message (a sentence)")
         case .loadFailed(let message):
-            String(localized: "\(message) The original image is unchanged.", bundle: .main, comment: "The argument is the error message (a sentence)")
+            String(localized: "\(message.asSentence) The original image is unchanged.", bundle: .main, comment: "The argument is the error message (a sentence)")
         case .notSlimmed(let reference):
             String(localized: "The container CLI kept the other platform variants of \(reference); nothing was removed.", bundle: .main)
         case .needsRecovery(let reason, let archive):
-            String(localized: "\(reason) A copy of the image is kept at \(archive.path) — load it with: container image load --input \(shellQuoteIfNeeded(archive.path))", bundle: .main,
+            String(localized: "\(reason.asSentence) A copy of the image is kept at \(archive.path) — load it with: container image load --input \(shellQuoteIfNeeded(archive.path))", bundle: .main,
                    comment: "1: what went wrong (a sentence), 2: folder of the kept archive, 3: the archive path for the command")
         }
     }

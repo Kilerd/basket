@@ -5,7 +5,7 @@ Decisions made while translating, so later strings stay consistent. The main tab
 
 ## Messages
 
-Up / Down (Compose commands and buttons) → Up / Down (left untranslated like “Compose Up”; “Down with volumes” → 「Down 並刪除磁碟區」, “Up creates it” → 「Up 會建立」)
+Up / Down (Compose controls) → 建立並啟動 / 停止並移除 (review round; “Compose Up” stays the command name). Down… → 停止並移除⋯; Down and Delete Volumes… → 停止並移除（含磁碟區）⋯; sentences name the action (然後再建立並啟動)
 tag (image tag, YAML tag) → 標記 (標籤 stays reserved for “label”)
 copy (noun: “Basket's copy”, “a copy of the image”) → 拷貝 (Basket 中的拷貝 / OrbStack 中的拷貝)
 archive, image archive → 封存檔, 映像檔封存檔
@@ -65,12 +65,14 @@ Exempt (from Memory Saver) → 排除; Exempt from Memory Saver → 從記憶體
 Kill / Killing… → 強制結束 / 正在強制結束⋯ (as Force Quit)
 New Container… / New Volume… → 新增容器⋯ / 新增磁碟區⋯ (Apple “New …” → 新增)
 Add Port / Add Variable → 加入連接埠 / 加入變數
-Take “%@” down? / Couldn't take the project down → 要關閉「%@」嗎？ / 無法關閉專案 (buttons Up / Down stay untranslated)
+take down (compose down) → 停止並移除: Take “%@” down? → 要停止並移除「%@」嗎？; Couldn't take the project down → 無法停止並移除專案; Project %@ is down → 專案 %@ 已停止並移除
 Show in Finder / Reveal → 在 Finder 中顯示 / 顯示
 Inspect (detail tab) → 檢閱; Info → 資訊; Logs → 記錄; Stats → 統計資料
 Follow (logs) → 追蹤; following → 追蹤中
 Dangling (image) → 懸空; untagged → 無標記; Digest → 摘要
-Used By (column) → 使用對象; Used by %@. → 由 %@ 使用。
+Used By (column) → 使用方; Used by %@. → 使用方：%@。
+Summary (setup step) → 總結 (摘要 stays for Digest)
+context menu → 快速鍵選單 (as macOS)
 On Disk (column) → 磁碟佔用; %@ on disk → 佔用磁碟 %@
 Capacity → 容量; Subnet → 子網路; Gateway → 閘道; Mode → 模式; Distribution → 發行版
 Processes → 程序 (as Activity Monitor); Activity Monitor → 活動監視器
@@ -84,3 +86,4 @@ Step %lld of %lld → 第 %1$lld 步，共 %2$lld 步
 Docker states: Created / Exited / Paused / Dead / Removing / Restarting → 已建立 / 已結束 / 已暫停 / 已失效 / 移除中 / 重新啟動中
 Note / Warning (VoiceOver) → 附註 / 警告
 Spacing: names that arrive already quoted (Format.quoted → 「web」) get no spaces around %@ (要重新啟動%@嗎？); a placeholder that is a preceding Chinese sentence is joined without a space (%1$@已保留映像檔：%2$@), as Format.sentences does for zh
+Spacing: durations and relative dates (5分鐘, 2小時前) get a space before and none after (閒置 %2$@後已停止; %@保留)

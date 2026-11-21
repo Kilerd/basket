@@ -19,12 +19,15 @@ enum AuditCommand {
         var deadline: Double = 300
         /// App language for the run (`-AppleLanguages (<id>)`, e.g. `zh-Hans`); nil = the system's.
         var language: String?
+        /// Region format for the run (`-AppleLocale <id>`, e.g. `fr_FR`); nil = the system's.
+        var locale: String?
     }
 
     struct UsageError: Error, CustomStringConvertible { let description: String }
 
     static func parse(_ args: [String]) throws -> Options {
-        var app: URL?, fixtures: URL?, out: URL?, sections: [String]?, deadlineOverride: Double?, language: String?
+        var app: URL?, fixtures: URL?, out: URL?, sections: [String]?, deadlineOverride: Double?
+        var language: String?, locale: String?
         var i = 0
         func value() throws -> String {
             i += 1
@@ -47,6 +50,12 @@ enum AuditCommand {
                     throw UsageError(description: "--language needs a language id such as zh-Hans")
                 }
                 language = id
+            case "--locale":
+                let id = try value()
+                guard id.range(of: #"^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*$"#, options: .regularExpression) != nil else {
+                    throw UsageError(description: "--locale needs a locale id such as fr_FR")
+                }
+                locale = id
             case "--sections":
                 sections = try value().split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                     .filter { !$0.isEmpty }
@@ -61,6 +70,7 @@ enum AuditCommand {
         if let sections, !sections.isEmpty { options.sections = sections }
         if let deadlineOverride { options.deadline = deadlineOverride }
         options.language = language
+        options.locale = locale
         return options
     }
 
@@ -202,6 +212,10 @@ final class AuditRunner {
             // The argument domain overrides the app's language for this run only.
             config.arguments += ["-AppleLanguages", "(\(language))"]
             notes.append("language: \(language)")
+        }
+        if let locale = options.locale {
+            config.arguments += ["-AppleLocale", locale]
+            notes.append("region format: \(locale)")
         }
         let launched = try await NSWorkspace.shared.openApplication(at: options.app, configuration: config)
         app = launched

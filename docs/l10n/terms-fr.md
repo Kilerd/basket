@@ -90,3 +90,6 @@ English → French, one term per line.
 - “for good” (data loss) → définitivement
 - “a pull” (recreating needs one) → récupérer l’image
 - built or loaded on this Mac → générée ou chargée sur ce Mac
+- Host Memory (column and section title) → Mémoire hôte
+- Read-only / Read-write (home-folder mount) → Lecture seule / Lecture et écriture
+- Take Down (confirm button of the Down alert) → Exécuter Down

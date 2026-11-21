@@ -70,14 +70,24 @@ em dash in English running text → spaced en dash " – " (German convention)
 
 ## Interface
 
-Memory (narrow table column / stats tile) → RAM; Host Memory → Host-RAM; Memory (guest) / (host) → RAM (Gast) / RAM (Host). Width exception only: sentences, settings, alerts and chart titles keep Arbeitsspeicher (glossary)
+RAM only in: Host Memory → Host-RAM; stats tiles Memory (guest) / (host) → RAM (Gast) / RAM (Host). "Memory" everywhere else (incl. column headers) → Arbeitsspeicher (review decision)
+
+## Review round
+
+pull (an image) → herunterladen (replaces "laden"): Pull → Herunterladen; Pull Image… → Image herunterladen …; Pulling %@… → %@ wird heruntergeladen …; Pulled %@ → %@ heruntergeladen; pulled images → heruntergeladene Images
+download → herunterladen (Downloading… → Wird heruntergeladen …)
+load (from an archive, `container image load`) → laden ("aus einem Archiv geladen"; "Das Laden eines Images aus einem Archiv")
+Read-only / Read-write (home-folder mount) → Nur Lesen / Lesen & Schreiben
+Host (real) → Host (tatsächlich); real memory macOS pays → physischer Arbeitsspeicher, den macOS … aufwendet
+Memory now → Aktueller Arbeitsspeicher
+You’re up to date → Basket ist auf dem neuesten Stand
 On Disk (column) / "%@ on disk" → Belegt / "%@ belegt"
 Used By (column) → Genutzt von; "Used by %@." → "Wird von %@ verwendet."
 Disk (card, footer, machine column) → Festplatte; Disk I/O → Festplatten-E/A; R %@ / W %@ → L %@ / S %@ (Lesen / Schreiben)
 disk image (sparse volume file, OrbStack data image) → Festplattenimage (never bare "Image", which means a container image)
 sparse → mitwachsend (as Disk Utility's "mitwachsendes Image")
 home folder → Benutzerordner (also the machine column "Home")
-load from an archive vs pull → "aus einem Archiv geladen" vs "laden"; "pulled images" → "aus einer Registry geladene Images"
+load from an archive vs pull → "aus einem Archiv geladen" vs "herunterladen" (see review round)
 slim / keep one platform → verschlanken: "Keep Only %@" → "Nur %@ behalten"; "Keeping only…" → "… wird auf %@ verschlankt"; "Kept only %@" → "Auf %@ verschlankt"
 Kill (SIGKILL) → Sofort beenden (Apple's Force Quit wording); Killing… → Wird beendet …
 Stop Idle Containers / idle container → Container im Leerlauf stoppen
@@ -102,3 +112,5 @@ Stop containers idle for [duration] → Container stoppen nach Leerlauf von [dur
 Reveal (button) / Show in Finder → Anzeigen / Im Finder anzeigen
 Dismiss → Schließen
 lightweight VM → leichte VM
+Take Down (confirm button of the Down alert) → Herunterfahren (matches the alert title „%@“ herunterfahren?)
+Update containers every (refresh picker; the options are formatted durations) → Aktualisierungsintervall

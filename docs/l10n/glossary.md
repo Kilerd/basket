@@ -26,7 +26,8 @@ formatting. Sizes, percentages, durations and dates come from formatters (`Forma
 | Quotes around names | “redis” | “redis” | 「redis」 | 「redis」 | « redis » (U+00A0 inside) | „redis“ |
 | Ellipsis (menus, buttons that open a sheet, progress) | `Reclaim…` | `回收…` (U+2026) | `回收⋯` (U+22EF, as Apple's zh-Hant menus) | `解放…` | `Libérer…` | `Freigeben …` (U+00A0 before …, as Apple's German menus) |
 | Sentence punctuation | , . : ; ! ? | full-width ，。：；！？ | full-width ，。：；！？ | 、。 full-width ：！？ | U+00A0 before : ; ! ? and » | as English |
-| Space between CJK and Latin letters or digits | — | one space (“这台 Mac”) | one space (“這台 Mac”) | none (“このMac”) | — | — |
+| Spaces next to Latin letters and digits | — | one space between CJK and Latin letters or digits (“这台 Mac”, “2 个容器”); none between a number and a CJK unit (“3秒”, “15分钟”); none next to “” | same as zh-Hans (“這台 Mac”, “3秒”); none next to 「」 | none at all (“このMac”, “2個のコンテナ”) | — | — |
+| Placeholders | | spaced by what they hold: a size or a name gets spaces (“占用 1.2 GB”), a duration a space before only (“闲置 %@后”), quoted names (`Format.quotedList`: “web”、“db”) none (“要重新启动%@吗？”); a leading sentence is followed by no space | as zh-Hans | no spaces | | | |
 | Form of address | you | 你 (no 您) | 你 | polite (です／ます) in sentences, plain verbs on buttons | vous | du (as macOS) |
 | Buttons and menu items | Title Case verb | verb | verb | verb (〜する is dropped: 削除) | infinitive, sentence case | infinitive |
 
@@ -47,7 +48,7 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | Overview | 概览 | 概覽 | 概要 | Vue d’ensemble | Übersicht | Sidebar section. |
 | Migrate from OrbStack | 从 OrbStack 迁移 | 從 OrbStack 移轉 | OrbStackから移行 | Migrer depuis OrbStack | Von OrbStack migrieren | Migrate: 迁移 / 移轉 / 移行 / migrer / migrieren (as Migration Assistant). |
 | import | 导入 | 匯入 | 読み込む（ボタン: 読み込む） | importer | importieren | |
-| memory | 内存 | 記憶體 | メモリ | mémoire | Arbeitsspeicher | de: “Speicher” alone means storage; use Arbeitsspeicher. Narrow table columns and tiles use “RAM” (“Host-RAM”, “RAM (Gast)”). |
+| memory | 内存 | 記憶體 | メモリ | mémoire | Arbeitsspeicher | de: “Speicher” alone means storage; use Arbeitsspeicher. “RAM” only in the “Host Memory” column (Host-RAM) and the stats tiles “Memory (guest)” / “Memory (host)” (RAM (Gast) / RAM (Host)). Real/physical memory: physischer Arbeitsspeicher. |
 | guest (Linux in a VM) / host | 客户机 / 本机 | 客體 / 本機 | ゲスト / このMac | invité / hôte | Gast / Host | “Memory (guest)”: 内存（客户机）, 記憶體（客體）, メモリ（ゲスト）, Mémoire (invité), RAM (Gast). |
 | host memory, memory on this Mac | 本机内存 | 本機記憶體 | このMacのメモリ | mémoire de ce Mac | Arbeitsspeicher dieses Mac | What macOS pays for a VM (its footprint). The “Host Memory” column and section: Mémoire hôte (fr), Host-RAM (de). |
 | stranded memory | 滞留内存 | 滯留記憶體 | 滞留メモリ | mémoire bloquée | blockierter Arbeitsspeicher | Memory a VM holds after its guest freed it. |
@@ -58,7 +59,8 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | reclaimable | 可回收 | 可回收 | 解放可能 | récupérable | freigebbar | |
 | Compose project | Compose 项目 | Compose 專案 | Composeプロジェクト | projet Compose | Compose-Projekt | |
 | service (Compose) | 服务 | 服務 | サービス | service | Dienst | |
-| pull (an image) | 拉取 | 拉取 | プル | récupérer | laden | “Pull Image…”: 拉取镜像…, 拉取映像檔⋯, イメージをプル…, Récupérer une image…, Image laden … |
+| pull (an image) | 拉取 | 拉取 | プル | récupérer | herunterladen | “Pull Image…”: 拉取镜像…, 拉取映像檔⋯, イメージをプル…, Récupérer une image…, Image herunterladen … |
+| load (an image from an archive) | 载入 | 載入 | 読み込む | charger | aus einem Archiv laden | `container image load`: never the same word as pull in de (“laden” vs “herunterladen”). |
 | platform, variant | 平台、变体 | 平台、變體 | プラットフォーム、バリアント | plateforme, variante | Plattform, Variante | `linux/arm64` itself is never translated. |
 | slim (keep one platform) | 精简 | 精簡 | スリム化 | alléger | verschlanken | |
 | port | 端口 | 連接埠 | ポート | port | Port | |
@@ -96,11 +98,18 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | Continue / Back / Skip | 继续 / 返回 / 跳过 | 繼續 / 返回 / 略過 | 続ける / 戻る / スキップ | Continuer / Retour / Ignorer | Fortfahren / Zurück / Überspringen | |
 | Not Now / Later | 以后 / 稍后 | 現在不要 / 稍後 | 今はしない / あとで | Plus tard / Plus tard | Nicht jetzt / Später | |
 | this Mac | 这台 Mac | 這台 Mac | このMac | ce Mac | dieser Mac | |
-| Up / Down (Compose) | Up / Down | Up / Down | 「Up」／「Down」 | Up / Down | Up / Down | `compose up` / `compose down`: command names, untranslated on buttons too (“Down…”); “take down” in a sentence names the action. |
+| Up / Down (Compose controls) | 创建并启动 / 停止并移除 | 建立並啟動 / 停止並移除 | 作成して起動 / 停止して削除 | Up / Down | Up / Down | “Compose Up” stays the feature name everywhere (menu item, sheet title). zh/ja translate the controls and name the action in sentences: “Down and Delete Volumes…” 停止并移除（含卷）…, 停止並移除（含磁碟區）⋯, 停止して削除（ボリュームも）…; “Take “%@” down?” 要停止并移除“%@”吗？, 要停止並移除「%@」嗎？, 「%@」を停止して削除しますか？. fr/de keep Up/Down; the alert's own button “Take Down”: Exécuter Down, Herunterfahren. |
+| … Anyway (buttons) | 仍要… | 仍要… | このまま… | … quand même | Trotzdem … | 仍要删除 / 仍要退出 / 仍要重新启动 / 仍要停止. |
+| items (in a list) | 项、内容 | 項目 | 項目 | éléments | Objekte | zh-Hans: 项目 only for a Compose project. |
+| Used By (column) | 使用方 | 使用方 | 使用元 | Utilisé par | Genutzt von | |
+| context menu | 快捷菜单 | 快速鍵選單 | コンテキストメニュー | menu contextuel | Kontextmenü | As macOS names it. |
+| Summary / Digest | 总结 / 摘要 | 總結 / 摘要 | まとめ / ダイジェスト | Résumé / digest | Zusammenfassung / Digest | Summary is the last setup step; Digest an image digest. |
+| container API server | container API 服务器 | container API 伺服器 | container APIサーバ | serveur d’API container | container-API-Server | |
+| Read-only / Read-write (home folder mount) | 只读 / 读写 | 唯讀 / 讀寫 | 読み出し専用 / 読み書き | Lecture seule / Lecture et écriture | Nur Lesen / Lesen & Schreiben | |
 | kill (SIGKILL) | 强制停止 | 強制結束 | 強制終了 | forcer l’arrêt | sofort beenden | As Force Quit. |
 | exempt (from Memory Saver) | 豁免 | 排除 | 除外 | exclu | ausgenommen | |
 | image tag | 标签 | 標記 | タグ | tag | Tag | zh-Hant keeps 標籤 for labels. |
-| Created (date column and label) | 创建时间 | 建立時間 | 作成日 | Créé | Erstellt | The container state is the separate key “Created (state)”: 已创建, 已建立, 作成済み, Créé, Erstellt. |
+| Created (date column and label) | 创建时间 | 建立時間 | 作成日時 | Créé | Erstellt | The container state is the separate key “Created (state)”: 已创建, 已建立, 作成済み, Créé, Erstellt. |
 | dangling / untagged image | 悬空 / 无标签 | 懸空 / 無標記 | ダングリング / タグなし | orpheline / sans tag | verwaist / ohne Tag | |
 | disk image (sparse) | 磁盘映像（稀疏） | 磁碟映像檔（稀疏） | ディスクイメージ（スパース） | image disque (fragmentée) | Festplattenimage (mitwachsend) | de: never bare “Image”, which is a container image. |
 | file-system volume | 宗卷 | 宗卷 | ボリューム | volume | Volume | The disk, as in Disk Utility — not a container volume. |

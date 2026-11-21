@@ -30,12 +30,11 @@ build (images) → 构建
 copy (noun: Basket's copy, this copy of Basket) → 副本 (the Copy action stays 拷贝)
 Compose file → Compose 文件
 top level / top-level (Compose file) → 顶层
-profile (Compose) → profile (untranslated; topic heading “Profile”)
+profile (Compose) → profile (untranslated; topic heading “profiles”)
 secrets / configs (Compose keys, also as topic headings) → secrets / configs (untranslated, as in the file)
 sysctls (topic heading) → sysctl
 replicas (topic heading) → 副本数
 reservations (topic heading) → 资源预留
-Up / Down (Compose actions referred to in sentences) → 执行 Up / 执行 Down (command names kept)
 docker shim → docker shim (untranslated)
 bundle identifier / team identifier → 套装 ID / 团队 ID (as App Store Connect)
 notarized → 经过公证的
@@ -60,7 +59,6 @@ guest (the Linux guest in a VM) → 客户机 (“Guest in use” 客户机已�
 host memory column / label → 本机内存; “Memory (host)” 内存（本机）; “On this Mac” 本机占用; “Host (real)” 本机（实际）; “Host” (Overview row) 主机
 stranded (label) → 滞留; “%@ stranded” 滞留 %@
 VM overhead / VM footprint → 虚拟机开销 / 虚拟机占用
-Up / Down (Compose buttons and menu items) → Up / Down (kept, as in round-1 sentences); “Take “%@” down?” 要对“%@”执行 Down 吗？
 Kill (SIGKILL) → 强制停止
 exempt (Memory Saver) → 豁免
 keep only one platform (slim action) → 仅保留 %@ / “仅保留一个平台”
@@ -88,3 +86,16 @@ help-tag shortcuts → kept in full-width parentheses: 新建容器（⌘N）, �
 counts → measure words: 个 (containers, images, volumes, networks, services, CPUs), 台 (machines), 行 (log lines), 项 (items)
 “%lld of %lld” (compact) → %1$lld/%2$lld; “Step %lld of %lld” → 第 %1$lld 步，共 %2$lld 步
 release notes / What’s New → 发布说明 / 新功能; “You’re up to date” 已是最新版本
+
+# Review round (lead decisions)
+
+Up (control) → 创建并启动; Down / Down… → 停止并移除 / 停止并移除…; Down and Delete Volumes… → 停止并移除（含卷）…; Take “%@” down? → 要停止并移除“%@”吗？ (“Compose Up” stays the feature name)
+… Anyway (buttons) → 仍要… (仍要删除, 仍要退出, 仍要重新启动, 仍要停止)
+项目 → only for Compose projects; other “items” → 项 / 各项 / 内容
+Used By / user (of an image or volume) → 使用方
+shell → shell, lower case also on buttons (打开 shell)
+pays for (memory macOS pays for a VM) → 实际占用的
+contacting (a server) → 连接
+read (parse a value: “can't read the port”) → 解析
+keep only one platform (progress) → 正在精简“%2$@”，仅保留 %1$@
+spacing: number + time unit without space (1秒, 15分钟); quoted names (Format.quoted / quotedList) and leading sentences (Format.sentences) without spaces around the placeholder

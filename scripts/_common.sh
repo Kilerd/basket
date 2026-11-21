@@ -46,6 +46,20 @@ check_app_language() {
     || die "Basket has no '$language' localization (have: $(cd "$app/Contents/Resources" && ls -d ./*.lproj | sed 's|^\./||; s|\.lproj$||' | tr '\n' ' '))" 64
 }
 
+# app_locale <language id> — the region format passed as -AppleLocale with BASKET_LANGUAGE, so
+# numbers, sizes and dates follow the language too ("4,21 Go", "4.21 GB", "2026年11月21日").
+app_locale() {
+  case "$1" in
+    en) echo en_US ;;
+    fr) echo fr_FR ;;
+    de) echo de_DE ;;
+    ja) echo ja_JP ;;
+    zh-Hans) echo zh_CN ;;
+    zh-Hant) echo zh_TW ;;
+    *) echo "${1//-/_}" ;;
+  esac
+}
+
 # developer_id_identity — the first "Developer ID Application" signing identity, or nothing.
 developer_id_identity() {
   security find-identity -v -p codesigning 2>/dev/null \

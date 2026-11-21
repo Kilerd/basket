@@ -32,10 +32,10 @@ struct SettingsView: View {
             SetupSettingsSection()
             Section("Refresh") {
                 Picker("Update containers every", selection: $refreshInterval) {
-                    Text("1 second").tag(1.0)
-                    Text("2 seconds").tag(2.0)
-                    Text("5 seconds").tag(5.0)
-                    Text("10 seconds").tag(10.0)
+                    // "1 second", "5 seconds" in the user's language (DurationFormatStyle).
+                    ForEach([1.0, 2.0, 5.0, 10.0], id: \.self) { seconds in
+                        Text(verbatim: Format.duration(seconds, width: .wide)).tag(seconds)
+                    }
                 }
                 .onChange(of: refreshInterval) { store.restartPolling() }
                 .accessibilityIdentifier("settings.refresh-interval")

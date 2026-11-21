@@ -139,7 +139,7 @@ func needsTranslation(_ key: String, _ entry: JSONObject) -> Bool {
     let stripped = key.replacing(#/%(?:\d+\$)?[-+0#']*(?:\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?[@dDiuUxXoOfFeEgGaAcCsSp%]/#, with: "")
     if stripped.unicodeScalars.contains(where: { CharacterSet.letters.contains($0) }) { return true }
     if key.wholeMatch(of: #/[0-9:./\-]+/#) != nil { return false }
-    return stripped.contains { "“”‘’\"'«»「」『』…:;!?()".contains($0) }
+    return stripped.contains { "“”‘’\"'«»「」『』….:;!?()".contains($0) }
 }
 
 /// Languages without plural categories for integers (CLDR: only "other").

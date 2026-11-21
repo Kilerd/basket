@@ -25,7 +25,7 @@ OUT="$ROOT/artifacts/e2e/$(date +%Y%m%d-%H%M%S)${LANGUAGE:+-$LANGUAGE}-$$"
 mkdir -p "$OUT"
 log "running BasketE2E.app${LANGUAGE:+ with Basket in $LANGUAGE} (log: $OUT/runner.log)"
 LANGUAGE_ARGS=()
-[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(--language "$LANGUAGE")
+[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(--language "$LANGUAGE" --locale "$(app_locale "$LANGUAGE")")
 # Launched through LaunchServices so macOS attributes the Accessibility grant to BasketE2E.app
 # itself (not to this terminal). Its stdout is invisible; it writes runner.log + report.json.
 open -W -n "$BUILD_DIR/BasketE2E.app" --args \

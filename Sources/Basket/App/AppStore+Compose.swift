@@ -254,7 +254,7 @@ extension AppStore {
             message: message.joined(separator: "\n\n"),
             confirmLabel: removeVolumes
                 ? String(localized: "Delete Everything")
-                : String(localized: "Down", comment: "Button: take a Compose project down (`compose down`): stop and remove its containers and networks")
+                : String(localized: "Take Down", comment: "Confirm button of “Take “%@” down?”: stop and remove the Compose project's containers and networks (`compose down`)")
         ) { [weak self] in
             let approved = ComposeDownApproval(
                 containers: Set(containers), networks: Set(networks), volumes: removeVolumes ? Set(volumes) : [])

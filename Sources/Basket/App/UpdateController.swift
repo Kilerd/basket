@@ -419,7 +419,7 @@ final class UpdateController {
             let reason = updateError.localizedDescription
             return UpdateFailure(
                 title: String(localized: "The update failed a security check"),
-                message: String(localized: "\(reason) Basket was not changed. Please report this (see SECURITY.md in the Basket repository).",
+                message: String(localized: "\(reason.asSentence) Basket was not changed. Please report this (see SECURITY.md in the Basket repository).",
                                 comment: "The placeholder is the failed check, a full sentence"),
                 isSecurity: true)
         }

@@ -5,7 +5,7 @@ Decisions made while translating, so later strings stay consistent. The main tab
 
 ## Messages
 
-- Up / Down (Compose actions, buttons) → Up / Down (kept like “Compose Up”; written 「Up」「Down」 in sentences)
+- Up / Down (Compose controls) → 作成して起動 / 停止して削除 (Down… → 停止して削除…); sentences name the action, not the button; “Compose Up” stays the feature name
 - progress line “Doing X” → 〜中 (起動中, 削除中, 書き出し中); a list placeholder goes after “：” (ネットワークを削除中：%@)
 - export (from OrbStack) → 書き出す / 書き出し
 - load (an image archive) → 読み込む (same as import)
@@ -58,13 +58,15 @@ Decisions made while translating, so later strings stay consistent. The main tab
 - New Container / Machine / Network / Volume → 新規コンテナ / 新規マシン / 新規ネットワーク / 新規ボリューム
 - Show in Finder / Reveal → Finderで表示 / 表示
 - Select All / Select None → すべてを選択 / 選択を解除
-- Down and Delete Volumes… → Down（ボリュームも削除）…; “Take X down?” → 「X」の「Down」を実行しますか？
+- Down and Delete Volumes… → 停止して削除（ボリュームも）…; “Take X down?” → 「X」を停止して削除しますか？
+- container API server → container APIサーバ; Remove Unused → 未使用の項目を削除; Created (date) → 作成日時, Created (state) → 作成済み
+- formulas use full-width ＋ ＝ with no spaces; “(recommended)” → （推奨）; no space after a leading sentence placeholder
 - Keep Only linux/arm64 → linux/arm64のみ残す; Slimming… → スリム化中…
 - Restore (image archive) → 復元
 - empty state “No Containers” → コンテナがありません; “No Results for X” → 「X」の結果はありません
 - “Couldn't load X” → Xを取得できませんでした (avoids 読み込む, which means import)
-- states: Running 実行中, Stopped 停止, Stopping 停止中, Unknown 不明, Created 作成済み, Exited 終了, Paused 一時停止, Restarting 再起動中, Removing 削除中, Dead デッド
-- table columns: Name 名前, State 状態, Size サイズ, On Disk ディスク上, Used By 使用元, In Basket Basket内, Created 作成済み, Subnet サブネット, Gateway ゲートウェイ, Mode モード, Capacity 容量, Tag タグ, Digest ダイジェスト, Format フォーマット, Home ホーム, Import 読み込み
+- states: Running 実行中, Stopped 停止, Stopping 停止中, Unknown 不明, Created (state) 作成済み, Exited 終了, Paused 一時停止, Restarting 再起動中, Removing 削除中, Dead デッド
+- table columns: Name 名前, State 状態, Size サイズ, On Disk ディスク上, Used By 使用元, In Basket Basket内, Created 作成日時, Subnet サブネット, Gateway ゲートウェイ, Mode モード, Capacity 容量, Tag タグ, Digest ダイジェスト, Format フォーマット, Home ホーム, Import 読み込み
 - detail tabs: Info 情報, Logs ログ, Stats 統計, Inspect インスペクト, Overview 概要
 - Host Memory (column / section) → このMacのメモリ; Memory (host) / Memory (guest) → メモリ（このMac） / メモリ（ゲスト）; Host (real) → このMac（実メモリ）
 - Guest in use → ゲスト使用量; VM overhead / VM footprint → VMオーバーヘッド / VMフットプリント; Limits → 上限; Top consumers → 使用量上位

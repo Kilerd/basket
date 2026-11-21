@@ -62,8 +62,10 @@ French and German; terms and typography are in [l10n/glossary.md](l10n/glossary.
   Accessibility identifiers are never localized.
 - **Language**: macOS's preferred languages, or Settings ▸ General ▸ Language, which writes
   `AppleLanguages` in Basket's own defaults and takes effect after a relaunch. Self-test and E2E
-  pick one with `BASKET_LANGUAGE=<id>` (`-AppleLanguages (<id>)` for that run only; the E2E runner
-  takes `--language <id>`).
+  pick one with `BASKET_LANGUAGE=<id>`: `-AppleLanguages (<id>)` plus the matching region format
+  `-AppleLocale` (`app_locale` in `scripts/_common.sh`: fr_FR, de_DE, ja_JP, zh_CN, zh_TW, en_US),
+  for that run only, so screenshots show the language's number and date formats ("4,21 Go"); the
+  E2E runner takes `--language <id> --locale <id>`.
 
 ## Why the CLI and not ContainerClient/XPC
 
