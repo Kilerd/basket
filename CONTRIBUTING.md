@@ -52,7 +52,7 @@ list from a repository secret.
 | `scripts/build-app.sh [debug\|release]` | Bundles and signs `build/Basket.app` |
 | `scripts/selftest.sh demo\|empty\|stopped` | In-process accessibility audit and screenshots for one fixture set. Needs no permissions |
 | `scripts/e2e.sh demo` | Out-of-process `AXUIElement` end-to-end test. Needs the Accessibility permission for `BasketE2E.app` |
-| `BASKET_LANGUAGE=de scripts/selftest.sh demo` | Either test in another language (`zh-Hans`, `zh-Hant`, `ja`, `fr`, `de`) |
+| `BASKET_LANGUAGE=de scripts/selftest.sh demo` | Either test in another language (`zh-Hans`, `zh-Hant`, `ja`, `fr`, `de`) and its region format (numbers, sizes, dates) |
 | `scripts/sync-strings.sh [--prune]` | Adds new UI strings to the String Catalog and marks (or drops) unused ones |
 | `scripts/check-l10n.sh` | Localization gate: catalog in sync, every language complete, placeholders match |
 | `scripts/check-leaks.sh --all` | Confidentiality scan of the working tree (`--staged` runs in the pre-commit hook) |

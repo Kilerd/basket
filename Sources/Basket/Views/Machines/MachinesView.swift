@@ -88,11 +88,11 @@ private struct MachinesTable: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .width(min: 120, ideal: 160)
+            .width(min: 110, ideal: 140)
             TableColumn("Image", value: \.image) { row in
                 Text(ImageName(row.image).display).foregroundStyle(.secondary).lineLimit(1).help(row.image)
             }
-                .width(min: 90, ideal: 120)
+                .width(min: 90, ideal: 110)
             TableColumn("State", value: \.stateOrder) { row in
                 StateBadge(state: row.summary.state, pendingVerb: store.pending[row.id])
             }
@@ -110,7 +110,7 @@ private struct MachinesTable: View {
                 NumericCell(row.hostMemory < 0 ? "—" : Format.memory(row.hostMemory), isPlaceholder: row.hostMemory < 0)
                     .help("Physical memory macOS pays for this machine's VM")
             }
-            .width(min: 80, ideal: 100)
+            .width(min: 80, ideal: 95)
             .alignment(.numeric)
             TableColumn("Disk", value: \.disk) { row in
                 NumericCell(row.disk < 0 ? "—" : Format.disk(row.disk), isPlaceholder: row.disk < 0)
@@ -119,11 +119,11 @@ private struct MachinesTable: View {
             .width(min: 70, ideal: 80)
             .alignment(.numeric)
             TableColumn("Home") { row in Text(homeMountTitle(row.summary.homeMount)).foregroundStyle(.secondary) }
-                .width(min: 112, ideal: 120)  // "Schreibgeschützt", "Lecture seule"
+                .width(min: 124, ideal: 128)  // "Lecture et écriture", "Lesen & Schreiben"
             TableColumn("IP Address") { row in
                 Text(row.summary.ipv4Address ?? "—").font(.body.monospaced()).foregroundStyle(.secondary)
             }
-            .width(min: 100, ideal: 110)
+            .width(min: 112, ideal: 115)  // a full IPv4 address
         }
         .contextMenu(forSelectionType: String.self) { ids in
             if ids.count == 1, let id = ids.first, let m = store.machines.first(where: { $0.id == id }) {

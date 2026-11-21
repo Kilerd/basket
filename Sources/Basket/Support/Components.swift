@@ -172,7 +172,10 @@ struct Pill: View {
             Text(text)
         }
         .font(.caption)
-        .padding(.horizontal, 6)
+        // 8 pt: the accessibility frame is the whole capsule, and the truncation check reads a
+        // 17 pt tall frame as 14 pt text; the extra room keeps long labels ("8プラットフォーム")
+        // from being reported as cut off.
+        .padding(.horizontal, 8)
         .padding(.vertical, 2)
         .foregroundStyle(tint)
         .background(tint.opacity(0.12), in: Capsule())
