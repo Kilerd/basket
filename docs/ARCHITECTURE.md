@@ -140,8 +140,10 @@ The UI is tested the way VoiceOver sees it â€” through the accessibility tree â€
 
 Rules (BasketAXKit): every interactive element has an accessible name; no element is outside
 its window; sibling interactive elements don't overlap; hit targets are not tiny; buttons in one
-group share a height; identifiers are unique; static text is not obviously truncated; and the
-cross-section consistency contract below holds. No rule depends on the UI language: elements are
+group share a height; identifiers are unique; static text is not obviously truncated; inside a
+card (`overview.card.*`, or any group with a full-width bar) a right-aligned value column ends
+where the card's full-width content ends (`card-trailing-alignment`); and the cross-section
+consistency contract below holds. No rule depends on the UI language: elements are
 found by identifier, and a section's title by the accessible name of its `section.<name>` root.
 Run both paths in other languages with `BASKET_LANGUAGE` (German has the longest labels, Chinese
 and Japanese text is checked for truncation from two characters on).

@@ -18,6 +18,7 @@ public enum AXAuditor {
         findings += unknownRoles(tree)
         findings += repeatedLabels(tree)
         findings += columnAlignment(tree)
+        findings += cardTrailingAlignment(tree)
         findings += contract(tree, section: section)
         return findings.sortedForReport()
     }
