@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRATCH="${BASKET_SCRATCH:-.build}"
 # Where app bundles go (override with BASKET_BUILD_DIR so parallel lanes don't overwrite each other).
 BUILD_DIR="${BASKET_BUILD_DIR:-$ROOT/build}"
-VERSION="0.0.1"
+VERSION="0.0.2"
 # A release version: SemVer X.Y.Z, no leading zeros, no pre-release or build suffix (docs/RELEASING.md).
 SEMVER_RE='^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$'
 
