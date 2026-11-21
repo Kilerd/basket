@@ -76,6 +76,7 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | name conflict | 名称冲突 | 名稱衝突 | 名前の競合 | conflit de nom | Namenskonflikt | |
 | refresh | 刷新 | 重新整理 | 再読み込み | actualiser | aktualisieren | |
 | search | 搜索 | 搜尋 | 検索 | rechercher | suchen | |
+| find (find bar, ⌘F) | 查找 | 尋找 | 検索 | rechercher | suchen | As macOS's Edit ▸ Find. Searching inside a text view; “search” is the toolbar field that filters a list. |
 | copy | 拷贝 | 拷貝 | コピー | copier | kopieren | |
 | Settings | 设置 | 設定 | 設定 | Réglages | Einstellungen | |
 | General (settings tab) | 通用 | 一般 | 一般 | Général | Allgemein | |

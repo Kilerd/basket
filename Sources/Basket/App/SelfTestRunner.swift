@@ -61,6 +61,7 @@ struct SelfTestRunner {
             try? await Task.sleep(for: .milliseconds(tab == .stats ? 1500 : 900))
             await capture(window, as: "containers-\(tab.rawValue.lowercased())")
         }
+        await captureInspectExtras(window)
         store.containerDetailTab = .info
         let sheets: [ActiveSheet] = [
             .newContainer(.defaults(image: "docker.io/library/nginx:latest")), .pullImage(""), .newVolume,

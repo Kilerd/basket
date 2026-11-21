@@ -9,6 +9,14 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Added
+
+- Inspect: the JSON of containers and images is tidied (two-space indentation, `"key": value`,
+  `[]` / `{}` for empty arrays and objects, original key order) and highlighted with system
+  colours that keep WCAG AA contrast in light and dark mode (#32). Find (⌘F) searches it, long
+  lines scroll sideways instead of wrapping, and Copy JSON copies the tidied text. Large documents
+  are formatted and coloured off the main thread.
+
 ### Fixed
 
 - Overview: the Disk card's breakdown now spans the card, its numbers ending where the usage bar
