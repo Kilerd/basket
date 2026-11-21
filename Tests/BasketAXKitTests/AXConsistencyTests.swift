@@ -91,6 +91,16 @@ import Testing
         #expect(findings.first?.message.contains("AXHeading") == true)
     }
 
+    @Test func localizedSectionTitlesAreFoundThroughTheSectionLabel() {
+        // Titles in another language: found by the section root's label, not by English text.
+        let findings = AXAuditor.auditConsistency(sections: all {
+            basketWindow(section: $0, titleRole: $0 == "machines" ? "AXStaticText" : "AXHeading",
+                         localizedTitle: "标题 \($0)")
+        }).rule(AXAuditRules.consistencyTitle)
+        #expect(findings.map(\.severity) == [.warning])
+        #expect(findings.first?.path.hasPrefix("machines:") == true)
+    }
+
     @Test func missingTitleIsInfoAndSidebarTextIsNotATitle() {
         let findings = AXAuditor.auditConsistency(sections: all {
             basketWindow(section: $0, withTitle: $0 != "images")

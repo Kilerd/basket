@@ -1,6 +1,17 @@
 import AppKit
 import SwiftUI
 
+/// The caption above a log: "120 lines · 3 services · following". Each part is a whole phrase so
+/// every number gets its own plural.
+enum LogStatus {
+    static func text(lines: Int, services: Int? = nil, following: Bool) -> String {
+        var parts = [String(localized: "\(lines) lines", comment: "Log status: line count")]
+        if let services { parts.append(String(localized: "\(services) services", comment: "A number of Compose services")) }
+        if following { parts.append(String(localized: "following", comment: "Log status: new lines stream in as they are written")) }
+        return parts.joined(separator: " · ")
+    }
+}
+
 /// The lines a log view shows, applied to its NSTextView incrementally: appends add only the new
 /// text and trimming removes only the oldest lines, so a followed log never re-sets the whole text.
 @Observable @MainActor

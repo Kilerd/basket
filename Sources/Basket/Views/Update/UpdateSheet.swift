@@ -30,8 +30,8 @@ struct UpdateSheet: View {
 }
 
 private struct SheetHeader: View {
-    var title: String
-    var subtitle: String
+    var title: LocalizedStringKey
+    var subtitle: LocalizedStringKey
     var titleIdentifier: String
 
     var body: some View {
@@ -62,7 +62,8 @@ private struct OfferView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
-                SheetHeader(title: "Basket \(offer.version) is available", subtitle: subtitle, titleIdentifier: "update.version")
+                SheetHeader(title: "Basket \(offer.version.description) is available", subtitle: "\(subtitle)",
+                            titleIdentifier: "update.version")
                 Text("What’s New").font(.headline)
                 ReleaseNotesView(notes: offer.notes)
                     .accessibilityIdentifier("update.notes")
@@ -103,9 +104,11 @@ private struct OfferView: View {
     }
 
     private var subtitle: String {
-        var parts = ["You have \(updates.currentVersionText)", "released \(offer.date.formatted(date: .long, time: .omitted))"]
-        if let size = updates.offerSize { parts.append(Format.disk(size)) }
-        return parts.joined(separator: " · ")
+        let date = offer.date.formatted(date: .long, time: .omitted)
+        let text = String(localized: "You have \(updates.currentVersionText) · released \(date)",
+                          comment: "Update sheet: the installed version, then the new version's release date")
+        guard let size = updates.offerSize else { return text }
+        return text + " · " + Format.disk(size)
     }
 
     @ViewBuilder private var status: some View {
@@ -151,7 +154,7 @@ private struct DownloadProgress: View {
 }
 
 private struct ProgressRow: View {
-    var text: String
+    var text: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: 8) {
@@ -224,7 +227,7 @@ private struct StatusView: View {
 
     @ViewBuilder private var content: some View {
         if let reason = updates.unavailableReason {
-            SheetHeader(title: "Updates aren’t available for this copy", subtitle: reason, titleIdentifier: "update.status")
+            SheetHeader(title: "Updates aren’t available for this copy", subtitle: "\(reason)", titleIdentifier: "update.status")
         } else {
             switch updates.phase {
             case .checking:
@@ -237,7 +240,7 @@ private struct StatusView: View {
                 SheetHeader(title: "You’re up to date", subtitle: "Basket \(updates.currentVersionText) is the newest version.",
                             titleIdentifier: "update.status")
             case .failed(let failure):
-                SheetHeader(title: failure.title, subtitle: "Basket \(updates.currentVersionText) stays installed.",
+                SheetHeader(title: "\(failure.title)", subtitle: "Basket \(updates.currentVersionText) stays installed.",
                             titleIdentifier: "update.status")
                 FailureBox(title: nil, message: failure.message, isSecurity: failure.isSecurity)
             default:
@@ -283,7 +286,7 @@ struct ReleaseNotesView: View {
                             .padding(.top, index == 0 ? 0 : 6)
                     case .bullet(let text):
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text("•").foregroundStyle(.secondary).accessibilityHidden(true)
+                            Text(verbatim: "•").foregroundStyle(.secondary).accessibilityHidden(true)
                             Text(Self.inline(text)).fixedSize(horizontal: false, vertical: true)
                         }
                     case .paragraph(let text):

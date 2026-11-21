@@ -38,20 +38,24 @@ struct SetupSettingsSection: View {
 
     private func caption(_ model: OnboardingModel) -> String {
         if let failure = model.dockerPhase.failure { return failure }
-        guard let status = model.dockerStatus else { return "Checking your shell…" }
+        guard let status = model.dockerStatus else { return String(localized: "Checking your shell…") }
         if status.isInstalled {
-            return "New terminal windows run Basket’s docker (\(model.displayPath(status.binPath))), which translates docker commands to container."
+            let path = model.displayPath(status.binPath)
+            return String(localized: "New terminal windows run Basket’s docker (\(path)), which translates docker commands to container.")
         }
-        var text = "Adds a docker command to new \(status.shell) windows that translates docker commands to container."
         if status.currentDockerIsOrbStack, let current = status.currentDocker {
-            text += " OrbStack’s docker stays at \(model.displayPath(current))."
+            let path = model.displayPath(current)
+            return String(localized: "Adds a docker command to new \(status.shell) windows that translates docker commands to container. OrbStack’s docker stays at \(path).")
         }
-        return text
+        return String(localized: "Adds a docker command to new \(status.shell) windows that translates docker commands to container.")
     }
 
     private func planText(_ model: OnboardingModel) -> String {
+        // File names and the lines Basket adds are shown exactly as they will be written.
         let changes = model.dockerPlan.map { "\(model.displayPath($0.file)):\n\($0.contents.trimmingCharacters(in: .newlines))" }
-        guard !changes.isEmpty else { return "Basket adds a docker command for new terminal windows." }
-        return "Basket adds:\n\n" + changes.joined(separator: "\n\n") + "\n\nTurn it off here to remove exactly these lines."
+        guard !changes.isEmpty else { return String(localized: "Basket adds a docker command for new terminal windows.") }
+        let listing = changes.joined(separator: "\n\n")
+        return String(localized: "Basket adds:\n\n\(listing)\n\nTurn it off here to remove exactly these lines.",
+                      comment: "Confirmation: the files and the exact lines Basket writes to them")
     }
 }

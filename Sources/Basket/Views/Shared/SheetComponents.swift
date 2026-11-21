@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Title, scrollable grouped form and a button row — the layout every Basket sheet uses.
 struct SheetScaffold<Content: View, Footer: View>: View {
-    var title: String
-    var subtitle: String
+    var title: LocalizedStringKey
+    var subtitle: LocalizedStringKey
     var identifier: String
     var width: CGFloat = 520
     var height: CGFloat = 560
@@ -39,8 +39,13 @@ struct ListEntry: Identifiable, Hashable {
 
 /// Editable list of strings ("8080:80", "KEY=value", …) with add/remove buttons.
 struct StringListEditor: View {
-    var noun: String
-    var placeholder: String
+    /// Field label ("Port").
+    var noun: LocalizedStringKey
+    /// The add button ("Add Port").
+    var addTitle: LocalizedStringKey
+    /// VoiceOver name of an entry's remove button ("Remove port 8080:80").
+    var removeLabel: (String) -> LocalizedStringKey
+    var placeholder: LocalizedStringKey
     var identifier: String
     @Binding var entries: [ListEntry]
 
@@ -59,13 +64,13 @@ struct StringListEditor: View {
                 .buttonStyle(.borderless)
                 .frame(minWidth: 22, minHeight: 22)
                 .help("Remove")
-                .accessibilityLabel("Remove \(noun.lowercased()) \(entry.value)")
+                .accessibilityLabel(removeLabel(entry.value))
             }
         }
         Button {
             entries.append(ListEntry(value: ""))
         } label: {
-            Label("Add \(noun)", systemImage: "plus.circle")
+            Label(addTitle, systemImage: "plus.circle")
         }
         .buttonStyle(.borderless)
         .accessibilityIdentifier(identifier)
@@ -113,13 +118,14 @@ struct ProgressLog: View {
 /// Sizes offered for memory pickers, in MiB.
 let memoryChoicesMB = [256, 512, 1024, 2048, 4096, 8192, 16384]
 
+/// "512 MB", "2 GB" ("2 Go" in French).
 func memoryChoiceLabel(_ mb: Int) -> String {
-    mb >= 1024 ? "\(mb / 1024) GB" : "\(mb) MB"
+    (Int64(mb) * 1024 * 1024).formatted(.byteCount(style: .memory))
 }
 
 /// "CPUs        2 [⌃⌄]" — label left, value and stepper right, as in System Settings.
 struct StepperRow: View {
-    var title: String
+    var title: LocalizedStringKey
     @Binding var value: Int
     var range: ClosedRange<Int>
     var identifier: String

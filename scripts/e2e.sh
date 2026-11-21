@@ -2,7 +2,8 @@
 # True out-of-process E2E: BasketE2E.app launches build/Basket.app with fixtures, drives it
 # through the Accessibility API (AXUIElement) and audits every section.
 #   scripts/e2e.sh [demo|empty|stopped]
-# Output: artifacts/e2e/<timestamp>/{report.md,report.json,runner.log,<section>.ax.json,<section>.png}
+#   BASKET_LANGUAGE=de scripts/e2e.sh demo     run the app in another language
+# Output: artifacts/e2e/<timestamp>[-<language>]-<pid>/{report.md,report.json,runner.log,<section>.ax.json,<section>.png}
 # Exit code: the runner's, as recorded in report.json (0 ok, 1 findings, 2 runner error,
 # 3 Accessibility permission missing).
 set -euo pipefail
@@ -12,18 +13,24 @@ SET="${1:-demo}"
 FIXTURES="$ROOT/Fixtures/$SET"
 [[ -d "$FIXTURES" ]] || die "no fixture set at $FIXTURES (try: $(ls "$ROOT/Fixtures" | tr '\n' ' '))" 64
 
+LANGUAGE="${BASKET_LANGUAGE:-}"
+
 "$ROOT/scripts/build-app.sh" debug >/dev/null
 "$ROOT/scripts/build-e2e-runner.sh" >/dev/null
+check_app_language "$BUILD_DIR/Basket.app" "$LANGUAGE"
 
 acquire_gui_lock "E2E run"
 
-OUT="$ROOT/artifacts/e2e/$(date +%Y%m%d-%H%M%S)-$$"
+OUT="$ROOT/artifacts/e2e/$(date +%Y%m%d-%H%M%S)${LANGUAGE:+-$LANGUAGE}-$$"
 mkdir -p "$OUT"
-log "running BasketE2E.app (log: $OUT/runner.log)"
+log "running BasketE2E.app${LANGUAGE:+ with Basket in $LANGUAGE} (log: $OUT/runner.log)"
+LANGUAGE_ARGS=()
+[[ -n "$LANGUAGE" ]] && LANGUAGE_ARGS=(--language "$LANGUAGE" --locale "$(app_locale "$LANGUAGE")")
 # Launched through LaunchServices so macOS attributes the Accessibility grant to BasketE2E.app
 # itself (not to this terminal). Its stdout is invisible; it writes runner.log + report.json.
 open -W -n "$BUILD_DIR/BasketE2E.app" --args \
-  audit --app "$BUILD_DIR/Basket.app" --fixtures "$FIXTURES" --out "$OUT"
+  audit --app "$BUILD_DIR/Basket.app" --fixtures "$FIXTURES" --out "$OUT" \
+  ${LANGUAGE_ARGS[@]+"${LANGUAGE_ARGS[@]}"}
 
 REPORT="$OUT/report.json"
 if [[ ! -f "$REPORT" ]]; then

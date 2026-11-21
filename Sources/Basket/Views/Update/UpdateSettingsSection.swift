@@ -34,13 +34,16 @@ struct UpdateSettingsSection: View {
 
     private func status(_ updates: UpdateController) -> String {
         if let reason = updates.unavailableReason { return reason }
-        var text = "Basket checks GitHub Releases once a day and installs an update only after verifying its signature."
         if let offer = updates.offer {
-            text += " Basket \(offer.version) is available."
-        } else if let last = updates.lastChecked {
-            text += " Last checked \(last.formatted(.relative(presentation: .named)))."
+            let version = offer.version.description
+            return String(localized: "Basket checks GitHub Releases once a day and installs an update only after verifying its signature. Basket \(version) is available.")
         }
-        return text
+        if let last = updates.lastChecked {
+            let when = last.formatted(.relative(presentation: .named))
+            return String(localized: "Basket checks GitHub Releases once a day and installs an update only after verifying its signature. Last checked \(when).",
+                          comment: "The placeholder is a relative date such as “2 hours ago”")
+        }
+        return String(localized: "Basket checks GitHub Releases once a day and installs an update only after verifying its signature.")
     }
 }
 

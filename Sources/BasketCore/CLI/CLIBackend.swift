@@ -174,7 +174,7 @@ public final class CLIBackend: ContainerBackend {
         let lines = String(decoding: data, as: UTF8.self).split(whereSeparator: \.isNewline)
         guard let id = lines.last.map({ $0.trimmingCharacters(in: .whitespaces) }), !id.isEmpty else {
             if let name = spec.name { return name }
-            throw BackendError.decodingFailed(command: "container run", detail: "no container id in output")
+            throw BackendError.decodingFailed(command: "container run", detail: String(localized: "it printed no container ID", bundle: .main))
         }
         return id
     }

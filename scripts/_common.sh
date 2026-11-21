@@ -35,6 +35,31 @@ swift_build() {
   (cd "$ROOT" && swift build --scratch-path "$SCRATCH" -c "$config" --show-bin-path)
 }
 
+# check_app_language <Basket.app> <language id or empty> — dies unless the built app ships that
+# localization (BASKET_LANGUAGE for selftest.sh / e2e.sh, e.g. zh-Hans).
+check_app_language() {
+  local app="$1" language="$2"
+  [[ -z "$language" ]] && return 0
+  [[ "$language" =~ ^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*$ ]] \
+    || die "BASKET_LANGUAGE must be a language id such as zh-Hans (got '$language')" 64
+  [[ -d "$app/Contents/Resources/$language.lproj" ]] \
+    || die "Basket has no '$language' localization (have: $(cd "$app/Contents/Resources" && ls -d ./*.lproj | sed 's|^\./||; s|\.lproj$||' | tr '\n' ' '))" 64
+}
+
+# app_locale <language id> — the region format passed as -AppleLocale with BASKET_LANGUAGE, so
+# numbers, sizes and dates follow the language too ("4,21 Go", "4.21 GB", "2026年11月21日").
+app_locale() {
+  case "$1" in
+    en) echo en_US ;;
+    fr) echo fr_FR ;;
+    de) echo de_DE ;;
+    ja) echo ja_JP ;;
+    zh-Hans) echo zh_CN ;;
+    zh-Hant) echo zh_TW ;;
+    *) echo "${1//-/_}" ;;
+  esac
+}
+
 # developer_id_identity — the first "Developer ID Application" signing identity, or nothing.
 developer_id_identity() {
   security find-identity -v -p codesigning 2>/dev/null \

@@ -16,11 +16,11 @@ final class BasketAppDelegate: NSObject, NSApplicationDelegate {
         if !store.options.isUITest {
             let alert = NSAlert()
             alert.alertStyle = .warning
-            alert.messageText = "Basket is still working"
-            alert.informativeText = work.map { "• \($0)" }.joined(separator: "\n")
-                + "\n\nQuitting stops this work. Import archives are deleted (OrbStack keeps its images). If keeping one platform was already loading the image back, its archive is kept and offered for restore in Images."
-            alert.addButton(withTitle: "Cancel")
-            alert.addButton(withTitle: "Quit Anyway").hasDestructiveAction = true
+            alert.messageText = String(localized: "Basket is still working")
+            alert.informativeText = work.map { "• \($0)" }.joined(separator: "\n") + "\n\n"
+                + String(localized: "Quitting stops this work. Import archives are deleted (OrbStack keeps its images). If keeping one platform was already loading the image back, its archive is kept and offered for restore in Images.")
+            alert.addButton(withTitle: String(localized: "Cancel"))
+            alert.addButton(withTitle: String(localized: "Quit Anyway")).hasDestructiveAction = true
             guard alert.runModal() == .alertSecondButtonReturn else { return .terminateCancel }
         }
         Task {
@@ -58,14 +58,14 @@ extension AppStore {
         var items: [String] = []
         if migration.isImporting {
             let left = migration.importItems.filter { !$0.state.isFinished }.count
-            items.append("Importing \(left) image\(left == 1 ? "" : "s") from OrbStack")
+            items.append(String(localized: "Importing \(left) images from OrbStack"))
         }
         if migration.activeRecreations > 0 {
             let count = migration.activeRecreations
-            items.append("Recreating \(count) OrbStack container\(count == 1 ? "" : "s") in Basket")
+            items.append(String(localized: "Recreating \(count) OrbStack containers in Basket"))
         }
         for reference in slimTasks.keys.sorted() {
-            items.append("Keeping only \(hostPlatform) of “\(ImageName(reference).display)”")
+            items.append(String(localized: "Keeping only \(hostPlatform) of “\(ImageName(reference).display)”"))
         }
         return items
     }
@@ -111,7 +111,7 @@ extension AppStore {
     /// `image load` the archive; once Basket lists the image again the archive is deleted.
     func restoreRecoveryArchive(_ archive: RecoveryArchive) async {
         let id = "archive:\(archive.id)"
-        pending[id] = "Restoring"
+        pending[id] = String(localized: "Restoring…", comment: "Shown next to an image archive while it is loaded back")
         defer { pending[id] = nil }
         do {
             let loaded = try await backend.loadImage(from: archive.url)
@@ -121,25 +121,24 @@ extension AppStore {
             if !wanted.isEmpty, wanted.allSatisfy(listed.contains) {
                 try? FileManager.default.removeItem(at: archive.url)
                 banner = BannerMessage(
-                    title: "Restored \(archive.title)",
-                    detail: "Loaded from \(archive.url.lastPathComponent); the archive was deleted.")
+                    title: String(localized: "Restored \(archive.title)"),
+                    detail: String(localized: "Loaded from \(archive.url.lastPathComponent); the archive was deleted."))
             } else {
                 banner = BannerMessage(
-                    title: "Loaded \(archive.url.lastPathComponent)",
-                    detail: "Basket doesn't list \(wanted.joined(separator: ", ")) yet, so the archive was kept.")
+                    title: String(localized: "Loaded \(archive.url.lastPathComponent)"),
+                    detail: String(localized: "Basket doesn't list \(wanted.localizedList) yet, so the archive was kept."))
             }
         } catch {
-            showError("Restoring \(archive.title) failed", error)
+            showError(String(localized: "Couldn't restore \(archive.title)"), error)
         }
         scanRecoveryArchives()
     }
 
     func confirmDeleteRecoveryArchive(_ archive: RecoveryArchive) {
         confirmation = Confirmation(
-            title: "Delete the archive of “\(archive.title)”?",
-            message: "\(archive.url.lastPathComponent) (\(Format.disk(archive.sizeBytes))) is the copy kept when keeping one platform was interrupted. "
-                + "If the image in Basket is missing or broken, this is the only way to get it back without a pull.",
-            confirmLabel: "Delete Archive", cancelIsDefault: true
+            title: String(localized: "Delete the archive of “\(archive.title)”?"),
+            message: String(localized: "\(archive.url.lastPathComponent) (\(Format.disk(archive.sizeBytes))) is the copy kept when keeping one platform was interrupted. If the image in Basket is missing or broken, this is the only way to get it back without a pull."),
+            confirmLabel: String(localized: "Delete Archive"), cancelIsDefault: true
         ) { [weak self] in
             try? FileManager.default.removeItem(at: archive.url)
             self?.scanRecoveryArchives()

@@ -41,10 +41,10 @@ struct OverviewView: View {
         switch store.availability {
         case .running:
             let running = store.runningContainers.count
-            return "\(running) running · \(Format.memory(store.totalHostMemory)) memory"
-        case .stopped: return "Container system stopped"
-        case .cliMissing: return "container CLI not found"
-        case .unknown: return "Connecting…"
+            return String(localized: "\(running) running · \(Format.memory(store.totalHostMemory)) memory", comment: "Overview window subtitle: running containers and the host memory they cost")
+        case .stopped: return String(localized: "Container system stopped")
+        case .cliMissing: return String(localized: "container CLI not found")
+        case .unknown: return String(localized: "Connecting…")
         }
     }
 }
@@ -82,7 +82,7 @@ private struct DiskCard: View {
                 .frame(height: 10)
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
                     GridRow {
-                        Text("")
+                        Text(verbatim: "")
                         Text("In use").gridColumnAlignment(.trailing)
                         Text("Size").gridColumnAlignment(.trailing)
                         Text("Reclaimable").gridColumnAlignment(.trailing)
@@ -104,7 +104,7 @@ private struct DiskCard: View {
         }
     }
 
-    private func categoryRow(_ name: String, _ c: DiskUsageCategory, _ color: Color) -> some View {
+    private func categoryRow(_ name: LocalizedStringKey, _ c: DiskUsageCategory, _ color: Color) -> some View {
         GridRow {
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
@@ -187,15 +187,15 @@ private struct SystemCard: View {
                 row("CLI", store.system?.cliVersion.map { "container \($0)" })
                 row("API server", store.system?.serverVersion)
                 row("Host", hostLine)
-                row("Containers", store.system.map { "\($0.containersRunning) running of \($0.containersTotal)" })
-                row("Images", store.system.map { "\($0.imagesTotal)" })
+                row("Containers", store.system.map { String(localized: "\($0.containersRunning) running of \($0.containersTotal)", comment: "Running containers or machines, of all of them") })
+                row("Images", store.system.map { Format.count($0.imagesTotal) })
                 row("Data", store.system?.appRoot.map { ($0 as NSString).abbreviatingWithTildeInPath })
             }
             .font(.callout)
         }
     }
 
-    private func row(_ label: String, _ value: String?) -> some View {
+    private func row(_ label: LocalizedStringKey, _ value: String?) -> some View {
         GridRow {
             Text(label).foregroundStyle(.secondary)
             Text(value ?? "—")
@@ -208,7 +208,7 @@ private struct SystemCard: View {
 
     private var hostLine: String? {
         guard let s = store.system else { return nil }
-        let cpus = s.hostCPUs.map { "\($0) CPUs" }
+        let cpus = s.hostCPUs.map { String(localized: "\($0) CPUs") }
         let os = s.hostOS.map { $0.replacingOccurrences(of: "Version ", with: "macOS ") }
         let parts = [cpus, os].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -216,19 +216,19 @@ private struct SystemCard: View {
 
     private var statusTitle: String {
         switch store.availability {
-        case .running: "Running"
-        case .stopped: "Stopped"
-        case .cliMissing: "CLI not found"
-        case .unknown: "Checking…"
+        case .running: String(localized: "Running", comment: "State of a container, a machine or the container system")
+        case .stopped: String(localized: "Stopped", comment: "State of a container, a machine or the container system")
+        case .cliMissing: String(localized: "CLI not found", comment: "Sidebar footer: the container CLI is missing")
+        case .unknown: String(localized: "Checking…")
         }
     }
 
     private var statusDetail: String {
         switch store.availability {
-        case .running: "Each container gets its own VM; nothing runs when idle."
-        case .stopped: "No VMs are running. Start the system to run containers."
+        case .running: String(localized: "Each container gets its own VM; nothing runs when idle.")
+        case .stopped: String(localized: "No VMs are running. Start the system to run containers.")
         case .cliMissing(let message): message
-        case .unknown: "Contacting the container API server"
+        case .unknown: String(localized: "Contacting the container API server")
         }
     }
 
@@ -275,7 +275,7 @@ private struct OrbStackCard: View {
         }
     }
 
-    private func comparison(title: String, orbStack: Int64, basket: Int64, format: (Int64) -> String) -> some View {
+    private func comparison(title: LocalizedStringKey, orbStack: Int64, basket: Int64, format: (Int64) -> String) -> some View {
         let scale = Double(max(orbStack, basket, 1))
         return VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
@@ -298,14 +298,15 @@ private struct OrbStackCard: View {
     private func summary(_ orb: OrbStackSnapshot) -> String {
         var parts: [String] = []
         if orb.isRunning, orb.memoryFootprintBytes > store.totalHostMemory {
-            parts.append("Quitting OrbStack would return \(Format.memory(orb.memoryFootprintBytes)) to macOS.")
+            parts.append(String(localized: "Quitting OrbStack would return \(Format.memory(orb.memoryFootprintBytes)) to macOS."))
         }
         if let data = orb.dataAllocatedBytes, data > 0 {
-            parts.append("Its data image holds \(Format.disk(data)) and never shrinks on its own.")
+            parts.append(String(localized: "Its data image holds \(Format.disk(data)) and never shrinks on its own.",
+                                comment: "OrbStack's data image (a disk image file), not a container image"))
         }
         if let n = orb.dockerImageCount {
-            parts.append("\(n) Docker image\(n == 1 ? "" : "s") stored there.")
+            parts.append(String(localized: "\(n) Docker images stored there.", comment: "Container images stored in OrbStack's data image"))
         }
-        return parts.isEmpty ? "OrbStack is installed." : parts.joined(separator: " ")
+        return parts.isEmpty ? String(localized: "OrbStack is installed.") : Format.sentences(parts)
     }
 }

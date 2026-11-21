@@ -119,8 +119,10 @@ struct RecreateContainerSheet: View {
 
     private var nameProblem: String? {
         guard phase == .idle else { return nil }
-        if trimmedName.isEmpty { return "Enter a name for the container." }
-        if store.containers.contains(where: { $0.id == trimmedName }) { return "Basket already has a container named “\(trimmedName)”." }
+        if trimmedName.isEmpty { return String(localized: "Enter a name for the container.") }
+        if store.containers.contains(where: { $0.id == trimmedName }) {
+            return String(localized: "Basket already has a container named “\(trimmedName)”.")
+        }
         return nil
     }
 
@@ -137,24 +139,25 @@ struct RecreateContainerSheet: View {
         let model = store.migration
         if model.basketReferences.contains(plan.image) {
             guard let source = model.image(for: container), source.basketReference == plan.image else {
-                return "Basket already has an image with this name; it is used as is"
+                return String(localized: "Basket already has an image with this name; it is used as is")
             }
             switch model.basketPresence(source) {
-            case .identical?, .absent?: return "Already in Basket"
-            case .nameConflict(let reason)?: return "Name conflict: Basket has a different image with this name: \(reason)"
-            case .unverified?: return "Basket has an image with this name that couldn't be compared with OrbStack's"
-            case nil: return "Basket has an image with this name; comparing it with OrbStack's…"
+            case .identical?, .absent?: return String(localized: "Already in Basket")
+            case .nameConflict(let reason)?: return String(localized: "Name conflict: Basket has a different image with this name: \(reason)")
+            case .unverified?: return String(localized: "Basket has an image with this name that couldn't be compared with OrbStack's")
+            case nil: return String(localized: "Basket has an image with this name; comparing it with OrbStack's…")
             }
         }
         if let source = model.image(for: container) {
-            return "Imported from OrbStack first (\(source.exportPlatform), up to \(Format.disk(source.sizeBytes)))"
+            let size = Format.disk(source.sizeBytes)
+            return String(localized: "Imported from OrbStack first (\(source.exportPlatform), up to \(size))")
         }
-        return "Not in OrbStack; `container run` pulls it"
+        return String(localized: "Not in OrbStack; `container run` pulls it")
     }
 
     private func recreate(_ plan: RecreationPlan) {
         let model = store.migration
-        phase = .running("Preparing")
+        phase = .running(String(localized: "Preparing", comment: "Recreating a container: first progress step"))
         task = Task {
             do {
                 let id = try await model.recreate(container, plan: plan) { message in
@@ -179,7 +182,7 @@ private struct WarningRow: View {
                 .foregroundStyle(warning.severity == .warning ? .orange : .secondary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(warning.topic).fontWeight(.semibold)
+                Text(warning.title).fontWeight(.semibold)
                 Text(warning.message)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -187,6 +190,8 @@ private struct WarningRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(warning.severity == .warning ? "Warning" : "Note"): \(warning.topic). \(warning.message)")
+        .accessibilityLabel(warning.severity == .warning
+            ? Text("Warning: \(warning.title). \(warning.message)", comment: "VoiceOver: topic, then the explanation")
+            : Text("Note: \(warning.title). \(warning.message)", comment: "VoiceOver: topic, then the explanation"))
     }
 }

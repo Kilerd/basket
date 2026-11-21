@@ -9,7 +9,7 @@ struct MenuBarContent: View {
     var body: some View {
         Text(statusLine)
         if store.availability == .running {
-            Text("Memory: \(Format.memory(store.totalHostMemory)) across \(vmCount) VM\(vmCount == 1 ? "" : "s")")
+            Text("Memory: \(Format.memory(store.totalHostMemory)) across \(vmCount) VMs")
             if stranded > 0 {
                 Text("Stranded: \(Format.memory(stranded)), returned by a restart")
             }
@@ -67,8 +67,8 @@ struct MenuBarContent: View {
     private var stranded: Int64 { store.memoryInsights.totals.strandedBytes }
 
     private var updateTitle: String {
-        guard let offer = store.updates.offer else { return "Check for Updates…" }
-        return "Update to Basket \(offer.version.description)…"
+        guard let offer = store.updates.offer else { return String(localized: "Check for Updates…") }
+        return String(localized: "Update to Basket \(offer.version.description)…")
     }
 
     private var vmCount: Int {
@@ -77,15 +77,15 @@ struct MenuBarContent: View {
 
     private var statusLine: String {
         switch store.availability {
-        case .running: "Container system running"
-        case .stopped: "Container system stopped"
-        case .cliMissing: "container CLI not found"
-        case .unknown: "Connecting…"
+        case .running: String(localized: "Container system running")
+        case .stopped: String(localized: "Container system stopped")
+        case .cliMissing: String(localized: "container CLI not found")
+        case .unknown: String(localized: "Connecting…")
         }
     }
 
     private func menuTitle(_ c: ContainerSummary) -> String {
-        guard c.state == .running else { return "\(c.id) — \(c.state.title.lowercased())" }
+        guard c.state == .running else { return "\(c.id) — \(c.state.title)" }
         if let host = store.hostMemoryByOwner[c.id] { return "\(c.id) — \(Format.memory(host))" }
         return c.id
     }
@@ -99,7 +99,7 @@ private struct MenuBarMemoryActions: View {
     var body: some View {
         let idle = store.idleContainers
         let strandedCount = store.memoryInsights.totals.strandedCount
-        Button(idle.isEmpty ? "Stop Idle Containers" : "Stop Idle Containers (\(idle.map(\.id).joined(separator: ", ")))") {
+        Button(idle.isEmpty ? "Stop Idle Containers" : "Stop Idle Containers (\(idle.map(\.id).localizedList))") {
             Task { await store.stopIdleContainers() }
         }
         .disabled(idle.isEmpty)

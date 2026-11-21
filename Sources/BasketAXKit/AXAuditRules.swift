@@ -37,7 +37,16 @@ public enum AXAuditRules {
     public static let truncationTolerance = 2.0
     /// Shorter texts ("—", "4") aren't checked: they can't meaningfully truncate, and single
     /// glyphs measure differently across fonts (an em dash is 1 em in SF Pro, 0.6 em in SF Mono).
+    /// Chinese and Japanese words are one or two characters ("容器"), so text with ideographs or
+    /// kana is checked from two characters on.
     public static let truncationMinLength = 3
+    public static let truncationMinLengthWide = 2
+
+    /// Whether `text` holds CJK ideographs, kana or full-width forms.
+    public static func hasWideCharacters(_ text: String) -> Bool {
+        text.unicodeScalars.contains { (0x2E80...0x9FFF).contains($0.value) || (0xF900...0xFAFF).contains($0.value)
+            || (0xFF00...0xFFEF).contains($0.value) || (0x20000...0x3FFFF).contains($0.value) }
+    }
     /// Ellipsis-terminated text only counts as truncated when it fills its frame to within this.
     public static let ellipsisFillSlack = 4.0
     /// Two buttons are in the same row when their vertical extents overlap by this fraction

@@ -141,8 +141,8 @@ public enum UpdateSwap {
         guard plan.stagingDirectory.path.split(separator: "/").count >= 2,
               plan.destination.path != "/",
               plan.newApp.resolvingSymlinksInPath().path.hasPrefix(plan.stagingDirectory.resolvingSymlinksInPath().path + "/")
-        else { throw UpdateError.installFailed("the staged update is in an unexpected place") }
-        guard !plan.requirement.isEmpty else { throw UpdateError.installFailed("the installer has no code requirement") }
+        else { throw UpdateError.installFailed(String(localized: "the staged update is in an unexpected place", bundle: .main)) }
+        guard !plan.requirement.isEmpty else { throw UpdateError.installFailed(String(localized: "the installer has no code requirement", bundle: .main)) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
@@ -163,7 +163,7 @@ public enum UpdateSwap {
             }
         }
         guard status == 0 else {
-            throw UpdateError.installFailed("the installer couldn't start (\(String(cString: strerror(status))))")
+            throw UpdateError.installFailed(String(localized: "the installer couldn't start (\(String(cString: strerror(status))))", bundle: .main))
         }
         return pid
     }

@@ -37,7 +37,7 @@ struct PullImageSheet: View {
                 .disabled(phase == .pulling)
                 .accessibilityIdentifier("pull-image.platform")
                 if platformChoice == .custom {
-                    TextField("Custom platform", text: $customPlatform, prompt: Text("linux/arm/v7"))
+                    TextField("Custom platform", text: $customPlatform, prompt: Text(verbatim: "linux/arm/v7"))
                         .accessibilityIdentifier("pull-image.custom-platform")
                 }
             }
@@ -106,7 +106,7 @@ struct PullImageSheet: View {
         let ref = reference.trimmingCharacters(in: .whitespaces)
         let backend = store.backend
         let platform = self.platform
-        lines = ["Pulling \(ref)…"]
+        lines = [String(localized: "Pulling \(ref)…")]
         phase = .pulling
         task = Task {
             do {

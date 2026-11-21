@@ -65,7 +65,7 @@ struct ReclaimMemorySheet: View {
         } footer: {
             if isWorking {
                 ProgressView().controlSize(.small)
-                Text("Restarting…").foregroundStyle(.secondary)
+                Text("Restarting…", comment: "Shown in place of a container's state while it restarts").foregroundStyle(.secondary)
             } else if freed > 0 {
                 Text("Frees about \(Format.memory(freed))").foregroundStyle(.secondary).monospacedDigit()
             }
@@ -73,7 +73,7 @@ struct ReclaimMemorySheet: View {
             Button("Cancel", role: .cancel) { dismiss() }
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("reclaim-memory.action.cancel")
-            Button(chosen.count == 1 ? "Restart 1 Container" : "Restart \(chosen.count) Containers") {
+            Button("Restart \(chosen.count) Containers") {
                 restart(chosen.map(\.id))
             }
             .keyboardShortcut(.defaultAction)
@@ -106,7 +106,7 @@ struct ReclaimMemorySheet: View {
         Binding(get: { selected.contains(id) }, set: { if $0 { selected.insert(id) } else { selected.remove(id) } })
     }
 
-    private func consequence(_ symbol: String, _ text: String, tint: Color = .secondary) -> some View {
+    private func consequence(_ symbol: String, _ text: LocalizedStringKey, tint: Color = .secondary) -> some View {
         Label {
             Text(text).fixedSize(horizontal: false, vertical: true)
         } icon: {

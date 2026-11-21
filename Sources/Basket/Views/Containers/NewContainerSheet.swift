@@ -26,7 +26,7 @@ struct NewContainerSheet: View {
         ) {
             Section("Image") {
                 HStack {
-                    TextField("Image", text: $draft.image, prompt: Text("nginx:latest"))
+                    TextField("Image", text: $draft.image, prompt: Text(verbatim: "nginx:latest"))
                         .accessibilityIdentifier("new-container.image")
                     if !store.images.isEmpty {
                         Menu {
@@ -59,23 +59,26 @@ struct NewContainerSheet: View {
             } header: {
                 Text("Resources")
             } footer: {
-                Text("The VM can use up to this much memory; most containers need far less than 1 GB.")
+                Text("The VM can use up to this much memory; most containers need far less than \(memoryChoiceLabel(1024)).")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Ports") {
-                StringListEditor(noun: "Port", placeholder: "8080:80", identifier: "new-container.add-port", entries: $ports)
+                StringListEditor(noun: "Port", addTitle: "Add Port", removeLabel: { "Remove port \($0)" },
+                                 placeholder: "8080:80", identifier: "new-container.add-port", entries: $ports)
             }
             Section("Volumes") {
-                StringListEditor(noun: "Volume", placeholder: "my-volume:/data or /host/path:/path",
+                StringListEditor(noun: "Volume", addTitle: "Add Volume", removeLabel: { "Remove volume \($0)" },
+                                 placeholder: "my-volume:/data or /host/path:/path",
                                  identifier: "new-container.add-volume", entries: $volumes)
             }
             Section("Environment") {
-                StringListEditor(noun: "Variable", placeholder: "KEY=value", identifier: "new-container.add-env",
+                StringListEditor(noun: "Variable", addTitle: "Add Variable", removeLabel: { "Remove variable \($0)" },
+                                 placeholder: "KEY=value", identifier: "new-container.add-env",
                                  entries: $environment)
             }
             Section("Options") {
                 Picker("Network", selection: $draft.network) {
-                    Text("Default").tag("")
+                    Text("Default", comment: "The default network").tag("")
                     ForEach(store.networks.filter { !$0.isBuiltin }) { Text($0.name).tag($0.name) }
                 }
                 .accessibilityIdentifier("new-container.network")

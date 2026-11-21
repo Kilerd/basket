@@ -63,9 +63,9 @@ struct YAMLReader {
     static func isBlank(_ c: Character?) -> Bool { c == nil || c == " " || c == "\t" || c == "\n" }
     static func isFlowIndicator(_ c: Character?) -> Bool { c == "," || c == "[" || c == "]" || c == "{" || c == "}" }
 
-    func error(_ message: String, at mark: Mark? = nil) -> YAMLError {
+    func error(_ message: LocalizedStringResource, at mark: Mark? = nil) -> YAMLError {
         let m = mark ?? self.mark
-        return YAMLError(line: m.line, column: m.pos - m.lineStart + 1, message: message)
+        return YAMLError(line: m.line, column: m.pos - m.lineStart + 1, message: String(localized: message))
     }
 
     mutating func skipInlineSpaces() {
@@ -106,7 +106,7 @@ struct YAMLReader {
     /// YAML forbids tabs in indentation; say so instead of failing obscurely later.
     func checkIndentation() throws {
         guard isAtLineContentStart, chars[lineStart..<pos].contains("\t") else { return }
-        throw YAMLError(line: line, column: 1, message: "tabs can't be used for indentation; use spaces")
+        throw YAMLError(line: line, column: 1, message: String(localized: "tabs can't be used for indentation; use spaces", bundle: .main))
     }
 
     /// After a value: only spaces and a comment may follow on its line.
@@ -286,11 +286,11 @@ struct YAMLReader {
                 switch value {
                 case .mapping: sources = [value]
                 case .sequence(let list): sources = list
-                default: throw error("a merge key (<<) needs a mapping or a list of mappings, not a \(value.kind)", at: mark)
+                default: throw error("a merge key (<<) needs a mapping or a list of mappings, but found \(value.kindPhrase)", at: mark)
                 }
                 for source in sources {
                     guard let mapping = source.mapping else {
-                        throw error("a merge key (<<) needs a mapping or a list of mappings, not a \(source.kind)", at: mark)
+                        throw error("a merge key (<<) needs a mapping or a list of mappings, but found \(source.kindPhrase)", at: mark)
                     }
                     for entry in mapping.entries where !explicit.contains(entry.key) && !added.contains(entry.key) {
                         result.set(entry.key, entry.value)
@@ -359,7 +359,7 @@ struct YAMLReader {
     /// into it (a single line break becomes a space, blank lines become newlines).
     mutating func parsePlainScalar(parentIndent: Int) throws -> String {
         if let c = peek(), "@`%".contains(c) || Self.isFlowIndicator(c) && c != "[" && c != "{" {
-            throw error("a plain value can't start with “\(c)”; quote it")
+            throw error("a plain value can't start with “\(String(c))”; quote it")
         }
         var text = try plainLine()
         var end = mark
@@ -415,7 +415,7 @@ struct YAMLReader {
         var result = ""
         while true {
             guard let c = peek() else {
-                throw error("unterminated \(quote == "\"" ? "double" : "single")-quoted string", at: start)
+                throw error(quote == "\"" ? "unterminated double-quoted string" : "unterminated single-quoted string", at: start)
             }
             if c == quote {
                 if quote == "'", peek(1) == "'" {
@@ -494,16 +494,16 @@ struct YAMLReader {
             let length = c == "x" ? 2 : c == "u" ? 4 : 8
             var hex = ""
             for _ in 0..<length {
-                guard let h = peek(), h.isHexDigit else { throw error("invalid \\\(c) escape: expected \(length) hex digits", at: start) }
+                guard let h = peek(), h.isHexDigit else { throw error("invalid \\\(String(c)) escape: expected \(length) hex digits", at: start) }
                 hex.append(h)
                 advance()
             }
             guard let code = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(code) else {
-                throw error("invalid \\\(c) escape", at: start)
+                throw error("invalid \\\(String(c)) escape", at: start)
             }
             return String(Character(scalar))
         default:
-            throw error("unknown escape sequence “\\\(c)”", at: start)
+            throw error("unknown escape sequence “\\\(String(c))”", at: start)
         }
     }
 

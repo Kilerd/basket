@@ -32,7 +32,7 @@ public struct UpdateVerifier: Sendable {
         do {
             data = try Data(contentsOf: archive, options: .mappedIfSafe)
         } catch {
-            throw UpdateError.invalidArchive("it can't be read (\(error.localizedDescription))")
+            throw UpdateError.invalidArchive(String(localized: "it can't be read (\(error.localizedDescription))", bundle: .main))
         }
         try verify(data: data, sha256: expected, signature: signature)
     }

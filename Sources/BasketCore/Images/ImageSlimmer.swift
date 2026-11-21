@@ -45,11 +45,11 @@ public struct ImageSlimmer: Sendable {
 
         public var title: String {
             switch self {
-            case .saving: "Saving the \(ImageSlimmer.hostPlatform) variant"
-            case .verifying: "Checking the archive"
-            case .loading: "Loading it back"
-            case .checking: "Checking the image"
-            case .reclaiming: "Reclaiming disk space"
+            case .saving: String(localized: "Saving the \(ImageSlimmer.hostPlatform) variant", bundle: .main)
+            case .verifying: String(localized: "Checking the archive", bundle: .main)
+            case .loading: String(localized: "Loading it back", bundle: .main, comment: "Slimming an image: loading the saved archive back")
+            case .checking: String(localized: "Checking the image", bundle: .main)
+            case .reclaiming: String(localized: "Reclaiming disk space", bundle: .main)
             }
         }
     }
@@ -126,16 +126,16 @@ public struct ImageSlimmer: Sendable {
                 remove(archive)
                 throw SlimError.loadFailed(Self.message(error))
             }
-            throw SlimError.needsRecovery(reason: "Loading failed: \(Self.message(error))", archive: archive)
+            throw SlimError.needsRecovery(reason: String(localized: "Loading failed: \(Self.message(error))", bundle: .main), archive: archive)
         }
 
         progress(.checking)
         guard let after = try? await image(reference) else {
-            throw SlimError.needsRecovery(reason: "The image isn't listed after loading.", archive: archive)
+            throw SlimError.needsRecovery(reason: String(localized: "The image isn't listed after loading.", bundle: .main), archive: archive)
         }
         guard after.variants.contains(where: { Self.matches($0.platform, platform) }) else {
             throw SlimError.needsRecovery(
-                reason: "After loading, the image has no \(platform) variant.", archive: archive)
+                reason: String(localized: "After loading, the image has no \(platform) variant.", bundle: .main), archive: archive)
         }
         remove(archive)
         if after.variants.contains(where: { !Self.matches($0.platform, platform) }) {
@@ -162,16 +162,18 @@ public struct ImageSlimmer: Sendable {
         let wanted = ImageUsage.normalized(reference)
         guard inspected.references.contains(where: { ImageUsage.normalized($0) == wanted }) else {
             throw ImageArchive.Invalid(
-                reason: "it is labelled \(inspected.references.joined(separator: ", ")) instead of \(reference)")
+                reason: String(localized: "it is labelled \(inspected.references.localizedList) instead of \(reference)", bundle: .main))
         }
         let platforms = inspected.manifests.map(\.platform)
         guard !platforms.isEmpty, platforms.allSatisfy({ Self.matches($0, platform) }) else {
             throw ImageArchive.Invalid(
-                reason: "it holds \(platforms.isEmpty ? "no platform" : platforms.joined(separator: ", ")) instead of only \(platform)")
+                reason: platforms.isEmpty
+                    ? String(localized: "it holds no platform instead of only \(platform)", bundle: .main)
+                    : String(localized: "it holds \(platforms.localizedList) instead of only \(platform)", bundle: .main))
         }
         guard inspected.fileSize >= before.hostVariantSizeBytes else {
             throw ImageArchive.Invalid(
-                reason: "it is \(inspected.fileSize) bytes, smaller than the \(before.hostVariantSizeBytes)-byte \(platform) variant")
+                reason: String(localized: "it is \(inspected.fileSize.formatted(.byteCount(style: .file))), smaller than the \(platform) variant (\(before.hostVariantSizeBytes.formatted(.byteCount(style: .file))))", bundle: .main))
         }
     }
 
@@ -252,25 +254,26 @@ public enum SlimError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .imageNotFound(let reference):
-            "\(reference) is no longer listed."
+            String(localized: "\(reference) is no longer listed.", bundle: .main)
         case .noHostVariant(let reference, let platform):
-            "\(reference) has no \(platform) variant to keep."
+            String(localized: "\(reference) has no \(platform) variant to keep.", bundle: .main)
         case .nothingToRemove(let reference):
-            "\(reference) already holds only this Mac's platform."
+            String(localized: "\(reference) already holds only this Mac's platform.", bundle: .main)
         case .notEnoughSpace(let needed, let available):
-            "Not enough free disk space: needs \(Self.size(needed)), \(Self.size(available)) available. Nothing was changed."
+            String(localized: "Not enough free disk space: needs \(Self.size(needed)), \(Self.size(available)) available. Nothing was changed.", bundle: .main)
         case .saveFailed(let message):
-            "\(message) Nothing was changed."
+            String(localized: "\(message.asSentence) Nothing was changed.", bundle: .main, comment: "The argument is the error message (a sentence)")
         case .loadFailed(let message):
-            "\(message) The original image is unchanged."
+            String(localized: "\(message.asSentence) The original image is unchanged.", bundle: .main, comment: "The argument is the error message (a sentence)")
         case .notSlimmed(let reference):
-            "The container CLI kept the other platform variants of \(reference); nothing was removed."
+            String(localized: "The container CLI kept the other platform variants of \(reference); nothing was removed.", bundle: .main)
         case .needsRecovery(let reason, let archive):
-            "\(reason) A copy of the image is kept at \(archive.path) — load it with: container image load --input \(shellQuoteIfNeeded(archive.path))"
+            String(localized: "\(reason.asSentence) A copy of the image is kept at \(archive.path) — load it with: container image load --input \(shellQuoteIfNeeded(archive.path))", bundle: .main,
+                   comment: "1: what went wrong (a sentence), 2: folder of the kept archive, 3: the archive path for the command")
         }
     }
 
     private static func size(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        bytes.formatted(.byteCount(style: .file))
     }
 }

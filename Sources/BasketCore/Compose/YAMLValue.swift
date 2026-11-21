@@ -72,6 +72,20 @@ public indirect enum YAMLValue: Sendable, Hashable {
     }
 
     /// Short type name for error messages.
+    /// The kind with an article in the user's language ("a list", "an integer"): the object of
+    /// “found …” in error messages.
+    public var kindPhrase: String {
+        switch self {
+        case .null: String(localized: "a null value", bundle: .main, comment: "YAML value kind: “expected …, found a null value”")
+        case .bool: String(localized: "a boolean", bundle: .main, comment: "YAML value kind: “expected …, found a boolean”")
+        case .int: String(localized: "an integer", bundle: .main, comment: "YAML value kind: “expected …, found an integer”")
+        case .float: String(localized: "a number", bundle: .main, comment: "YAML value kind: “expected …, found a number”")
+        case .string: String(localized: "a string", bundle: .main, comment: "YAML value kind: “expected …, found a string”")
+        case .sequence: String(localized: "a list", bundle: .main, comment: "YAML value kind: “expected …, found a list”")
+        case .mapping: String(localized: "a mapping", bundle: .main, comment: "YAML value kind: “expected …, found a mapping”")
+        }
+    }
+
     public var kind: String {
         switch self {
         case .null: "null"
@@ -148,5 +162,8 @@ public struct YAMLError: Error, LocalizedError, Sendable, Equatable {
         self.message = message
     }
 
-    public var errorDescription: String? { "line \(line), column \(column): \(message)" }
+    public var errorDescription: String? {
+        String(localized: "line \(line), column \(column): \(message)", bundle: .main,
+               comment: "Position of a syntax error in a YAML file, then the problem")
+    }
 }

@@ -10,14 +10,19 @@ enum Availability: Equatable {
 enum DataKind: String, CaseIterable, Sendable {
     case system, containers, stats, footprints, images, volumes, networks, machines, disk, orbstack
 
-    var title: String {
+    /// Banner title when loading this kind fails.
+    var loadFailureTitle: String {
         switch self {
-        case .system: "system status"
-        case .stats: "container statistics"
-        case .footprints: "host memory"
-        case .disk: "disk usage"
-        case .orbstack: "OrbStack status"
-        default: rawValue
+        case .system: String(localized: "Couldn't load the system status")
+        case .containers: String(localized: "Couldn't load containers")
+        case .stats: String(localized: "Couldn't load container statistics")
+        case .footprints: String(localized: "Couldn't load host memory")
+        case .images: String(localized: "Couldn't load images")
+        case .volumes: String(localized: "Couldn't load volumes")
+        case .networks: String(localized: "Couldn't load networks")
+        case .machines: String(localized: "Couldn't load machines")
+        case .disk: String(localized: "Couldn't load disk usage")
+        case .orbstack: String(localized: "Couldn't load the OrbStack status")
         }
     }
 }
@@ -73,6 +78,15 @@ enum ActiveSheet: Identifiable {
 enum ContainerDetailTab: String, CaseIterable, Identifiable {
     case info = "Info", logs = "Logs", inspect = "Inspect", stats = "Stats"
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .info: String(localized: "Info", comment: "Container detail tab")
+        case .logs: String(localized: "Logs", comment: "Container detail tab")
+        case .inspect: String(localized: "Inspect", comment: "Detail tab: the raw `inspect` JSON")
+        case .stats: String(localized: "Stats", comment: "Container detail tab: CPU and memory charts")
+        }
+    }
 }
 
 struct StatsPoint: Identifiable, Hashable {
@@ -134,7 +148,7 @@ final class AppStore {
     var diskUsage: DiskUsage?
     var orbStack: OrbStackSnapshot?
     var loaded: Set<DataKind> = []
-    /// Resource id → in-flight verb ("Stopping"), shown next to the row.
+    /// Resource id → in-flight progress phrase ("Stopping…"), shown next to the row.
     var pending: [String: String] = [:]
     /// Image reference → its running "Keep only linux/arm64" (quitting asks while any runs).
     @ObservationIgnored var slimTasks: [String: Task<Void, Never>] = [:]
@@ -448,7 +462,7 @@ final class AppStore {
                 return
             }
         }
-        let title = "Couldn't load \(kind.title)", detail = error.localizedDescription
+        let title = kind.loadFailureTitle, detail = error.localizedDescription
         if banner == nil || (banner?.pollKind != nil && (banner?.title != title || banner?.detail != detail)) {
             banner = BannerMessage(title: title, detail: detail, pollKind: kind)
         }

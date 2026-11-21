@@ -54,13 +54,15 @@ extension ContainerState {
 /// Status shown as icon + label (never colour alone).
 struct StateBadge: View {
     var state: ContainerState
+    /// A running operation's progress phrase ("Stopping…", see `PendingOperation`), shown instead
+    /// of the state.
     var pendingVerb: String?
 
     var body: some View {
         HStack(spacing: 5) {
             if let pendingVerb {
                 ProgressView().controlSize(.mini)
-                Text(pendingVerb + "…").foregroundStyle(.secondary)
+                Text(verbatim: pendingVerb).foregroundStyle(.secondary)
             } else {
                 Image(systemName: state.symbol).foregroundStyle(state.color).accessibilityHidden(true)
                 Text(state.title)
@@ -76,7 +78,7 @@ struct MeterBar: View {
     var height: CGFloat = 6
     /// Set to expose the bar to VoiceOver as a progress indicator ("Memory usage, 15%");
     /// nil keeps it decorative (a neighbouring label already says the same).
-    var accessibilityLabel: String?
+    var accessibilityLabel: LocalizedStringKey?
 
     var body: some View {
         let clamped = min(1, max(0, fraction))
@@ -113,7 +115,7 @@ struct MemoryUsageCell: View {
             Text(used < 0 ? "—" : Format.memory(used))
                 .foregroundStyle(used < 0 ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .trailing)
-            Text(limit > 0 ? "/ \(Format.memory(limit))" : "")
+            Text(verbatim: limit > 0 ? "/ \(Format.memory(limit))" : "")
                 .foregroundStyle(.secondary)
                 .frame(width: Self.limitWidth, alignment: .leading)
             MeterBar(
@@ -159,7 +161,7 @@ extension NumericCell where Mark == EmptyView {
 }
 
 struct Pill: View {
-    var text: String
+    var text: LocalizedStringKey
     var systemImage: String?
     var tint: Color = .secondary
 
@@ -170,7 +172,10 @@ struct Pill: View {
             Text(text)
         }
         .font(.caption)
-        .padding(.horizontal, 6)
+        // 8 pt: the accessibility frame is the whole capsule, and the truncation check reads a
+        // 17 pt tall frame as 14 pt text; the extra room keeps long labels ("8プラットフォーム")
+        // from being reported as cut off.
+        .padding(.horizontal, 8)
         .padding(.vertical, 2)
         .foregroundStyle(tint)
         .background(tint.opacity(0.12), in: Capsule())
@@ -181,13 +186,13 @@ struct Pill: View {
 // MARK: - Cards (Overview)
 
 struct Card<Content: View, Accessory: View>: View {
-    var title: String
+    var title: LocalizedStringKey
     var systemImage: String
     var identifier: String
     @ViewBuilder var accessory: Accessory
     @ViewBuilder var content: Content
 
-    init(_ title: String, systemImage: String, identifier: String,
+    init(_ title: LocalizedStringKey, systemImage: String, identifier: String,
          @ViewBuilder accessory: () -> Accessory = { EmptyView() }, @ViewBuilder content: () -> Content) {
         self.title = title
         self.systemImage = systemImage
@@ -220,7 +225,7 @@ struct Card<Content: View, Accessory: View>: View {
 /// Big number + caption (a stat tile).
 struct HeroNumber: View {
     var value: String
-    var caption: String
+    var caption: LocalizedStringKey
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -238,12 +243,12 @@ struct HeroNumber: View {
 
 struct SectionEmptyState<Actions: View>: View {
     var section: AppSection
-    var title: String
+    var title: LocalizedStringKey
     var systemImage: String
-    var message: String
+    var message: LocalizedStringKey
     @ViewBuilder var actions: Actions
 
-    init(section: AppSection, title: String, systemImage: String, message: String,
+    init(section: AppSection, title: LocalizedStringKey, systemImage: String, message: LocalizedStringKey,
          @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.section = section
         self.title = title
@@ -276,7 +281,7 @@ struct ServiceUnavailableView: View {
         case .stopped:
             SectionEmptyState(
                 section: section, title: "Container System Stopped", systemImage: "power.circle",
-                message: "Start the container system to see your \(section.title.lowercased()). It uses no memory until containers run."
+                message: Self.stoppedMessage(section)
             ) {
                 Button("Start Container System") { Task { await store.startSystem() } }
                     .buttonStyle(.borderedProminent)
@@ -284,12 +289,25 @@ struct ServiceUnavailableView: View {
             }
         case .cliMissing(let message):
             SectionEmptyState(section: section, title: "container CLI Not Found", systemImage: "exclamationmark.triangle",
-                              message: message) {
+                              message: "\(message)") {
                 SettingsLink { Text("Open Settings…") }
                     .accessibilityIdentifier("\(section.rawValue).action.settings")
             }
         default:
             EmptyView()
+        }
+    }
+
+    /// One full sentence per section: languages inflect the noun differently.
+    private static func stoppedMessage(_ section: AppSection) -> LocalizedStringKey {
+        switch section {
+        case .overview, .containers:
+            "Start the container system to see your containers. It uses no memory until containers run."
+        case .images: "Start the container system to see your images. It uses no memory until containers run."
+        case .volumes: "Start the container system to see your volumes. It uses no memory until containers run."
+        case .networks: "Start the container system to see your networks. It uses no memory until containers run."
+        case .machines: "Start the container system to see your machines. It uses no memory until containers run."
+        case .migration: "Start the container system to compare OrbStack with Basket. It uses no memory until containers run."
         }
     }
 
@@ -305,7 +323,7 @@ struct ServiceUnavailableView: View {
 
 /// A titled block of label/value rows, laid out side by side in detail panes.
 struct InfoSection<Content: View>: View {
-    var title: String
+    var title: LocalizedStringKey
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -327,15 +345,44 @@ struct InfoSection<Content: View>: View {
 }
 
 struct InfoRow: View {
-    var label: String
+    var label: Text
     var value: String
     var monospaced = false
+    /// UI labels are short and never truncated; data labels (long label keys) may be.
+    private var labelIsUIText = true
+
+    /// A row whose label is UI text ("Image", "Created").
+    init(label: LocalizedStringKey, value: String, monospaced: Bool = false) {
+        self.label = Text(label)
+        self.value = value
+        self.monospaced = monospaced
+    }
+
+    /// A row whose label is data (an environment variable, a mount path, a service name).
+    init(verbatimLabel: String, value: String, monospaced: Bool = false) {
+        self.label = Text(verbatim: verbatimLabel)
+        self.value = value
+        self.monospaced = monospaced
+        self.labelIsUIText = false
+    }
+
+    /// Width of an `InfoSection` whose rows have these labels and values up to `valueWidth`:
+    /// `minimum` (sized for English) or more when the translated labels are longer.
+    static func sectionWidth(labels: [String.LocalizationValue], valueWidth: CGFloat, minimum: CGFloat) -> CGFloat {
+        let font = NSFont.preferredFont(forTextStyle: .callout)
+        let widest = labels.map { (String(localized: $0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+        // Section padding (12 + 12) and the grid's column spacing (12).
+        return max(minimum, (widest + 12 + valueWidth + 24).rounded(.up))
+    }
 
     var body: some View {
         GridRow {
-            Text(label)
+            label
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                // A UI label keeps its full width (German and French run long); the value
+                // takes what is left.
+                .fixedSize(horizontal: labelIsUIText, vertical: false)
                 .gridColumnAlignment(.leading)
             Text(value.isEmpty ? "—" : value)
                 .font(monospaced ? .callout.monospaced() : .callout)

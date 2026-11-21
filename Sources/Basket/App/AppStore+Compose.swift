@@ -59,7 +59,7 @@ extension AppStore {
             state: project.state == .stopped ? .stopped : .running,
             labels: [ComposeLabels.project: project.name])
         return ContainerRow(
-            summary: summary, image: "\(project.totalCount) service\(project.totalCount == 1 ? "" : "s")",
+            summary: summary, image: String(localized: "\(project.totalCount) services", comment: "A number of Compose services"),
             stateOrder: project.state == .running ? 0 : project.state == .partial ? 1 : 3,
             portsText: project.containers.flatMap(\.ports).map(Format.port).joined(separator: ", "),
             cpu: cpu.isEmpty ? -1 : cpu.reduce(0, +),
@@ -98,9 +98,9 @@ extension AppStore {
     /// Asks for a compose file (or a folder holding one), then shows its plan.
     func chooseComposeFile() {
         let panel = NSOpenPanel()
-        panel.title = "Compose Up"
-        panel.message = "Choose a compose.yaml or docker-compose.yml, or the folder that holds it."
-        panel.prompt = "Show Plan"
+        panel.title = String(localized: "Compose Up", comment: "The command name of `docker compose up`")
+        panel.message = String(localized: "Choose a compose.yaml or docker-compose.yml, or the folder that holds it.")
+        panel.prompt = String(localized: "Show Plan")
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
@@ -123,8 +123,9 @@ extension AppStore {
             guard let found = ComposeLoader.defaultFileNames.map({ url.appendingPathComponent($0) })
                 .first(where: { FileManager.default.fileExists(atPath: $0.path) })
             else {
-                showError("No compose file in “\(url.lastPathComponent)”", BackendError.unsupported(
-                    "A folder without \(ComposeLoader.defaultFileNames.joined(separator: ", "))"))
+                banner = BannerMessage(
+                    title: String(localized: "No compose file in “\(url.lastPathComponent)”"),
+                    detail: String(localized: "Basket looks for \(ComposeLoader.defaultFileNames.formatted(.list(type: .or))) in the folder."))
                 return
             }
             file = found
@@ -148,7 +149,7 @@ extension AppStore {
     }
 
     func startComposeProject(_ project: String) async {
-        await perform("Starting", ids: memberIDs(project), refresh: [.containers, .stats, .footprints]) { backend in
+        await perform(.start, ids: memberIDs(project), refresh: [.containers, .stats, .footprints]) { backend in
             try await ComposeOperations(backend: backend).start(project: project)
         }
     }
@@ -161,9 +162,9 @@ extension AppStore {
         let unknown = running.filter { $0.removeOnStop == nil }.map(\.id)
         guard deleted.isEmpty, unknown.isEmpty || compose.isBasketManaged else {
             confirmation = Confirmation(
-                title: "Stop “\(project)”?",
+                title: String(localized: "Stop “\(project)”?"),
                 message: Self.removeOnStopNote(deleted: deleted, unknown: unknown),
-                confirmLabel: deleted.isEmpty ? "Stop Anyway" : "Stop and Delete") { [weak self] in
+                confirmLabel: deleted.isEmpty ? String(localized: "Stop Anyway") : String(localized: "Stop and Delete")) { [weak self] in
                 Task { await self?.stopComposeProject(project, confirmed: true) }
             }
             return
@@ -172,7 +173,7 @@ extension AppStore {
     }
 
     private func stopComposeProject(_ project: String, confirmed: Bool) async {
-        await perform("Stopping", ids: memberIDs(project), refresh: [.containers, .stats, .footprints]) { backend in
+        await perform(.stop, ids: memberIDs(project), refresh: [.containers, .stats, .footprints]) { backend in
             try await ComposeOperations(backend: backend).stop(project: project)
         }
     }
@@ -186,13 +187,14 @@ extension AppStore {
             ? [] : compose.containers.filter { $0.state == .running && $0.removeOnStop == nil }.map(\.id)
         let restartable = compose.containers.map(\.id).filter { !deleted.contains($0) }
         guard !restartable.isEmpty else { return }
-        var message = ["Each service is stopped and started again in turn, in dependency order, then Basket rewrites the service names in /etc/hosts. If one doesn't come back, the others still restart. Published ports come back once the services run again; anything kept only in memory is lost."]
+        var message = [String(localized: "Each service is stopped and started again in turn, in dependency order, then Basket rewrites the service names in /etc/hosts. If one doesn't come back, the others still restart. Published ports come back once the services run again; anything kept only in memory is lost.")]
         if !deleted.isEmpty || !unknown.isEmpty {
             message.append(Self.removeOnStopNote(deleted: deleted, unknown: unknown, skipping: true))
         }
         confirmation = Confirmation(
-            title: "Restart “\(project)”?", message: message.joined(separator: "\n\n"),
-            confirmLabel: unknown.isEmpty ? "Restart" : "Restart Anyway", isDestructive: !unknown.isEmpty
+            title: String(localized: "Restart “\(project)”?"), message: message.joined(separator: "\n\n"),
+            confirmLabel: unknown.isEmpty ? String(localized: "Restart") : String(localized: "Restart Anyway"),
+            isDestructive: !unknown.isEmpty
         ) { [weak self] in
             Task {
                 await self?.restart(restartable) { backend in
@@ -203,17 +205,22 @@ extension AppStore {
     }
 
     private static func removeOnStopNote(deleted: [String], unknown: [String], skipping: Bool = false) -> String {
-        func names(_ list: [String]) -> String { list.map { "“\($0)”" }.joined(separator: ", ") }
+        let names = Format.quotedList
         var parts: [String] = []
         if !deleted.isEmpty {
-            parts.append(skipping
-                ? "Skipped \(names(deleted)): started with --rm, so stopping would delete \(deleted.count == 1 ? "it" : "them")."
-                : "\(names(deleted)) \(deleted.count == 1 ? "was" : "were") started with --rm: stopping deletes \(deleted.count == 1 ? "it" : "them") for good.")
+            switch (skipping, deleted.count == 1) {
+            case (true, true): parts.append(String(localized: "Skipped \(names(deleted)): started with --rm, so stopping would delete it."))
+            case (true, false): parts.append(String(localized: "Skipped \(names(deleted)): started with --rm, so stopping would delete them."))
+            case (false, true): parts.append(String(localized: "\(names(deleted)) was started with --rm: stopping deletes it for good."))
+            case (false, false): parts.append(String(localized: "\(names(deleted)) were started with --rm: stopping deletes them for good."))
+            }
         }
         if !unknown.isEmpty {
-            parts.append("Basket can't tell whether \(names(unknown)) \(unknown.count == 1 ? "was" : "were") started with --rm. If so, stopping deletes \(unknown.count == 1 ? "it" : "them") for good.")
+            parts.append(unknown.count == 1
+                ? String(localized: "Basket can't tell whether \(names(unknown)) was started with --rm. If so, stopping deletes it for good.")
+                : String(localized: "Basket can't tell whether \(names(unknown)) were started with --rm. If so, stopping deletes them for good."))
         }
-        return parts.joined(separator: " ")
+        return Format.sentences(parts)
     }
 
     /// `down`: says exactly which containers, networks (and, if asked, volumes and their data) go.
@@ -222,20 +229,32 @@ extension AppStore {
         let containers = compose.containers.map(\.id)
         let networks = self.networks.filter { $0.labels[ComposeLabels.project] == project && !$0.isBuiltin }.map(\.name)
         let volumes = composeVolumes(project)
-        func list(_ items: [String]) -> String { items.joined(separator: ", ") }
-        var message = ["Stops and deletes \(containers.count == 1 ? "its container" : "its \(containers.count) containers") (\(list(containers)))"
-            + (networks.isEmpty ? "." : " and \(networks.count == 1 ? "the network" : "the networks") \(list(networks)).")]
-        if removeVolumes {
-            message.append(volumes.isEmpty
-                ? "The project has no volumes to delete."
-                : "Also deletes \(volumes.count == 1 ? "the volume" : "the volumes") \(list(volumes)) — the data in \(volumes.count == 1 ? "it" : "them") is lost for good.")
-        } else {
-            message.append(volumes.isEmpty ? "Images are kept." : "Images and the volumes \(list(volumes)) are kept, so Compose Up brings the data back.")
+        let containerList = containers.localizedList, networkList = networks.localizedList, volumeList = volumes.localizedList
+        let what: String = switch (containers.count == 1, networks.count) {
+        case (true, 0): String(localized: "Stops and deletes its container (\(containerList)).")
+        case (true, 1): String(localized: "Stops and deletes its container (\(containerList)) and the network \(networkList).")
+        case (true, _): String(localized: "Stops and deletes its container (\(containerList)) and the networks \(networkList).")
+        case (false, 0): String(localized: "Stops and deletes its \(containers.count) containers (\(containerList)).")
+        case (false, 1): String(localized: "Stops and deletes its \(containers.count) containers (\(containerList)) and the network \(networkList).")
+        case (false, _): String(localized: "Stops and deletes its \(containers.count) containers (\(containerList)) and the networks \(networkList).")
         }
+        let volumeNote: String = switch (removeVolumes, volumes.count) {
+        case (true, 0): String(localized: "The project has no volumes to delete.")
+        case (true, 1): String(localized: "Also deletes the volume \(volumeList) — the data in it is lost for good.")
+        case (true, _): String(localized: "Also deletes the volumes \(volumeList) — the data in them is lost for good.")
+        case (false, 0): String(localized: "Images are kept.")
+        case (false, 1): String(localized: "Images and the volume \(volumeList) are kept, so Compose Up brings the data back.")
+        case (false, _): String(localized: "Images and the volumes \(volumeList) are kept, so Compose Up brings the data back.")
+        }
+        let message = [what, volumeNote]
         confirmation = Confirmation(
-            title: removeVolumes ? "Delete “\(project)” and its volumes?" : "Take “\(project)” down?",
+            title: removeVolumes
+                ? String(localized: "Delete “\(project)” and its volumes?")
+                : String(localized: "Take “\(project)” down?", comment: "Compose project: stop and remove its containers and networks (`compose down`)"),
             message: message.joined(separator: "\n\n"),
-            confirmLabel: removeVolumes ? "Delete Everything" : "Down"
+            confirmLabel: removeVolumes
+                ? String(localized: "Delete Everything")
+                : String(localized: "Take Down", comment: "Confirm button of “Take “%@” down?”: stop and remove the Compose project's containers and networks (`compose down`)")
         ) { [weak self] in
             let approved = ComposeDownApproval(
                 containers: Set(containers), networks: Set(networks), volumes: removeVolumes ? Set(volumes) : [])
@@ -245,7 +264,7 @@ extension AppStore {
 
     private func composeDown(_ project: String, removeVolumes: Bool, approved: ComposeDownApproval) async {
         if selectedComposeProject == project { selectedComposeProject = nil }
-        await perform("Removing", ids: approved.containers.sorted(), refresh: [.containers, .stats, .footprints, .networks, .volumes, .disk]) { backend in
+        await perform(.composeDown, ids: approved.containers.sorted(), refresh: [.containers, .stats, .footprints, .networks, .volumes, .disk]) { backend in
             try await ComposeOperations(backend: backend).down(project: project, removeVolumes: removeVolumes, approved: approved)
         }
     }
@@ -262,8 +281,9 @@ extension AppStore {
         } else if let directory = compose.workingDirectory, FileManager.default.fileExists(atPath: directory) {
             NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: directory)])
         } else {
-            showError("Can't find the compose file", BackendError.unsupported(
-                "Revealing \(compose.configFiles.first ?? compose.workingDirectory ?? project), which no longer exists on this Mac,"))
+            banner = BannerMessage(
+                title: String(localized: "Can't find the compose file"),
+                detail: String(localized: "\(compose.configFiles.first ?? compose.workingDirectory ?? project) no longer exists on this Mac."))
         }
     }
 

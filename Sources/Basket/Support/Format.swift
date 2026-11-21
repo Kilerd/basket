@@ -2,29 +2,61 @@ import Foundation
 import BasketCore
 
 enum Format {
-    /// Memory sizes use binary units (what Activity Monitor shows).
+    /// Memory sizes use binary units (what Activity Monitor shows), in the user's locale
+    /// ("1.2 GB", "1,2 Go").
     static func memory(_ bytes: Int64) -> String {
         // The formatter spells zero out ("Zero kB"); a dashboard reads better with a digit.
-        bytes == 0 ? "0 MB" : bytes.formatted(.byteCount(style: .memory))
+        bytes == 0 ? zero(.memory) : bytes.formatted(.byteCount(style: .memory))
     }
 
     /// Disk sizes use decimal units (what Finder shows).
     static func disk(_ bytes: Int64) -> String {
-        bytes == 0 ? "0 MB" : bytes.formatted(.byteCount(style: .file))
+        bytes == 0 ? zero(.file) : bytes.formatted(.byteCount(style: .file))
     }
 
+    /// "0 MB" in the user's locale.
+    private static func zero(_ style: ByteCountFormatStyle.Style) -> String {
+        Int64(0).formatted(.byteCount(style: style, allowedUnits: .mb, spellsOutZero: false))
+    }
+
+    /// `value` is in percent: 15.3 → "15.3%" ("15,3 %" in French).
     static func percent(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1))) + "%"
+        (value / 100).formatted(.percent.precision(.fractionLength(1)))
     }
 
+    /// A count in the user's locale ("1,234", "1 234").
+    static func count(_ value: Int) -> String {
+        value.formatted()
+    }
+
+    /// "5 days ago", "1 wk. ago". Numeric: the named forms ("la semaine dernière") run much
+    /// longer in some languages, and these dates sit in narrow table columns.
     static func relative(_ date: Date?) -> String {
         guard let date else { return "—" }
-        return date.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
+        return date.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated))
     }
 
     static func dateTime(_ date: Date?) -> String {
         guard let date else { return "—" }
         return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    /// A name in the user's quotation marks: “web”, 「web」, « web », „web“.
+    static func quoted(_ name: String) -> String {
+        String(localized: "“\(name)”", comment: "A name in quotes")
+    }
+
+    /// Names in quotation marks, joined as a list in the user's language.
+    static func quotedList(_ names: [String]) -> String {
+        names.map(quoted).localizedList
+    }
+
+    /// Whole sentences run together as one paragraph: with a space, except in languages written
+    /// without spaces between sentences (Chinese, Japanese).
+    static func sentences(_ parts: [String]) -> String {
+        let language = Bundle.main.preferredLocalizations.first ?? "en"
+        let separator = ["zh", "ja"].contains(where: { language.hasPrefix($0) }) ? "" : " "
+        return parts.joined(separator: separator)
     }
 
     static func shortDigest(_ digest: String) -> String {

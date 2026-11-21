@@ -182,7 +182,8 @@ public enum AXAuditor {
         tree.indices.compactMap { i in
             let node = tree[i].node
             guard AXAuditRules.textRoles.contains(node.role), let text = node.text,
-                  text.count >= AXAuditRules.truncationMinLength,
+                  text.count >= (AXAuditRules.hasWideCharacters(text)
+                      ? AXAuditRules.truncationMinLengthWide : AXAuditRules.truncationMinLength),
                   let frame = node.frame, !frame.isEmpty else { return nil }
             let (fontSize, lines) = TextMeasure.estimateFont(forFrameHeight: frame.height)
             let needed = text.split(whereSeparator: \.isNewline)

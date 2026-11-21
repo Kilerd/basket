@@ -30,9 +30,10 @@ struct OrbStackStep: View {
     }
 
     private func comparison(
-        _ title: String, orbStack: Int64, basket: Int64, format: (Int64) -> String, identifier: String
+        _ title: LocalizedStringResource, orbStack: Int64, basket: Int64, format: (Int64) -> String, identifier: String
     ) -> some View {
         let scale = Double(max(orbStack, basket, 1))
+        let name = String(localized: title)
         return VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
@@ -41,14 +42,15 @@ struct OrbStackStep: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): OrbStack \(format(orbStack)), Basket \(format(basket))")
+        .accessibilityLabel(Text("\(name): OrbStack \(format(orbStack)), Basket \(format(basket))",
+                                 comment: "VoiceOver: “Memory now: OrbStack 2.1 GB, Basket 300 MB”"))
         .accessibilityIdentifier(identifier)
     }
 
-    /// Fixed label and value slots so both bars start and end at the same x.
+    /// Fixed label and value slots so both bars start and end at the same x. `label` is a product name.
     private func bar(_ label: String, _ bytes: Int64, _ scale: Double, _ color: Color, _ format: (Int64) -> String) -> some View {
         GridRow {
-            Text(label).frame(width: 70, alignment: .leading)
+            Text(verbatim: label).frame(width: 70, alignment: .leading)
             MeterBar(fraction: Double(bytes) / scale, color: color, height: 8)
                 .frame(maxWidth: .infinity)
             Text(format(bytes))
@@ -59,11 +61,16 @@ struct OrbStackStep: View {
     }
 
     private func advice(_ orb: OrbStackSnapshot) -> String {
-        var text = "Basket can copy your OrbStack images"
-        if let count = orb.dockerImageCount { text += " (\(count) today)" }
-        text += " and recreate your containers. OrbStack isn’t changed: you decide what to remove, and when."
-        if !orb.isRunning { text += " Basket reads from OrbStack only while it runs, so start it before you migrate." }
-        return text
+        switch (orb.dockerImageCount, orb.isRunning) {
+        case (let count?, true):
+            String(localized: "Basket can copy your OrbStack images (\(count) today) and recreate your containers. OrbStack isn’t changed: you decide what to remove, and when.")
+        case (let count?, false):
+            String(localized: "Basket can copy your OrbStack images (\(count) today) and recreate your containers. OrbStack isn’t changed: you decide what to remove, and when. Basket reads from OrbStack only while it runs, so start it before you migrate.")
+        case (nil, true):
+            String(localized: "Basket can copy your OrbStack images and recreate your containers. OrbStack isn’t changed: you decide what to remove, and when.")
+        case (nil, false):
+            String(localized: "Basket can copy your OrbStack images and recreate your containers. OrbStack isn’t changed: you decide what to remove, and when. Basket reads from OrbStack only while it runs, so start it before you migrate.")
+        }
     }
 }
 
@@ -90,7 +97,7 @@ struct DockerStep: View {
                     plan(status)
                 }
                 if let failure = model.dockerPhase.failure {
-                    OnboardingFailure(message: failure)
+                    OnboardingFailure(message: "\(failure)")
                 }
             } else {
                 OnboardingBox {
@@ -113,12 +120,12 @@ struct DockerStep: View {
         }
     }
 
-    private func today(_ status: DockerShimStatus) -> String {
+    private func today(_ status: DockerShimStatus) -> LocalizedStringKey {
         guard let current = status.currentDocker else { return "No docker command today" }
         return "docker today: \(model.displayPath(current))"
     }
 
-    private func todayDetail(_ status: DockerShimStatus) -> String {
+    private func todayDetail(_ status: DockerShimStatus) -> LocalizedStringKey {
         guard let current = status.currentDocker else {
             return "Your \(status.shell) shell finds no docker command, so nothing else changes."
         }
@@ -154,7 +161,7 @@ struct DockerStep: View {
         }
     }
 
-    private func planTitle(_ change: PlannedShellChange) -> String {
+    private func planTitle(_ change: PlannedShellChange) -> LocalizedStringKey {
         let path = model.displayPath(change.file)
         return path.hasSuffix("/docker") ? "Basket adds the command at \(path):" : "Basket adds these lines to \(path):"
     }
@@ -180,7 +187,7 @@ struct DoneStep: View {
         ) {
             OnboardingBox {
                 if let cli = model.cli {
-                    OnboardingStatusRow(status: .ok, title: "container \(cli.version ?? "") installed".replacingOccurrences(of: "  ", with: " "), detail: nil)
+                    OnboardingStatusRow(status: .ok, title: cli.version.map { "container \($0) installed" } ?? "container installed", detail: nil)
                 } else {
                     OnboardingStatusRow(status: .warning, title: "container isn’t installed", detail: "Basket needs it to run containers.")
                 }

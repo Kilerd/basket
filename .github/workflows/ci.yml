@@ -72,7 +72,7 @@ jobs:
     # macOS 26 on Apple silicon (the package needs the macOS 26 SDK). Image contents:
     # https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       XCODE_APP: /Applications/Xcode_26.6.app
       # scripts/_common.sh always uses /Applications/Xcode.app; "Select Xcode" points that path at
@@ -109,6 +109,12 @@ jobs:
       - name: Unit tests
         run: swift test
 
+      # The String Catalog matches the sources (swiftc -emit-localized-strings), every key is
+      # translated into every language with matching placeholders, and it compiles.
+      - name: Localization check
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/check-l10n.sh
+
       # The self-test opens the app's window in the runner's GUI session. Restored window state
       # (from an earlier launch in this job) can leave the main window closed, which would stall
       # the self-test, so state restoration is turned off for the app's bundle id.
@@ -129,6 +135,19 @@ jobs:
       - name: Self-test (stopped fixtures)
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: caffeinate -d -i -u scripts/selftest.sh stopped
+
+      # Other languages: Chinese for CJK text, German as the longest labels (truncation).
+      - name: Self-test (demo fixtures, Simplified Chinese)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          BASKET_LANGUAGE: zh-Hans
+        run: caffeinate -d -i -u scripts/selftest.sh demo
+
+      - name: Self-test (demo fixtures, German)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          BASKET_LANGUAGE: de
+        run: caffeinate -d -i -u scripts/selftest.sh demo
 
       - name: Upload self-test reports and screenshots
         if: ${{ !cancelled() }}

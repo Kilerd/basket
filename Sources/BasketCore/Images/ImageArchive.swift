@@ -30,11 +30,11 @@ public struct ImageArchive: Sendable, Hashable {
     /// Throws `ImageArchive.Invalid` when the file is not a readable OCI archive.
     public static func inspect(_ url: URL) throws -> ImageArchive {
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-        guard let size = (attributes?[.size] as? NSNumber)?.int64Value else { throw Invalid(reason: "the archive \(url.lastPathComponent) does not exist") }
-        guard size > 1024 else { throw Invalid(reason: "the archive is empty (\(size) bytes)") }
+        guard let size = (attributes?[.size] as? NSNumber)?.int64Value else { throw Invalid(reason: String(localized: "the archive \(url.lastPathComponent) does not exist", bundle: .main)) }
+        guard size > 1024 else { throw Invalid(reason: String(localized: "the archive is empty (\(size.formatted(.byteCount(style: .file))))", bundle: .main)) }
         let tar = try TarReader(url: url)
         guard let indexData = try tar.data(of: "index.json") else {
-            throw Invalid(reason: "the archive has no index.json")
+            throw Invalid(reason: String(localized: "the archive has no index.json", bundle: .main))
         }
         let index = try decodeIndex(indexData, name: "index.json")
         var references: [String] = []
@@ -54,7 +54,7 @@ public struct ImageArchive: Sendable, Hashable {
 
     public struct Invalid: Error, LocalizedError, Sendable, Equatable {
         public var reason: String
-        public var errorDescription: String? { "Not a usable image archive: \(reason)." }
+        public var errorDescription: String? { String(localized: "Not a usable image archive: \(reason).", bundle: .main) }
     }
 
     // MARK: Parsing
@@ -85,7 +85,7 @@ public struct ImageArchive: Sendable, Hashable {
         do {
             return try JSONDecoder().decode(Index.self, from: data).manifests
         } catch {
-            throw Invalid(reason: "\(name) is not an OCI index")
+            throw Invalid(reason: String(localized: "\(name) is not an OCI index", bundle: .main))
         }
     }
 
@@ -97,7 +97,7 @@ public struct ImageArchive: Sendable, Hashable {
             if indexMediaTypes.contains(descriptor.mediaType ?? "") {
                 guard depth < 3 else { continue }
                 guard let data = try tar.data(of: blobPath(descriptor.digest)) else {
-                    throw Invalid(reason: "the index blob \(descriptor.digest.prefix(19)) is missing")
+                    throw Invalid(reason: String(localized: "the index blob \(String(descriptor.digest.prefix(19))) is missing", bundle: .main))
                 }
                 if indexDigest == nil { indexDigest = descriptor.digest }
                 try collect(decodeIndex(data, name: "index blob"), from: tar, depth: depth + 1, into: &manifests,
@@ -124,7 +124,7 @@ struct TarReader {
 
     init(url: URL) throws {
         do { handle = try FileHandle(forReadingFrom: url) } catch {
-            throw ImageArchive.Invalid(reason: "the archive can't be opened")
+            throw ImageArchive.Invalid(reason: String(localized: "the archive can't be opened", bundle: .main))
         }
         var offset: UInt64 = 0
         var longName: String?
@@ -134,7 +134,7 @@ struct TarReader {
             if header.allSatisfy({ $0 == 0 }) { break }
             let bytes = [UInt8](header)
             guard let size = Self.number(bytes[124..<136]) else {
-                throw ImageArchive.Invalid(reason: "the archive is not a tar file")
+                throw ImageArchive.Invalid(reason: String(localized: "the archive is not a tar file", bundle: .main))
             }
             let type = bytes[156]
             let dataOffset = offset + 512
@@ -166,7 +166,7 @@ struct TarReader {
     /// Contents of a regular file entry (refuses entries over `limit` bytes: only JSON is read).
     func data(of name: String, limit: Int64 = 16 << 20) throws -> Data? {
         guard let entry = entries[name] else { return nil }
-        guard entry.size <= limit else { throw ImageArchive.Invalid(reason: "\(name) is unexpectedly large") }
+        guard entry.size <= limit else { throw ImageArchive.Invalid(reason: String(localized: "\(name) is unexpectedly large", bundle: .main)) }
         try handle.seek(toOffset: entry.offset)
         return try handle.read(upToCount: Int(entry.size)) ?? Data()
     }

@@ -1,3 +1,5 @@
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
+
 <p align="center">
   <img src="Resources/Branding/AppIcon-1024.png" width="128" alt="Basket app icon: a star-shaped mascot sitting in a woven basket">
 </p>
@@ -83,6 +85,9 @@ Available in `0.0.1`:
   identifier, and the UI is tested through the accessibility tree; see
   [How the UI is tested](#how-the-ui-is-tested).
 
+Coming in the next release: **six languages** — English, 简体中文, 繁體中文, 日本語, Français and
+Deutsch. Basket follows the macOS language, or the one chosen in Settings ▸ General ▸ Language.
+
 Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes and
 optional Docker API compatibility. See the
 [feature map](docs/EVOLUTION.md#orbstack--basket-feature-map) and the open issues.
@@ -148,6 +153,7 @@ deterministic fixture data. There is no pixel matching and no XCUITest.
 
    ```sh
    scripts/selftest.sh demo     # also: empty, stopped
+   BASKET_LANGUAGE=de scripts/selftest.sh demo   # in another language
    ```
 
    The app starts with the fixture backend (`Fixtures/<set>`, raw `container … --format json`

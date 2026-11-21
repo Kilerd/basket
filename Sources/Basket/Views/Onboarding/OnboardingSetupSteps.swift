@@ -57,7 +57,7 @@ struct InstallStep: View {
                 OnboardingLog(lines: model.installLog, label: "Homebrew output")
             }
             if model.cli == nil, let failure = model.installPhase.failure {
-                OnboardingFailure(message: failure)
+                OnboardingFailure(message: "\(failure)")
             }
         }
     }
@@ -65,8 +65,8 @@ struct InstallStep: View {
     @ViewBuilder private var status: some View {
         if let cli = model.cli {
             OnboardingStatusRow(
-                status: .ok, title: "container \(cli.version ?? "") is installed".replacingOccurrences(of: "  ", with: " "),
-                detail: cli.path, identifier: "onboarding.status")
+                status: .ok, title: cli.version.map { "container \($0) is installed" } ?? "container is installed",
+                detail: "\(cli.path)", identifier: "onboarding.status")
         } else if model.installPhase.isRunning {
             OnboardingStatusRow(
                 status: .working, title: "Installing container with Homebrew…",
@@ -143,7 +143,7 @@ struct SystemStep: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let failure = model.startPhase.failure {
-                    OnboardingFailure(message: failure)
+                    OnboardingFailure(message: "\(failure)")
                 }
             }
             if !model.startLog.isEmpty {
@@ -161,7 +161,8 @@ struct SystemStep: View {
         } else if model.systemStatus?.isRunning == true {
             OnboardingStatusRow(
                 status: .ok, title: "The container system is running",
-                detail: version.map { "container \($0)" }, identifier: "onboarding.status")
+                // "container 1.7.1": the CLI's name and version, the same in every language.
+                detail: version.map { "\("container \($0)")" }, identifier: "onboarding.status")
         } else if model.startPhase.isRunning {
             OnboardingStatusRow(
                 status: .working, title: "Starting the container system…",

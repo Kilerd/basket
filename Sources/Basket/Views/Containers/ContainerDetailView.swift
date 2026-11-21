@@ -43,7 +43,7 @@ struct ContainerDetailView: View {
             .layoutPriority(1)
             Spacer(minLength: 12)
             Picker("Detail", selection: Bindable(store).containerDetailTab) {
-                ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(Tab.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -79,14 +79,16 @@ struct ContainerDetailView: View {
                     if let port = container.ports.first { HostActions.openInBrowser(port) }
                 }
                 .disabled(container.ports.isEmpty || container.state != .running)
-                .help(container.ports.first.map { "Open localhost:\($0.hostPort) in your browser" } ?? "No published ports")
+                .help(container.ports.first.map { String(localized: "Open localhost:\($0.hostPort) in your browser") }
+                      ?? String(localized: "No published ports"))
                 .accessibilityIdentifier("containers.action.open-port")
             }
             Button("Copy IP", systemImage: "doc.on.doc") {
                 if let ip = container.ipv4Address { HostActions.copy(ip) }
             }
             .disabled(container.ipv4Address == nil)
-            .help(container.ipv4Address.map { "Copy \($0)" } ?? "No IP address")
+            .help(container.ipv4Address.map { String(localized: "Copy \($0)", comment: "Help tag: copy this IP address") }
+                  ?? String(localized: "No IP address"))
             .accessibilityIdentifier("containers.action.copy-ip")
             Button("Kill", systemImage: "bolt.fill") { Task { await store.killContainers([container.id]) } }
                 .disabled(container.state != .running)
@@ -123,7 +125,10 @@ private struct ContainerInfoView: View {
                         ContainerActivityRows(container: container)
                     }
                     // Short values: a fixed width, so General and Network get room for long ones.
-                    .frame(width: 250)
+                    // 250 pt fits the English labels; longer ones (German, French) widen it.
+                    .frame(width: InfoRow.sectionWidth(
+                        labels: ["CPUs", "Memory limit", "Processes", "Activity", "Memory Saver"],
+                        valueWidth: 130, minimum: 250))
                     InfoSection(title: "Network") {
                         InfoRow(label: "IP address", value: container.ipv4Address ?? "—", monospaced: true)
                         InfoRow(label: "Hostname", value: container.hostname ?? "—")
@@ -139,7 +144,9 @@ private struct ContainerInfoView: View {
                             Text("No mounts").font(.callout).foregroundStyle(.secondary)
                         }
                         ForEach(container.mounts, id: \.self) { m in
-                            InfoRow(label: m.destination, value: "\(m.source) (\(m.kind)\(m.readOnly ? ", read-only" : ""))")
+                            InfoRow(verbatimLabel: m.destination, value: m.readOnly
+                                    ? String(localized: "\(m.source) (\(m.kind), read-only)", comment: "A mount: source (kind, e.g. “volume” or “bind”)")
+                                    : "\(m.source) (\(m.kind))")
                         }
                     }
                     InfoSection(title: "Environment") {
@@ -148,14 +155,14 @@ private struct ContainerInfoView: View {
                         }
                         ForEach(container.environment, id: \.self) { entry in
                             let parts = entry.split(separator: "=", maxSplits: 1).map(String.init)
-                            InfoRow(label: parts.first ?? entry, value: parts.count > 1 ? parts[1] : "", monospaced: true)
+                            InfoRow(verbatimLabel: parts.first ?? entry, value: parts.count > 1 ? parts[1] : "", monospaced: true)
                         }
                     }
                     let labels = container.labels.filter { !ComposeLabels.isManaged($0.key) }
                     if !labels.isEmpty {
                         InfoSection(title: "Labels") {
                             ForEach(labels.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                                InfoRow(label: key, value: value, monospaced: true)
+                                InfoRow(verbatimLabel: key, value: value, monospaced: true)
                             }
                         }
                     }
@@ -180,7 +187,8 @@ struct InspectJSONView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(error ?? "container inspect output").font(.caption).foregroundStyle(error == nil ? Color.secondary : Color.orange)
+                (error.map { Text(verbatim: $0) } ?? Text("container inspect output", comment: "Caption above raw JSON; `container inspect` is the CLI command and stays untranslated"))
+                    .font(.caption).foregroundStyle(error == nil ? Color.secondary : Color.orange)
                     .lineLimit(1)
                 Spacer()
                 Button("Copy JSON", systemImage: "doc.on.doc") { HostActions.copy(text) }

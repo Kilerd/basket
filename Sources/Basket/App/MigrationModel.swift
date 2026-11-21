@@ -77,7 +77,9 @@ final class MigrationModel {
     /// OrbStack row id → content comparison with Basket's image of the same reference, valid while
     /// `key` (OrbStack image ID + Basket digest) still matches. See `basketPresence(_:)`.
     private(set) var presenceCache: [String: (key: String, value: BasketPresence)] = [:]
-    private(set) var isComparing = false
+    /// Bumped whenever `presenceCache` is cleared, so the comparison task restarts even when
+    /// OrbStack's images read back unchanged.
+    private var presenceGeneration = 0
     /// Image row id → what was imported this session.
     var imported: [String: ItemState] = [:]
     /// OrbStack container id → the Basket container made from it.
@@ -100,6 +102,7 @@ final class MigrationModel {
         let migrator = self.migrator
         // Re-read means re-compare: OrbStack may have changed under the same image IDs' names.
         presenceCache = [:]
+        presenceGeneration += 1
         let status = await migrator.status()
         self.status = status
         guard status.isReady else {
@@ -161,6 +164,7 @@ final class MigrationModel {
     /// Changes whenever OrbStack's images or what Basket's references point at change.
     var presenceSignature: Int {
         var hasher = Hasher()
+        hasher.combine(presenceGeneration)
         for image in images { hasher.combine(image.id); hasher.combine(image.imageID) }
         for image in store?.images ?? [] { hasher.combine(image.reference); hasher.combine(image.digest) }
         return hasher.finalize()
@@ -177,8 +181,6 @@ final class MigrationModel {
             return presenceCache[image.id]?.key != Self.presenceKey(image, digest)
         }
         guard !pending.isEmpty else { return }
-        isComparing = true
-        defer { isComparing = false }
         let migrator = self.migrator
         let backend = store.backend
         for image in pending {
@@ -187,6 +189,12 @@ final class MigrationModel {
             let result = await migrator.basketPresence(of: [image], basket: basket, backend: backend)[image.id] ?? .absent
             presenceCache[image.id] = (Self.presenceKey(image, digest), result)
         }
+    }
+
+    /// Whether some image Basket lists under the same reference hasn't been compared yet.
+    var hasPendingComparisons: Bool {
+        let digests = basketDigests
+        return images.contains { basketPresence($0, digests: digests) == nil }
     }
 
     var canImport: Bool {
@@ -252,7 +260,7 @@ final class MigrationModel {
         let selection = checkedImages
         guard !selection.isEmpty else { return }
         importItems = selection.map { image in
-            if image.isDangling { return ImportItem(image: image, state: .skipped("No name to import it under")) }
+            if image.isDangling { return ImportItem(image: image, state: .skipped(String(localized: "No name to import it under"))) }
             if let reason = Self.skipReason(image, presence: basketPresence(image)) {
                 return ImportItem(image: image, state: .skipped(reason))
             }
@@ -280,7 +288,7 @@ final class MigrationModel {
                 } catch is CancellationError {
                     importItems[index].state = .cancelled
                 } catch MigrationError.alreadyInBasket {
-                    importItems[index].state = .skipped("Already in Basket")
+                    importItems[index].state = .skipped(String(localized: "Already in Basket"))
                 } catch MigrationError.nameConflict(let reference, let reason) {
                     importItems[index].state = .skipped(Self.conflictText(reference, reason))
                 } catch {
@@ -316,17 +324,17 @@ final class MigrationModel {
         let reference = image.basketReference ?? image.reference ?? image.imageID
         switch presence {
         case .absent?: return nil
-        case .identical?: return "Already in Basket"
+        case .identical?: return String(localized: "Already in Basket")
         case .nameConflict(let reason)?: return conflictText(reference, reason)
         case .unverified(let reason)?:
-            return "Basket already has an image named \(reference) that couldn't be compared with OrbStack's: \(reason). Not imported."
+            return String(localized: "Basket already has an image named \(reference) that couldn't be compared with OrbStack's: \(reason). Not imported.")
         case nil:
-            return "Basket already has an image named \(reference); still comparing them, so it isn't imported."
+            return String(localized: "Basket already has an image named \(reference); still comparing them, so it isn't imported.")
         }
     }
 
     static func conflictText(_ reference: String, _ reason: String) -> String {
-        "Name conflict: Basket already has a different \(reference): \(reason). Not imported."
+        String(localized: "Name conflict: Basket already has a different \(reference): \(reason). Not imported.")
     }
 
     static func state(for phase: ImportPhase) -> ItemState {
@@ -344,14 +352,14 @@ final class MigrationModel {
         let total = importItems.count
         if isImporting {
             let finished = importItems.filter(\.state.isFinished).count
-            return "\(finished) of \(total) done"
+            return String(localized: "\(finished) of \(total) done", comment: "Import progress: images finished of all images")
         }
-        var parts = ["\(done) imported"]
-        if failed > 0 { parts.append("\(failed) failed") }
+        var parts = [String(localized: "\(done) imported", comment: "Import result: number of images imported")]
+        if failed > 0 { parts.append(String(localized: "\(failed) failed", comment: "Import result: number of images that failed")) }
         let skipped = importItems.filter { if case .skipped = $0.state { true } else { false } }.count
-        if skipped > 0 { parts.append("\(skipped) skipped") }
+        if skipped > 0 { parts.append(String(localized: "\(skipped) skipped", comment: "Import result: number of images skipped")) }
         let cancelled = importItems.filter { $0.state == .cancelled }.count
-        if cancelled > 0 { parts.append("\(cancelled) cancelled") }
+        if cancelled > 0 { parts.append(String(localized: "\(cancelled) cancelled", comment: "Import result: number of imports cancelled")) }
         return parts.joined(separator: " · ")
     }
 
@@ -405,28 +413,37 @@ final class MigrationModel {
     var statusLine: String {
         switch status {
         case .ready(let version)?:
+            // Product name and version: the same in every language.
             let engine = "OrbStack Docker \(version ?? "")".trimmingCharacters(in: .whitespaces)
             switch tab {
             case .images:
                 let rows = imageRows
                 let total = images.filter(visible).count
-                var parts = [rows.count == total ? "\(total) image\(total == 1 ? "" : "s")" : "Showing \(rows.count) of \(total) images"]
+                var parts = [rows.count == total
+                    ? String(localized: "\(total) images")
+                    : String(localized: "Showing \(rows.count) of \(total) images", comment: "Status bar while searching")]
                 let selection = checkedImages
                 if !selection.isEmpty {
-                    parts.append("\(selection.count) selected (\(Format.disk(selection.map(\.sizeBytes).reduce(0, +))) in OrbStack)")
+                    let size = Format.disk(selection.map(\.sizeBytes).reduce(0, +))
+                    parts.append(String(localized: "\(selection.count) selected (\(size) in OrbStack)",
+                                        comment: "Status bar: images checked for import and their size in OrbStack"))
                 }
-                if hiddenUntaggedCount > 0 { parts.append("\(hiddenUntaggedCount) untagged hidden") }
+                if hiddenUntaggedCount > 0 {
+                    parts.append(String(localized: "\(hiddenUntaggedCount) untagged hidden", comment: "Status bar: untagged images not listed"))
+                }
                 parts.append(engine)
                 return parts.joined(separator: " · ")
             case .containers:
                 let running = containers.filter(\.isRunning).count
-                return ["\(containers.count) container\(containers.count == 1 ? "" : "s")", "\(running) running in OrbStack", engine]
+                return [String(localized: "\(containers.count) containers"),
+                        String(localized: "\(running) running in OrbStack", comment: "Status bar: OrbStack containers running"),
+                        engine]
                     .joined(separator: " · ")
             }
-        case .notRunning?: return "OrbStack isn't running"
-        case .notInstalled?: return "OrbStack isn't installed"
-        case .dockerUnavailable?: return "OrbStack's docker CLI isn't available"
-        case nil: return "Reading OrbStack…"
+        case .notRunning?: return String(localized: "OrbStack isn't running")
+        case .notInstalled?: return String(localized: "OrbStack isn't installed")
+        case .dockerUnavailable?: return String(localized: "OrbStack's docker CLI isn't available")
+        case nil: return String(localized: "Reading OrbStack…")
         }
     }
 }
@@ -544,28 +561,40 @@ extension MigrationModel {
 
     static func portsText(_ ports: [OrbStackPortBinding]) -> String {
         ports.map { port in
-            let host = port.hostPort.map(String.init) ?? "random"
+            let host = port.hostPort.map(String.init)
+                ?? String(localized: "random", comment: "Host port Docker picks at random, shown as “random→80”")
             return "\(host)→\(port.containerPort)" + (port.proto == "tcp" ? "" : "/\(port.proto)")
         }
         .joined(separator: ", ")
     }
 
-    /// Short summary ("volume pgdata", "2 binds, tmpfs"); the full list is in `mountsDetail`.
+    /// Short summary ("volume pgdata, 2 binds, tmpfs"); the full list is in `mountsDetail`.
     static func mountsText(_ mounts: [OrbStackMount]) -> String {
-        var parts: [String] = mounts.filter { $0.kind == .volume && !$0.isAnonymousVolume }.map { "volume \($0.source)" }
+        var parts: [String] = mounts.filter { $0.kind == .volume && !$0.isAnonymousVolume }
+            .map { String(localized: "volume \($0.source)", comment: "Mount summary: a named volume") }
         let anonymous = mounts.filter(\.isAnonymousVolume).count
-        if anonymous > 0 { parts.append(anonymous == 1 ? "anonymous volume" : "\(anonymous) anonymous volumes") }
+        if anonymous > 0 {
+            parts.append(anonymous == 1
+                ? String(localized: "anonymous volume", comment: "Mount summary: one volume without a name")
+                : String(localized: "\(anonymous) anonymous volumes", comment: "Mount summary: two or more volumes without a name"))
+        }
         let binds = mounts.filter { $0.kind == .bind }.count
-        if binds > 0 { parts.append(binds == 1 ? "1 bind" : "\(binds) binds") }
+        if binds > 0 { parts.append(String(localized: "\(binds) binds", comment: "Mount summary: number of bind mounts")) }
         let other = mounts.filter { $0.kind == .tmpfs || $0.kind == .other }.count
-        if other > 0 { parts.append(other == 1 ? "tmpfs" : "\(other) tmpfs") }
-        return parts.joined(separator: ", ")
+        if other > 0 {
+            parts.append(other == 1 ? "tmpfs" : String(localized: "\(other) tmpfs", comment: "Mount summary: two or more tmpfs mounts"))
+        }
+        return parts.formatted(.list(type: .and, width: .narrow))
     }
 
     static func mountsDetail(_ mounts: [OrbStackMount]) -> String {
         mounts.map { mount in
-            let source = mount.kind == .tmpfs ? "tmpfs" : mount.isAnonymousVolume ? "anonymous volume" : mount.source
-            return "\(source) → \(mount.destination)\(mount.readOnly ? " (read-only)" : "")"
+            let source = mount.kind == .tmpfs ? "tmpfs"
+                : mount.isAnonymousVolume ? String(localized: "anonymous volume", comment: "Mount summary: one volume without a name")
+                : mount.source
+            return mount.readOnly
+                ? String(localized: "\(source) → \(mount.destination) (read-only)", comment: "A mount: source → path in the container")
+                : "\(source) → \(mount.destination)"
         }
         .joined(separator: "\n")
     }
@@ -580,9 +609,4 @@ extension LaunchOptions {
         case .cli: .host()
         }
     }
-}
-
-extension AppSection {
-    /// Placeholder of the toolbar search field.
-    var searchPrompt: String { self == .migration ? "Search OrbStack" : "Search \(title)" }
 }

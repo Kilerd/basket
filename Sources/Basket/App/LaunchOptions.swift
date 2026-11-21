@@ -8,13 +8,26 @@ enum AppSection: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .overview: "Overview"
-        case .containers: "Containers"
-        case .images: "Images"
-        case .volumes: "Volumes"
-        case .networks: "Networks"
-        case .machines: "Machines"
-        case .migration: "Migrate from OrbStack"
+        case .overview: String(localized: "Overview")
+        case .containers: String(localized: "Containers")
+        case .images: String(localized: "Images")
+        case .volumes: String(localized: "Volumes")
+        case .networks: String(localized: "Networks")
+        case .machines: String(localized: "Machines")
+        case .migration: String(localized: "Migrate from OrbStack")
+        }
+    }
+
+    /// Placeholder (and accessible name) of the toolbar search field.
+    var searchPrompt: String {
+        switch self {
+        case .overview: String(localized: "Search")
+        case .containers: String(localized: "Search Containers")
+        case .images: String(localized: "Search Images")
+        case .volumes: String(localized: "Search Volumes")
+        case .networks: String(localized: "Search Networks")
+        case .machines: String(localized: "Search Machines")
+        case .migration: String(localized: "Search OrbStack")
         }
     }
 

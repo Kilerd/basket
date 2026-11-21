@@ -88,8 +88,8 @@ private struct OnboardingStepList: View {
                     .frame(width: 34, height: 34)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Basket").font(.headline)
-                    Text("Setup").font(.callout).foregroundStyle(.secondary)
+                    Text(verbatim: "Basket").font(.headline)
+                    Text("Setup", comment: "Subtitle under the app name in the setup window's step list").font(.callout).foregroundStyle(.secondary)
                 }
             }
             .accessibilityElement(children: .combine)
@@ -136,11 +136,14 @@ private struct StepRow: View {
             Text(step.listTitle)
                 .font(.body.weight(mark == .current ? .semibold : .regular))
                 .foregroundStyle(mark == .upcoming ? .secondary : .primary)
-                .lineLimit(1)
+                // Longer languages wrap instead of truncating.
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
-        .frame(height: 30)
+        .padding(.vertical, 2)
+        .frame(minHeight: 30)
         .background {
             if mark == .current {
                 RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.accentColor.opacity(0.14))
@@ -150,7 +153,16 @@ private struct StepRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(mark == .current ? [.isStaticText, .isSelected] : .isStaticText)
         .accessibilityLabel(step.listTitle)
-        .accessibilityHint("Step \(number) of \(total)\(spokenMark.isEmpty ? "" : ", \(spokenMark)")")
+        .accessibilityHint(hint)
+    }
+
+    private var hint: Text {
+        switch mark {
+        case .current: Text("Step \(number) of \(total), current step", comment: "VoiceOver hint in the setup step list")
+        case .done: Text("Step \(number) of \(total), done", comment: "VoiceOver hint in the setup step list")
+        case .skipped: Text("Step \(number) of \(total), skipped", comment: "VoiceOver hint in the setup step list")
+        case .upcoming: Text("Step \(number) of \(total)", comment: "VoiceOver hint in the setup step list")
+        }
     }
 
     @ViewBuilder private var indicator: some View {
@@ -168,14 +180,6 @@ private struct StepRow: View {
         }
     }
 
-    private var spokenMark: String {
-        switch mark {
-        case .current: "current step"
-        case .done: "done"
-        case .skipped: "skipped"
-        case .upcoming: ""
-        }
-    }
 }
 
 // MARK: - Footer
@@ -226,12 +230,12 @@ private struct OnboardingFooter: View {
         }
     }
 
-    private func button(_ title: String, _ verb: String, action: @escaping () -> Void) -> some View {
+    private func button(_ title: LocalizedStringKey, _ verb: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .accessibilityIdentifier("onboarding.action.\(verb)")
     }
 
-    private func primary(_ title: String, _ verb: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+    private func primary(_ title: LocalizedStringKey, _ verb: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)

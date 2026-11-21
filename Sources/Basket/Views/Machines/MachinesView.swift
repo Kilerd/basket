@@ -25,7 +25,7 @@ struct MachinesView: View {
 
     private var subtitle: String {
         let running = store.machines.filter { $0.state == .running }.count
-        return "\(running) running of \(store.machines.count)"
+        return String(localized: "\(running) running of \(store.machines.count)", comment: "Running containers or machines, of all of them")
     }
 
     private var selected: MachineSummary? {
@@ -88,11 +88,11 @@ private struct MachinesTable: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .width(min: 120, ideal: 190)
+            .width(min: 110, ideal: 140)
             TableColumn("Image", value: \.image) { row in
                 Text(ImageName(row.image).display).foregroundStyle(.secondary).lineLimit(1).help(row.image)
             }
-                .width(min: 90, ideal: 130)
+                .width(min: 90, ideal: 110)
             TableColumn("State", value: \.stateOrder) { row in
                 StateBadge(state: row.summary.state, pendingVerb: store.pending[row.id])
             }
@@ -104,13 +104,13 @@ private struct MachinesTable: View {
                 NumericCell(row.memory > 0 ? Format.memory(row.memory) : "—", isPlaceholder: row.memory <= 0)
                     .help("Memory limit of the machine's VM")
             }
-            .width(min: 70, ideal: 80)
+            .width(min: 92, ideal: 96)  // "Arbeitsspeicher"
             .alignment(.numeric)
             TableColumn("Host Memory", value: \.hostMemory) { row in
                 NumericCell(row.hostMemory < 0 ? "—" : Format.memory(row.hostMemory), isPlaceholder: row.hostMemory < 0)
                     .help("Physical memory macOS pays for this machine's VM")
             }
-            .width(min: 80, ideal: 100)
+            .width(min: 80, ideal: 95)
             .alignment(.numeric)
             TableColumn("Disk", value: \.disk) { row in
                 NumericCell(row.disk < 0 ? "—" : Format.disk(row.disk), isPlaceholder: row.disk < 0)
@@ -119,11 +119,11 @@ private struct MachinesTable: View {
             .width(min: 70, ideal: 80)
             .alignment(.numeric)
             TableColumn("Home") { row in Text(homeMountTitle(row.summary.homeMount)).foregroundStyle(.secondary) }
-                .width(min: 70, ideal: 90)
+                .width(min: 124, ideal: 128)  // "Lecture et écriture", "Lesen & Schreiben"
             TableColumn("IP Address") { row in
                 Text(row.summary.ipv4Address ?? "—").font(.body.monospaced()).foregroundStyle(.secondary)
             }
-            .width(min: 100, ideal: 120)
+            .width(min: 112, ideal: 115)  // a full IPv4 address
         }
         .contextMenu(forSelectionType: String.self) { ids in
             if ids.count == 1, let id = ids.first, let m = store.machines.first(where: { $0.id == id }) {
@@ -151,9 +151,9 @@ private struct MachinesTable: View {
 
     private func homeMountTitle(_ mode: String) -> String {
         switch mode {
-        case "rw": "Read-write"
-        case "ro": "Read-only"
-        case "none": "Not mounted"
+        case "rw": String(localized: "Read-write", comment: "How a machine mounts your home folder")
+        case "ro": String(localized: "Read-only", comment: "How a machine mounts your home folder")
+        case "none": String(localized: "Not mounted", comment: "How a machine mounts your home folder")
         default: mode
         }
     }
@@ -192,7 +192,7 @@ struct NewMachineSheet: View {
             case .debian: "Debian 12"
             case .fedora: "Fedora 42"
             case .alpine: "Alpine 3.22"
-            case .custom: "Custom image…"
+            case .custom: String(localized: "Custom image…")
             }
         }
     }
@@ -209,7 +209,7 @@ struct NewMachineSheet: View {
                 }
                 .accessibilityIdentifier("new-machine.preset")
                 if preset == .custom {
-                    TextField("Image", text: $customImage, prompt: Text("archlinux:latest"))
+                    TextField("Image", text: $customImage, prompt: Text(verbatim: "archlinux:latest"))
                         .accessibilityIdentifier("new-machine.image")
                 }
                 TextField("Name", text: $name, prompt: Text(defaultName))
@@ -228,7 +228,7 @@ struct NewMachineSheet: View {
             } header: {
                 Text("Resources")
             } footer: {
-                Text("Without a limit the CLI would reserve half of your Mac's memory. Machines need more than 1 GB; 2 GB is plenty for most shells and builds.")
+                Text("Without a limit the CLI would reserve half of your Mac's memory. Machines need more than \(memoryChoiceLabel(1024)); \(memoryChoiceLabel(2048)) is plenty for most shells and builds.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if phase != .idle {
@@ -284,7 +284,7 @@ struct NewMachineSheet: View {
         let cpus = self.cpus
         let memory = MemorySize.cliString(megabytes: memoryMB)
         let makeDefault = self.makeDefault
-        lines = ["Creating \(name) from \(image)…"]
+        lines = [String(localized: "Creating \(name) from \(image)…", comment: "Creating a machine: its name, then the image")]
         phase = .creating
         task = Task {
             do {

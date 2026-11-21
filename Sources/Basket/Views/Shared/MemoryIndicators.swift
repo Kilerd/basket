@@ -14,7 +14,7 @@ struct StrandedMark: View {
     }
 
     static func help(_ bytes: Int64) -> String {
-        "About \(Format.memory(bytes)) stranded: the VM still holds memory its guest has freed. Restart the container to return it to macOS."
+        String(localized: "About \(Format.memory(bytes)) stranded: the VM still holds memory its guest has freed. Restart the container to return it to macOS.")
     }
 }
 
@@ -30,7 +30,8 @@ struct IdleMark: View {
     }
 
     static func help(_ idleFor: TimeInterval) -> String {
-        "Idle for \(Format.duration(idleFor)): under 1% CPU and under 1 KB/s of network traffic the whole time."
+        String(localized: "Idle for \(Format.duration(idleFor)): under \((0.01).formatted(.percent)) CPU and under \(Int64(1000).formatted(.byteCount(style: .file))) per second of network traffic the whole time.",
+               comment: "1: a duration, 2: “1%”, 3: “1 KB”")
     }
 }
 
@@ -44,7 +45,7 @@ struct HostMemoryCell: View {
         NumericCell(text: bytes < 0 ? "—" : Format.memory(bytes), isPlaceholder: bytes < 0, valueWidth: 66, markWidth: 14) {
             if strandedBytes > 0 { StrandedMark(bytes: strandedBytes).font(.caption) }
         }
-        .help(strandedBytes > 0 ? StrandedMark.help(strandedBytes) : "Physical memory macOS pays for this container's VM")
+        .help(strandedBytes > 0 ? StrandedMark.help(strandedBytes) : String(localized: "Physical memory macOS pays for this container's VM"))
     }
 }
 

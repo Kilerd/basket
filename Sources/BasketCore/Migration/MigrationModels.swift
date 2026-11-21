@@ -291,15 +291,28 @@ public struct ImportProgress: Sendable, Hashable {
 public struct MigrationWarning: Identifiable, Sendable, Hashable {
     public enum Severity: Sendable, Hashable { case info, warning }
     public var severity: Severity
-    /// Short topic ("Restart policy", "Volume data").
+    /// Short topic in English ("Restart policy", "Volume data"): identifies the kind of warning.
     public var topic: String
+    /// The topic in the user's language, for display.
+    public var title: String
+    /// In the user's language.
     public var message: String
     public var id: String { topic + "|" + message }
 
-    public init(_ severity: Severity, _ topic: String, _ message: String) {
+    /// `topic` and `message` are localized (String Catalog keys in English).
+    public init(_ severity: Severity, _ topic: LocalizedStringResource, _ message: LocalizedStringResource) {
         self.severity = severity
-        self.topic = topic
-        self.message = message
+        self.topic = topic.key
+        self.title = String(localized: topic)
+        self.message = String(localized: message)
+    }
+
+    /// A warning whose topic is a technical name ("tmpfs"): shown as is, never translated.
+    public init(_ severity: Severity, key: String, _ message: LocalizedStringResource) {
+        self.severity = severity
+        self.topic = key
+        self.title = key
+        self.message = String(localized: message)
     }
 }
 
@@ -382,23 +395,23 @@ public enum MigrationError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .orbStackNotRunning:
-            "OrbStack's Docker engine isn't running. Start OrbStack yourself to migrate; Basket never launches it."
+            String(localized: "OrbStack's Docker engine isn't running. Start OrbStack yourself to migrate; Basket never launches it.", bundle: .main)
         case .dockerNotFound:
-            "The docker CLI that ships with OrbStack wasn't found."
+            String(localized: "The docker CLI that ships with OrbStack wasn't found.", bundle: .main)
         case .forbiddenDockerCommand(let command):
-            "Refusing to run `\(command)`: Basket only reads from OrbStack."
+            String(localized: "Refusing to run `\(command)`: Basket only reads from OrbStack.", bundle: .main)
         case .insufficientDiskSpace(let needed, let available):
-            "Not enough free disk space: the export needs about \(ByteCountFormatter.string(fromByteCount: needed, countStyle: .file)), \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) is free."
+            String(localized: "Not enough free disk space: the export needs about \(needed.formatted(.byteCount(style: .file))), \(available.formatted(.byteCount(style: .file))) is free.", bundle: .main)
         case .notImportable(let reason):
             reason
         case .dockerFailed(let command, let message):
-            "`\(command)` failed: \(message)"
+            String(localized: "`\(command)` failed: \(message)", bundle: .main)
         case .loadFailed(let message):
-            "Loading into Basket failed: \(message)"
+            String(localized: "Loading into Basket failed: \(message)", bundle: .main)
         case .alreadyInBasket(let reference):
-            "Basket already has the same image as \(reference)."
+            String(localized: "Basket already has the same image as \(reference).", bundle: .main)
         case .nameConflict(let reference, let reason):
-            "Basket already has a different image named \(reference): \(reason). Rename or delete it in Basket to import OrbStack's."
+            String(localized: "Basket already has a different image named \(reference): \(reason). Rename or delete it in Basket to import OrbStack's.", bundle: .main)
         }
     }
 }

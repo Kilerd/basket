@@ -5,8 +5,8 @@ import AppKit
 /// carries `onboarding.step.<name>` (AX contract).
 struct OnboardingStepScaffold<Icon: View, Content: View>: View {
     var step: OnboardingStep
-    var title: String
-    var message: String
+    var title: LocalizedStringKey
+    var message: LocalizedStringKey
     /// Vertically centred (the welcome page) instead of top-aligned like the task steps.
     var centered = false
     @ViewBuilder var icon: Icon
@@ -49,7 +49,7 @@ struct OnboardingStepScaffold<Icon: View, Content: View>: View {
 }
 
 extension OnboardingStepScaffold where Icon == OnboardingSymbol {
-    init(step: OnboardingStep, symbol: String, title: String, message: String, @ViewBuilder content: () -> Content) {
+    init(step: OnboardingStep, symbol: String, title: LocalizedStringKey, message: LocalizedStringKey, @ViewBuilder content: () -> Content) {
         self.init(step: step, title: title, message: message, icon: { OnboardingSymbol(name: symbol) }, content: content)
     }
 }
@@ -106,11 +106,11 @@ enum OnboardingStatus {
     /// Spoken with the row so state isn't conveyed by colour alone.
     var spoken: String? {
         switch self {
-        case .ok: "Done"
-        case .warning: "Needs attention"
-        case .blocked: "Not supported"
+        case .ok: String(localized: "Done", comment: "VoiceOver value of a setup status row: this item is fine")
+        case .warning: String(localized: "Needs attention", comment: "VoiceOver value of a setup status row")
+        case .blocked: String(localized: "Not supported", comment: "VoiceOver value of a setup status row")
         case .neutral: nil
-        case .working: "In progress"
+        case .working: String(localized: "In progress", comment: "VoiceOver value of a setup status row")
         }
     }
 }
@@ -118,8 +118,8 @@ enum OnboardingStatus {
 /// Icon + title + detail. The icon sits in a fixed 20 pt slot so titles line up down the box.
 struct OnboardingStatusRow: View {
     var status: OnboardingStatus
-    var title: String
-    var detail: String?
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey?
     var identifier: String?
 
     var body: some View {
@@ -172,7 +172,7 @@ struct OnboardingRowDivider: View {
 /// Streamed command output: selectable, follows the tail.
 struct OnboardingLog: View {
     var lines: [String]
-    var label: String
+    var label: LocalizedStringResource
 
     var body: some View {
         MonospacedTextView(text: lines.joined(separator: "\n"), followTail: true, identifier: "onboarding.log", label: label)
@@ -184,7 +184,7 @@ struct OnboardingLog: View {
 
 /// Error text under a step's actions.
 struct OnboardingFailure: View {
-    var message: String
+    var message: LocalizedStringKey
 
     var body: some View {
         Label {

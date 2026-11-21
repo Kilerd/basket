@@ -2,12 +2,26 @@ import AppKit
 import BasketCore
 
 extension SelfTestRunner {
+    /// Reads OrbStack again and waits until every image Basket lists under the same name has been
+    /// compared, so a capture shows final states rather than a comparison in progress (#17).
+    func refreshMigrationAndWait() async {
+        let model = store.migration
+        await model.refresh()
+        let deadline = Date().addingTimeInterval(10)
+        // The comparison runs in the section's `.task`, which restarts after the refresh.
+        try? await Task.sleep(for: .milliseconds(100))
+        while model.isLoading || model.hasPendingComparisons, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        if model.hasPendingComparisons { log("migration: comparisons still running after 10 s; capturing anyway") }
+    }
+
     /// Extras for "Migrate from OrbStack": the containers tab, the recreate preview, and an import
     /// run to completion (fixture backends simulate it) with the section afterwards.
     func captureMigrationExtras(_ window: NSWindow) async {
         let model = store.migration
         store.selectedSection = .migration
-        await model.refresh()
+        await refreshMigrationAndWait()
         guard model.status?.isReady == true else { return }
 
         model.tab = .containers
@@ -36,6 +50,8 @@ extension SelfTestRunner {
         if let sheet = window.attachedSheet { await capture(sheet, as: "sheet-migration-import") }
         model.sheet = nil
         try? await Task.sleep(for: .milliseconds(700))
+        let deadline2 = Date().addingTimeInterval(10)
+        while model.hasPendingComparisons, Date() < deadline2 { try? await Task.sleep(for: .milliseconds(100)) }
         await capture(window, as: "migration-imported")
     }
 }

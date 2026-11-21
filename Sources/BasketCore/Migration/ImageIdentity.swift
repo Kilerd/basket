@@ -88,17 +88,20 @@ public enum ImageContentComparison {
     public static func compare(_ source: ImageContentIdentity, with basket: [ImageContentIdentity]) -> BasketPresence {
         guard let target = basket.first(where: { samePlatform($0.platform, source.platform) }) else {
             let have = basket.map(\.platform)
-            return .nameConflict("Basket's copy has no \(source.platform) variant"
-                + (have.isEmpty ? "" : "; it has \(have.joined(separator: ", "))"))
+            return .nameConflict(have.isEmpty
+                ? String(localized: "Basket's copy has no \(source.platform) variant", bundle: .main)
+                : String(localized: "Basket's copy has no \(source.platform) variant; it has \(have.localizedList)", bundle: .main))
         }
         if let digest = source.manifestDigest, digest == target.manifestDigest { return .identical }
         guard !source.diffIDs.isEmpty, !target.diffIDs.isEmpty else {
-            return .unverified("their layer lists couldn't be read")
+            return .unverified(String(localized: "their layer lists couldn't be read", bundle: .main))
         }
-        guard source.diffIDs == target.diffIDs else { return .nameConflict("its layers differ") }
-        guard source.config == target.config else { return .nameConflict("same layers, but its configuration differs") }
+        guard source.diffIDs == target.diffIDs else { return .nameConflict(String(localized: "its layers differ", bundle: .main)) }
+        guard source.config == target.config else {
+            return .nameConflict(String(localized: "same layers, but its configuration differs", bundle: .main))
+        }
         guard sameCreated(source.created, target.created) else {
-            return .nameConflict("same layers and configuration, but built at a different time")
+            return .nameConflict(String(localized: "same layers and configuration, but built at a different time", bundle: .main))
         }
         return .identical
     }
@@ -197,11 +200,11 @@ extension OrbStackMigrator {
         let source: ImageContentIdentity
         do {
             guard let identity = try await orbStackIdentity(image) else {
-                return .unverified("OrbStack has no content for it on this Mac's platform or linux/amd64")
+                return .unverified(String(localized: "OrbStack has no content for it on this Mac's platform or linux/amd64", bundle: .main))
             }
             source = identity
         } catch {
-            return .unverified("couldn't read OrbStack's copy: \(error.localizedDescription)")
+            return .unverified(String(localized: "couldn't read OrbStack's copy: \(error.localizedDescription)", bundle: .main))
         }
         let basket: [ImageContentIdentity]
         do {
@@ -209,7 +212,7 @@ extension OrbStackMigrator {
             let decoded = try JSONDecoder().decode([Lossy<RawBasketImageInspect>].self, from: Data(text.utf8))
             basket = decoded.compactMap(\.value).first?.identities ?? []
         } catch {
-            return .unverified("couldn't inspect Basket's copy: \(error.localizedDescription)")
+            return .unverified(String(localized: "couldn't inspect Basket's copy: \(error.localizedDescription)", bundle: .main))
         }
         return ImageContentComparison.compare(source, with: basket)
     }

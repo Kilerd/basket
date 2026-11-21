@@ -316,6 +316,15 @@ import Testing
         #expect(audit(text("4 GB", r(200, 200, 5, 16))).count == 1)
     }
 
+    @Test func chineseAndJapaneseTextIsMeasuredFromTwoCharacters() {
+        // Two ideographs are a whole word ("容器" = container).
+        #expect(audit(text("容器", r(200, 200, 14, 16))).count == 1)
+        let width = TextMeasure.width(of: "容器", fontSize: 13)
+        #expect(width > 20, "ideographs are measured with a fallback font, not as zero-width glyphs")
+        #expect(audit(text("容器", r(200, 200, width.rounded(.up), 16))).isEmpty)
+        #expect(audit(text("滞留メモリを解放", r(200, 200, 40, 16))).count == 1)
+    }
+
     @Test func headingsUseTheirLabel() {
         #expect(audit(text(long, r(200, 200, 60, 16), role: "AXHeading")).count == 1)
         #expect(audit(node("AXStaticText", nil, r(200, 200, 10, 16))).isEmpty, "no text, nothing to measure")

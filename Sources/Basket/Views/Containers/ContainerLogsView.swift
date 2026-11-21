@@ -31,7 +31,7 @@ struct ContainerLogsView: View {
                     .accessibilityIdentifier("containers.detail.logs.copy")
                 if isLoading { ProgressView().controlSize(.small) }
                 Spacer()
-                Text(error ?? "\(document.lineCount) line\(document.lineCount == 1 ? "" : "s")\(follow ? " · following" : "")")
+                Text(error ?? LogStatus.text(lines: document.lineCount, following: follow))
                     .font(.caption)
                     .foregroundStyle(error == nil ? Color.secondary : Color.orange)
                     .lineLimit(1)
@@ -40,7 +40,7 @@ struct ContainerLogsView: View {
             .padding(.vertical, 6)
             Divider()
             LogTextView(document: document, followTail: follow,
-                        identifier: "containers.detail.logs", label: "Logs for \(containerID)")
+                        identifier: "containers.detail.logs", label: String(localized: "Logs for \(containerID)"))
                 .overlay {
                     if document.lineCount == 0 && !isLoading && error == nil {
                         Text(follow ? "Waiting for output…" : "No log output")
@@ -78,7 +78,7 @@ struct ContainerLogsView: View {
             for try await batch in backend.followLogBatches(id) {
                 var lines = batch.lines
                 if batch.droppedLines > 0 {
-                    lines.insert("[Basket skipped \(batch.droppedLines) lines: output was faster than it can be shown]", at: 0)
+                    lines.insert(String(localized: "[Basket skipped \(batch.droppedLines) lines: output was faster than it can be shown]"), at: 0)
                 }
                 document.append(lines)
             }

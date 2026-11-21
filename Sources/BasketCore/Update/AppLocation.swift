@@ -36,13 +36,13 @@ public enum AppLocation {
     /// Why updates can't be installed at `bundle`, or nil when they can.
     public static func problem(with bundle: URL) -> String? {
         guard bundle.pathExtension == "app" else {
-            return "Basket isn't running from an app bundle (a development run), so it can't update itself."
+            return String(localized: "Basket isn't running from an app bundle (a development run), so it can't update itself.", bundle: .main)
         }
         if isTranslocated(bundle) {
-            return "macOS runs this copy of Basket from a temporary read-only location because it was opened where it was downloaded. Move Basket to the Applications folder and open it again to get updates."
+            return String(localized: "macOS runs this copy of Basket from a temporary read-only location because it was opened where it was downloaded. Move Basket to the Applications folder and open it again to get updates.", bundle: .main)
         }
         guard isReplaceable(bundle) else {
-            return "Basket can't replace itself in “\(bundle.deletingLastPathComponent().path)” (no write permission). Move it to a folder you can write to, such as Applications."
+            return String(localized: "Basket can't replace itself in “\(bundle.deletingLastPathComponent().path)” (no write permission). Move it to a folder you can write to, such as Applications.", bundle: .main)
         }
         return nil
     }

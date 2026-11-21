@@ -23,12 +23,12 @@ enum OnboardingStep: String, CaseIterable, Identifiable, Sendable {
     /// Title in the step list.
     var listTitle: String {
         switch self {
-        case .welcome: "Welcome"
-        case .install: "Install container"
-        case .system: "Start container"
-        case .orbstack: "From OrbStack"
-        case .docker: "docker Command"
-        case .done: "Ready"
+        case .welcome: String(localized: "Welcome", comment: "Setup step list")
+        case .install: String(localized: "Install container", comment: "Setup step list; `container` is the CLI's name")
+        case .system: String(localized: "Start container", comment: "Setup step list; `container` is the CLI's name")
+        case .orbstack: String(localized: "From OrbStack", comment: "Setup step list")
+        case .docker: String(localized: "docker Command", comment: "Setup step list; `docker` is the command's name")
+        case .done: String(localized: "Ready", comment: "Setup step list: the last step")
         }
     }
 }
@@ -310,13 +310,13 @@ final class OnboardingModel {
                     if installLog.count > 2_000 { installLog.removeFirst(installLog.count - 2_000) }
                 }
                 if Task.isCancelled {
-                    installLog.append("Cancelled.")
+                    installLog.append(String(localized: "Cancelled.", comment: "Last line of an install or start log"))
                     installPhase = .idle
                     return
                 }
                 await checkCLI()
                 installPhase = cli == nil
-                    ? .failed("Homebrew finished, but Basket still can't find container. Click Check Again, or choose where it is.")
+                    ? .failed(String(localized: "Homebrew finished, but Basket still can't find container. Click Check Again, or choose where it is."))
                     : .idle
             } catch {
                 installPhase = Task.isCancelled ? .idle : .failed(error.localizedDescription)
@@ -369,8 +369,8 @@ final class OnboardingModel {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: "/usr/local/bin")
-        panel.message = "Choose the container executable"
-        panel.prompt = "Use This"
+        panel.message = String(localized: "Choose the container executable")
+        panel.prompt = String(localized: "Use This", comment: "Open panel button: use the chosen container executable")
         panel.allowedContentTypes = [.unixExecutable]
         let handle: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let url = panel.url, let self else { return }
@@ -412,12 +412,13 @@ final class OnboardingModel {
                     startLog.append("Verifying apiserver is running...")
                 }
                 if Task.isCancelled {
-                    startLog.append("Cancelled.")
+                    startLog.append(String(localized: "Cancelled.", comment: "Last line of an install or start log"))
                     startPhase = .idle
                     return
                 }
                 await checkSystem()
-                startPhase = systemStatus?.isRunning == true ? .idle : .failed("The container system didn't report itself as running.")
+                startPhase = systemStatus?.isRunning == true
+                    ? .idle : .failed(String(localized: "The container system didn't report itself as running."))
                 await store.refreshAll()
             } catch {
                 startPhase = Task.isCancelled ? .idle : .failed(error.localizedDescription)
@@ -461,8 +462,10 @@ final class OnboardingModel {
             switch result {
             case .success: dockerPhase = .idle
             case .failure(let error):
-                dockerPhase = .failed(
-                    "Couldn't \(enabled ? "add" : "remove") the docker command: \(error.localizedDescription)")
+                let reason = error.localizedDescription
+                dockerPhase = .failed(enabled
+                    ? String(localized: "Couldn't add the docker command: \(reason)")
+                    : String(localized: "Couldn't remove the docker command: \(reason)"))
             }
         }
     }

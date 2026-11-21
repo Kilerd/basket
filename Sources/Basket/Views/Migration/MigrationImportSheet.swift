@@ -82,16 +82,23 @@ private struct ImportItemRow: View {
     }
 
     private var detail: String {
+        let platform = item.image.exportPlatform
         switch item.state {
-        case .queued: "Waiting"
-        case .checking: "Checking free disk space…"
-        case .exporting(let bytes): bytes > 0 ? "Exporting \(item.image.exportPlatform) from OrbStack… \(Format.disk(bytes))" : "Exporting \(item.image.exportPlatform) from OrbStack…"
-        case .loading(let bytes): "Loading into Basket… (\(Format.disk(bytes)) archive)"
+        case .queued: return String(localized: "Waiting", comment: "Import queue: not started yet")
+        case .checking: return String(localized: "Checking free disk space…")
+        case .exporting(let bytes):
+            let size = Format.disk(bytes)
+            return bytes > 0 ? String(localized: "Exporting \(platform) from OrbStack… \(size)", comment: "Import progress: platform, bytes so far")
+                : String(localized: "Exporting \(platform) from OrbStack…")
+        case .loading(let bytes):
+            let size = Format.disk(bytes)
+            return String(localized: "Loading into Basket… (\(size) archive)")
         case .done(let references, let bytes):
-            "Imported as \(references.joined(separator: ", ")) · \(Format.disk(bytes)) copied"
-        case .skipped(let reason): reason
-        case .failed(let message): message
-        case .cancelled: "Cancelled"
+            let copied = Format.disk(bytes)
+            return String(localized: "Imported as \(references.localizedList) · \(copied) copied", comment: "Import result: image names, then the size copied")
+        case .skipped(let reason): return reason
+        case .failed(let message): return message
+        case .cancelled: return String(localized: "Cancelled", comment: "Import of one image was cancelled")
         }
     }
 

@@ -16,7 +16,7 @@ struct ComposePlanSheet: View {
 
     var body: some View {
         SheetScaffold(
-            title: title,
+            title: "\(title)",
             subtitle: "Basket runs each service in its own lightweight VM, with the memory shown below.",
             identifier: "sheet.compose-plan", width: 820, height: 720
         ) {
@@ -45,8 +45,10 @@ struct ComposePlanSheet: View {
     }
 
     private var title: String {
-        if case .success(let plan)? = loaded { return "Compose Up “\(plan.project)”" }
-        return "Compose Up"
+        if case .success(let plan)? = loaded {
+            return String(localized: "Compose Up “\(plan.project)”", comment: "Sheet title; Compose Up is the command name of `docker compose up`")
+        }
+        return String(localized: "Compose Up", comment: "The command name of `docker compose up`")
     }
 
     private var plan: ComposePlan? {
@@ -81,7 +83,8 @@ struct ComposePlanSheet: View {
             }
             .keyboardShortcut(.cancelAction)
             .accessibilityIdentifier("compose-plan.cancel")
-            Button(isFailed ? "Try Again" : "Up") { up() }
+            Button(isFailed ? String(localized: "Try Again")
+                   : String(localized: "Up", comment: "Button: run `compose up` (create and start the project's services)")) { up() }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canUp)
                 .help(store.availability == .running ? "Create the networks and volumes, then start every service" : "Start the container system first")
@@ -103,10 +106,10 @@ struct ComposePlanSheet: View {
     private func existingProblem(_ plan: ComposePlan) -> (message: String, blocking: Bool)? {
         let names = Set(plan.services.map(\.containerName))
         if let clash = store.containers.first(where: { names.contains($0.id) && ComposeProject.projectName(of: $0) != plan.project }) {
-            return ("A container named “\(clash.id)” already exists outside this project. Rename or delete it first.", true)
+            return (String(localized: "A container named “\(clash.id)” already exists outside this project. Rename or delete it first."), true)
         }
         if phase == .idle, store.containers.contains(where: { ComposeProject.projectName(of: $0) == plan.project }) {
-            return ("Project “\(plan.project)” already exists: Up starts its stopped services and leaves running ones as they are. Take it down first to apply changes to the file.", false)
+            return (String(localized: "Project “\(plan.project)” already exists: Up starts its stopped services and leaves running ones as they are. Take it down first to apply changes to the file."), false)
         }
         return nil
     }
@@ -254,7 +257,7 @@ private struct ServicesGrid: View {
     static let serviceWidth: CGFloat = 150
     static let imageWidth: CGFloat = 190
     static let memoryWidth: CGFloat = 70
-    static let defaultWidth: CGFloat = 50
+    static let defaultWidth: CGFloat = 72
     static let cpuWidth: CGFloat = 40
 
     var body: some View {
@@ -291,7 +294,7 @@ private struct ServicesGrid: View {
                         .monospacedDigit()
                         .frame(width: Self.memoryWidth, alignment: .trailing)
                         .help(service.memoryIsDefault ? "No limit in the file: the default from Settings" : "From the file")
-                    Text(service.memoryIsDefault ? "default" : "")
+                    Text(service.memoryIsDefault ? String(localized: "default", comment: "Compose plan: this service gets the default memory limit from Settings") : "")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(width: Self.defaultWidth, alignment: .leading)
@@ -371,10 +374,10 @@ struct ComposeWarningRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(warning.severity == .warning ? "Warning" : "Note"): \(topic). \(warning.message)")
+        .accessibilityLabel(warning.severity == .warning ? "Warning: \(topic). \(warning.message)" : "Note: \(topic). \(warning.message)")
     }
 
     private var topic: String {
-        warning.service.map { "\($0) · \(warning.topic)" } ?? warning.topic
+        warning.service.map { "\($0) · \(warning.title)" } ?? warning.title
     }
 }

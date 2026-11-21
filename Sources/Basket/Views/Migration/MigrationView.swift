@@ -32,15 +32,17 @@ struct MigrationView: View {
 
     private var subtitle: String {
         let model = store.migration
-        guard model.status?.isReady == true else { return "Read-only" }
-        return "\(model.images.count) images · \(model.containers.count) containers in OrbStack"
+        guard model.status?.isReady == true else { return String(localized: "Read-only", comment: "Subtitle: Basket only reads OrbStack") }
+        let images = String(localized: "\(model.images.count) images")
+        let containers = String(localized: "\(model.containers.count) containers")
+        return String(localized: "In OrbStack: \(images) · \(containers)", comment: "Window subtitle: “12 images · 5 containers”")
     }
 
     @ViewBuilder private var content: some View {
         let model = store.migration
         if let error = model.loadError {
             SectionEmptyState(section: .migration, title: "Couldn't Read OrbStack", systemImage: "exclamationmark.triangle",
-                              message: error) {
+                              message: "\(error)") {
                 Button("Try Again") { Task { await model.refresh() } }
                     .accessibilityIdentifier("migration.action.retry")
             }
@@ -71,7 +73,7 @@ struct MigrationView: View {
                 )
             case .dockerUnavailable(let message)?:
                 SectionEmptyState(section: .migration, title: "Can't Read OrbStack", systemImage: "exclamationmark.triangle",
-                                  message: message) {
+                                  message: "\(message)") {
                     Button("Check Again") { Task { await model.refresh() } }
                         .accessibilityIdentifier("migration.action.check")
                 }
@@ -88,7 +90,7 @@ struct MigrationView: View {
         let model = store.migration
         let rows = model.imageRows
         if rows.isEmpty {
-            noResults(noun: "Images")
+            noResults(.images)
         } else {
             MigrationImagesTable(rows: rows)
         }
@@ -97,16 +99,17 @@ struct MigrationView: View {
     @ViewBuilder private var containersBody: some View {
         let rows = store.migration.containerRows
         if rows.isEmpty {
-            noResults(noun: "Containers")
+            noResults(.containers)
         } else {
             MigrationContainersTable(rows: rows)
         }
     }
 
-    @ViewBuilder private func noResults(noun: String) -> some View {
+    @ViewBuilder private func noResults(_ tab: MigrationModel.Tab) -> some View {
         let query = store.search(.migration).trimmingCharacters(in: .whitespaces)
         if query.isEmpty {
-            SectionEmptyState(section: .migration, title: "No \(noun) in OrbStack", systemImage: "tray",
+            SectionEmptyState(section: .migration,
+                              title: tab == .images ? "No Images in OrbStack" : "No Containers in OrbStack", systemImage: "tray",
                               message: "There's nothing of this kind to migrate.")
         } else {
             SectionEmptyState(section: .migration, title: "No Results for “\(query)”", systemImage: "magnifyingglass",
@@ -219,7 +222,7 @@ private struct MigrationSummaryStrip: View {
             }
             .disabled(reclaim.references.isEmpty)
             .help(reclaim.references.isEmpty
-                  ? "No unused OrbStack image is verified to be identical in Basket yet"
+                  ? String(localized: "No unused OrbStack image is verified to be identical in Basket yet")
                   : OrbStackMigrator.removalCommand(reclaim.references))
             .accessibilityIdentifier("migration.action.copy-cleanup")
         }
@@ -235,24 +238,28 @@ private struct MigrationSummaryStrip: View {
         let inBasket = tagged.filter(model.isInBasket).count
         var parts: [String] = []
         if session.count > 0 {
-            parts.append("Imported \(session.count) image\(session.count == 1 ? "" : "s") this session (\(Format.disk(session.bytes)) copied)")
+            let copied = Format.disk(session.bytes)
+            parts.append(String(localized: "Imported \(session.count) images this session (\(copied) copied)",
+                                comment: "Migration summary"))
         }
         if !model.recreated.isEmpty {
-            parts.append("\(model.recreated.count) container\(model.recreated.count == 1 ? "" : "s") recreated")
+            parts.append(String(localized: "\(model.recreated.count) containers recreated", comment: "Migration summary"))
         }
-        parts.append("\(inBasket) of \(tagged.count) tagged images already in Basket")
+        parts.append(String(localized: "\(inBasket) of \(tagged.count) tagged images already in Basket", comment: "Migration summary"))
         let conflicts = model.nameConflicts.filter { !$0.isUntagged }.count
-        if conflicts > 0 { parts.append("\(conflicts) name conflict\(conflicts == 1 ? "" : "s")") }
+        if conflicts > 0 { parts.append(String(localized: "\(conflicts) name conflicts", comment: "Migration summary")) }
         return parts.joined(separator: " · ")
     }
 
     private func detail(_ reclaim: (references: [String], bytes: Int64)) -> String {
-        let never = "Basket never deletes anything from OrbStack."
         guard !reclaim.references.isEmpty else {
-            return "Import images, check they work in Basket, then remove them in OrbStack to get the disk back. \(never)"
+            return String(localized: "Import images, check they work in Basket, then remove them in OrbStack to get the disk back. Basket never deletes anything from OrbStack.")
         }
-        let count = reclaim.references.count
-        return "Once you've verified \(count == 1 ? "it" : "them") in Basket, removing \(count) image\(count == 1 ? "" : "s") in OrbStack could free up to \(Format.disk(reclaim.bytes)) (docker --context orbstack image rm, or OrbStack's Images list). \(never)"
+        let size = Format.disk(reclaim.bytes)
+        if reclaim.references.count == 1 {
+            return String(localized: "Once you've verified it in Basket, removing this image in OrbStack could free up to \(size) (docker --context orbstack image rm, or OrbStack's Images list). Basket never deletes anything from OrbStack.")
+        }
+        return String(localized: "Once you've verified them in Basket, removing these \(reclaim.references.count) images in OrbStack could free up to \(size) (docker --context orbstack image rm, or OrbStack's Images list). Basket never deletes anything from OrbStack.")
     }
 }
 
@@ -273,8 +280,10 @@ private struct MigrationImagesTable: View {
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(!importable || model.isImporting)
-                .help(importable ? "Import into Basket" : row.image.isDangling ? "Dangling images have no name to import under"
-                      : MigrationModel.skipReason(row.image, presence: model.basketPresence(row.image)) ?? "Not importable")
+                .help(importable ? String(localized: "Import into Basket")
+                      : row.image.isDangling ? String(localized: "Dangling images have no name to import under")
+                      : MigrationModel.skipReason(row.image, presence: model.basketPresence(row.image))
+                        ?? String(localized: "Not importable"))
                 .frame(maxWidth: .infinity)
             }
             .width(52)
@@ -286,14 +295,14 @@ private struct MigrationImagesTable: View {
                     .help(row.image.reference ?? row.image.imageID)
                     .accessibilityIdentifier("migration.row.\(row.id)")
             }
-            .width(min: 140, ideal: 250)
+            .width(min: 140, ideal: 200)
             TableColumn("Tag", value: \.tag) { row in
                 Text(row.image.tag ?? (row.image.isDangling ? "<none>" : Format.shortDigest(row.image.reference.map { String($0.split(separator: "@").last ?? "") } ?? "")))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            .width(min: 60, ideal: 160)
+            .width(min: 60, ideal: 145)
             TableColumn("Size", value: \.size) { row in
                 Text(Format.disk(row.size)).monospacedDigit()
                     .help("Disk used in OrbStack; the import copies the compressed \(row.image.exportPlatform) layers only")
@@ -308,16 +317,25 @@ private struct MigrationImagesTable: View {
                     }
                 }
             }
-            .width(min: 70, ideal: 110)
+            // "amd64" next to the Rosetta pill, neither of which is translated.
+            .width(min: 112, ideal: 116)
             TableColumn("Used By", value: \.usedBy) { row in
-                Text(row.usedBy == 0 ? "Unused" : "\(row.usedBy) container\(row.usedBy == 1 ? "" : "s")")
-                    .foregroundStyle(row.usedBy == 0 ? .secondary : .primary)
+                Group {
+                    if row.usedBy == 0 {
+                        Text("Unused", comment: "Image used by no container")
+                    } else {
+                        Text("\(row.usedBy) containers")
+                    }
+                }
+                .foregroundStyle(row.usedBy == 0 ? .secondary : .primary)
+                .lineLimit(1)
             }
-            .width(min: 70, ideal: 90)
+            .width(min: 80, ideal: 95)
             TableColumn("In Basket", value: \.basketOrder) { row in
                 MigrationImageStatus(row: row)
             }
-            .width(min: 90, ideal: 110)
+            // Room for the longest status pill in German and French ("Nicht verglichen").
+            .width(min: 120, ideal: 125)
             TableColumn("Created", value: \.created) { row in
                 Text(Format.relative(row.image.createdAt)).foregroundStyle(.secondary)
                     .help(Format.dateTime(row.image.createdAt))
@@ -353,8 +371,12 @@ private struct MigrationImageStatus: View {
             Pill(text: "In Basket", systemImage: "checkmark", tint: Series.blue)
                 .help("Basket has the same image (compared by content, not just by name)")
         case .checking:
-            Text("Comparing…").foregroundStyle(.secondary)
+            // A spinner fits the column in every language (a "Comparing…" label didn't, #17); the
+            // tooltip and VoiceOver say what is going on.
+            ProgressView()
+                .controlSize(.small)
                 .help("Basket has an image with this name; comparing it with OrbStack's")
+                .accessibilityLabel("Comparing with Basket")
         case .unverified(let reason):
             Pill(text: "Not compared", systemImage: "questionmark.circle", tint: .secondary)
                 .help("Basket has an image with this name, but it couldn't be compared with OrbStack's: \(reason). It isn't imported or offered for cleanup.")
@@ -362,9 +384,9 @@ private struct MigrationImageStatus: View {
             Pill(text: "Name conflict", systemImage: "exclamationmark.triangle.fill", tint: .orange)
                 .help("Basket has a different image with this name: \(reason). It isn't imported or offered for cleanup; rename or delete Basket's to import OrbStack's.")
         case .dangling:
-            Text("Dangling").foregroundStyle(.secondary)
+            Text("Dangling", comment: "An image with no name (dangling layers)").foregroundStyle(.secondary)
         case .notInBasket:
-            Text("—").foregroundStyle(.secondary)
+            Text(verbatim: "—").foregroundStyle(.secondary)
         }
     }
 }
@@ -386,13 +408,13 @@ private struct MigrationContainersTable: View {
             TableColumn("Image", value: \.image) { row in
                 Text(row.image).lineLimit(1).truncationMode(.middle).help(row.image)
             }
-            .width(min: 120, ideal: 270)
+            .width(min: 120, ideal: 230)
             TableColumn("State", value: \.stateOrder) { row in
                 HStack(spacing: 5) {
                     Image(systemName: row.container.isRunning ? "play.circle.fill" : "stop.circle")
                         .foregroundStyle(row.container.isRunning ? .green : .secondary)
                         .accessibilityHidden(true)
-                    Text(row.container.isRunning ? "Running" : row.container.state.capitalized)
+                    Text(row.container.isRunning ? String(localized: "Running") : Self.stateTitle(row.container.state))
                 }
                 .help(row.container.status)
             }
@@ -407,13 +429,13 @@ private struct MigrationContainersTable: View {
                     .lineLimit(1)
                     .help(MigrationModel.mountsDetail(row.container.mounts))
             }
-            .width(min: 80, ideal: 170)
+            .width(min: 80, ideal: 200)
             TableColumn("In Basket") { row in
                 if let recreated = model.recreated[row.id] {
-                    Pill(text: recreated.basketID, systemImage: "checkmark.circle.fill", tint: .green)
+                    Pill(text: "\(recreated.basketID)", systemImage: "checkmark.circle.fill", tint: .green)
                         .help("Recreated in Basket as \(recreated.basketID)")
                 } else {
-                    Text("—").foregroundStyle(.secondary)
+                    Text(verbatim: "—").foregroundStyle(.secondary)
                 }
             }
             .width(min: 80, ideal: 110)
@@ -431,5 +453,19 @@ private struct MigrationContainersTable: View {
             if ids.count == 1, let id = ids.first { model.sheet = .recreate(id) }
         }
         .accessibilityIdentifier("migration.list")
+    }
+
+    /// Docker's container state ("exited", "paused", …) in the user's language.
+    static func stateTitle(_ state: String) -> String {
+        switch state.lowercased() {
+        case "running": String(localized: "Running")
+        case "exited": String(localized: "Exited", comment: "Docker container state")
+        case "created": String(localized: "Created (state)", defaultValue: "Created", comment: "Container state: created but never started")
+        case "paused": String(localized: "Paused", comment: "Docker container state")
+        case "restarting": String(localized: "Restarting", comment: "Docker container state")
+        case "removing": String(localized: "Removing", comment: "Docker container state")
+        case "dead": String(localized: "Dead", comment: "Docker container state")
+        default: state.capitalized
+        }
     }
 }

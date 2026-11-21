@@ -46,7 +46,7 @@ struct VolumeRow: Identifiable, Hashable {
     var capacity: Int64
     var created: Double
     var usedBy: [String]
-    var usedByText: String { usedBy.isEmpty ? "—" : usedBy.joined(separator: ", ") }
+    var usedByText: String { usedBy.isEmpty ? "—" : usedBy.compactList }
 }
 
 struct NetworkRow: Identifiable, Hashable {
@@ -87,11 +87,11 @@ extension ContainerState {
 
     var title: String {
         switch self {
-        case .running: "Running"
-        case .stopped: "Stopped"
-        case .stopping: "Stopping"
-        case .created: "Created"
-        case .unknown: "Unknown"
+        case .running: String(localized: "Running", comment: "State of a container, a machine or the container system")
+        case .stopped: String(localized: "Stopped", comment: "State of a container, a machine or the container system")
+        case .stopping: String(localized: "Stopping", comment: "State of a container, a machine or the container system")
+        case .created: String(localized: "Created (state)", defaultValue: "Created", comment: "Container state: created but never started")
+        case .unknown: String(localized: "Unknown", comment: "State of a container, a machine or the container system")
         }
     }
 }
@@ -139,7 +139,9 @@ extension AppStore {
                     summary: i, name: name.repository, tag: name.tag,
                     created: i.createdAt?.timeIntervalSince1970 ?? 0, hostSize: i.hostVariantSizeBytes,
                     totalSize: i.totalSizeBytes, variantCount: i.variants.count,
-                    usedBy: users.containers + users.machines.map { "machine \($0)" }
+                    usedBy: users.containers + users.machines.map {
+                        String(localized: "machine \($0)", comment: "A Linux machine named in a list of image users")
+                    }
                 )
             }
             .sorted(using: imageSort)
@@ -191,16 +193,18 @@ extension AppStore {
     }
 
     /// The status bar line under each list: counts plus what the section costs in memory or disk.
+    /// Each part is a whole phrase with at most one number, so every number gets its own plural.
     func statusLine(for section: AppSection) -> String {
-        func shown(_ visible: Int, _ total: Int, _ noun: String) -> String {
-            let plural = total == 1 ? noun : noun + "s"
-            return visible == total ? "\(total) \(plural)" : "Showing \(visible) of \(total) \(plural)"
+        /// "12 images", plus "3 shown" while a search hides some.
+        func counted(_ totalText: String, visible: Int, total: Int) -> [String] {
+            visible == total ? [totalText]
+                : [totalText, String(localized: "\(visible) shown", comment: "Status bar: how many items match the search")]
         }
         // OrbStack's side reads fine while Basket's container system is stopped.
         if section == .migration { return migration.statusLine }
         switch availability {
-        case .stopped: return "Container system stopped"
-        case .cliMissing: return "container CLI not found"
+        case .stopped: return String(localized: "Container system stopped")
+        case .cliMissing: return String(localized: "container CLI not found")
         default: break
         }
         switch section {
@@ -208,35 +212,45 @@ extension AppStore {
             return ""
         case .containers:
             let running = runningContainers
-            var parts = [shown(containerRows.count, containers.count, "container"), "\(running.count) running"]
+            let total = containers.count, visible = containerRows.count
+            var parts = counted(String(localized: "\(total) containers", comment: "Status bar"), visible: visible, total: total)
+            parts.append(String(localized: "\(running.count) running", comment: "Status bar: number of running containers or machines"))
             let projects = Set(containers.compactMap(ComposeProject.projectName(of:))).count
-            if projects > 0 { parts.append("\(projects) compose project\(projects == 1 ? "" : "s")") }
+            if projects > 0 { parts.append(String(localized: "\(projects) compose projects", comment: "Status bar")) }
             if !running.isEmpty {
                 let cpu = running.compactMap { cpuPercent[$0.id] }.reduce(0, +)
                 let guest = running.compactMap { latestStats[$0.id]?.memoryUsageBytes }.reduce(0, +)
                 let host = running.compactMap { hostMemoryByOwner[$0.id] }.reduce(0, +)
-                parts.append("CPU \(Format.percent(cpu))")
-                parts.append("\(Format.memory(guest)) used in guests")
-                if footprintsAvailable { parts.append("\(Format.memory(host)) on this Mac") }
+                parts.append(String(localized: "CPU \(Format.percent(cpu))", comment: "Status bar: total CPU use"))
+                parts.append(String(localized: "\(Format.memory(guest)) used in guests", comment: "Status bar: memory the guests use"))
+                if footprintsAvailable {
+                    parts.append(String(localized: "\(Format.memory(host)) on this Mac", comment: "Status bar: host memory the VMs cost"))
+                }
             }
             return parts.joined(separator: " · ")
         case .images:
-            let total = images.reduce(Int64(0)) { $0 + $1.totalSizeBytes }
+            let totalBytes = images.reduce(Int64(0)) { $0 + $1.totalSizeBytes }
             let extra = images.reduce(Int64(0)) { $0 + max(0, $1.totalSizeBytes - $1.hostVariantSizeBytes) }
             let unused = imageUsage.unused(images)
-            var parts = [shown(imageRows.count, images.count, "image"), "\(Format.disk(total)) on disk"]
-            if extra > 0 { parts.append("\(Format.disk(extra)) for other platforms") }
-            if !unused.isEmpty { parts.append("\(unused.count) unused") }
+            let total = images.count, visible = imageRows.count
+            var parts = counted(String(localized: "\(total) images", comment: "Status bar"), visible: visible, total: total)
+            parts.append(String(localized: "\(Format.disk(totalBytes)) on disk", comment: "Status bar: disk space used"))
+            if extra > 0 { parts.append(String(localized: "\(Format.disk(extra)) for other platforms", comment: "Status bar: disk space taken by other CPU architectures")) }
+            if !unused.isEmpty { parts.append(String(localized: "\(unused.count) unused", comment: "Status bar: number of unused images")) }
             return parts.joined(separator: " · ")
         case .volumes:
             let allocated = volumes.reduce(Int64(0)) { $0 + ($1.allocatedBytes ?? 0) }
             let capacity = volumes.reduce(Int64(0)) { $0 + $1.capacityBytes }
-            var parts = [shown(volumeRows.count, volumes.count, "volume"), "\(Format.disk(allocated)) on disk"]
-            if capacity > 0 { parts.append("sparse, up to \(Format.memory(capacity))") }
+            let total = volumes.count, visible = volumeRows.count
+            var parts = counted(String(localized: "\(total) volumes", comment: "Status bar"), visible: visible, total: total)
+            parts.append(String(localized: "\(Format.disk(allocated)) on disk", comment: "Status bar: disk space used"))
+            if capacity > 0 { parts.append(String(localized: "sparse, up to \(Format.memory(capacity))", comment: "Status bar: volumes are sparse disk images that can grow to this size")) }
             return parts.joined(separator: " · ")
         case .networks:
             let attached = containers.reduce(0) { $0 + $1.networks.count }
-            return [shown(networkRows.count, networks.count, "network"), "\(attached) container attachment\(attached == 1 ? "" : "s")"]
+            let total = networks.count, visible = networkRows.count
+            return (counted(String(localized: "\(total) networks", comment: "Status bar"), visible: visible, total: total)
+                + [String(localized: "\(attached) container attachments", comment: "Status bar: how many container–network connections exist")])
                 .joined(separator: " · ")
         case .migration:
             return migration.statusLine
@@ -244,9 +258,13 @@ extension AppStore {
             let running = machines.filter { $0.state == .running }
             let disk = machines.reduce(Int64(0)) { $0 + ($1.diskBytes ?? 0) }
             let host = running.compactMap { hostMemoryByOwner[$0.id] }.reduce(0, +)
-            var parts = [shown(machineRows.count, machines.count, "machine"), "\(running.count) running"]
-            if footprintsAvailable, !running.isEmpty { parts.append("\(Format.memory(host)) on this Mac") }
-            if disk > 0 { parts.append("\(Format.disk(disk)) on disk") }
+            let total = machines.count, visible = machineRows.count
+            var parts = counted(String(localized: "\(total) machines", comment: "Status bar"), visible: visible, total: total)
+            parts.append(String(localized: "\(running.count) running", comment: "Status bar: number of running containers or machines"))
+            if footprintsAvailable, !running.isEmpty {
+                parts.append(String(localized: "\(Format.memory(host)) on this Mac", comment: "Status bar: host memory the VMs cost"))
+            }
+            if disk > 0 { parts.append(String(localized: "\(Format.disk(disk)) on disk", comment: "Status bar: disk space used")) }
             return parts.joined(separator: " · ")
         }
     }
