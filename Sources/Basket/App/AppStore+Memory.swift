@@ -158,14 +158,11 @@ extension AppStore {
 }
 
 extension Format {
-    /// "45 s", "12 min", "2 h 5 min".
+    /// "45 sec", "12 min", "2 hr, 5 min" in the user's locale.
     static func duration(_ seconds: TimeInterval) -> String {
         let s = max(0, Int(seconds))
-        if s < 60 { return "\(s) s" }
-        let minutes = s / 60
-        if minutes < 60 { return "\(minutes) min" }
-        let hours = minutes / 60, rest = minutes % 60
-        return rest == 0 ? "\(hours) h" : "\(hours) h \(rest) min"
+        let units: Set<Duration.UnitsFormatStyle.Unit> = s < 60 ? [.seconds] : [.hours, .minutes]
+        return Duration.seconds(s).formatted(.units(allowed: units, width: .abbreviated))
     }
 }
 

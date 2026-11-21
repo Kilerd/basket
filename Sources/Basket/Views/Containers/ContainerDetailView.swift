@@ -139,7 +139,7 @@ private struct ContainerInfoView: View {
                             Text("No mounts").font(.callout).foregroundStyle(.secondary)
                         }
                         ForEach(container.mounts, id: \.self) { m in
-                            InfoRow(label: m.destination, value: "\(m.source) (\(m.kind)\(m.readOnly ? ", read-only" : ""))")
+                            InfoRow(verbatimLabel: m.destination, value: "\(m.source) (\(m.kind)\(m.readOnly ? ", read-only" : ""))")
                         }
                     }
                     InfoSection(title: "Environment") {
@@ -148,14 +148,14 @@ private struct ContainerInfoView: View {
                         }
                         ForEach(container.environment, id: \.self) { entry in
                             let parts = entry.split(separator: "=", maxSplits: 1).map(String.init)
-                            InfoRow(label: parts.first ?? entry, value: parts.count > 1 ? parts[1] : "", monospaced: true)
+                            InfoRow(verbatimLabel: parts.first ?? entry, value: parts.count > 1 ? parts[1] : "", monospaced: true)
                         }
                     }
                     let labels = container.labels.filter { !ComposeLabels.isManaged($0.key) }
                     if !labels.isEmpty {
                         InfoSection(title: "Labels") {
                             ForEach(labels.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                                InfoRow(label: key, value: value, monospaced: true)
+                                InfoRow(verbatimLabel: key, value: value, monospaced: true)
                             }
                         }
                     }

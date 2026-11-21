@@ -151,7 +151,7 @@ private struct ComposeOverview: View {
                 .fixedSize(horizontal: false, vertical: true)
                 InfoSection(title: "Services") {
                     ForEach(project.startOrder, id: \.id) { container in
-                        InfoRow(label: ComposeProject.serviceName(of: container), value: describe(container))
+                        InfoRow(verbatimLabel: ComposeProject.serviceName(of: container), value: describe(container))
                     }
                 }
                 Label(

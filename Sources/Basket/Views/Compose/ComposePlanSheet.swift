@@ -16,7 +16,7 @@ struct ComposePlanSheet: View {
 
     var body: some View {
         SheetScaffold(
-            title: title,
+            title: "\(title)",
             subtitle: "Basket runs each service in its own lightweight VM, with the memory shown below.",
             identifier: "sheet.compose-plan", width: 820, height: 720
         ) {

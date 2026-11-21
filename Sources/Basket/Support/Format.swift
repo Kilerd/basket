@@ -2,19 +2,31 @@ import Foundation
 import BasketCore
 
 enum Format {
-    /// Memory sizes use binary units (what Activity Monitor shows).
+    /// Memory sizes use binary units (what Activity Monitor shows), in the user's locale
+    /// ("1.2 GB", "1,2 Go").
     static func memory(_ bytes: Int64) -> String {
         // The formatter spells zero out ("Zero kB"); a dashboard reads better with a digit.
-        bytes == 0 ? "0 MB" : bytes.formatted(.byteCount(style: .memory))
+        bytes == 0 ? zero(.memory) : bytes.formatted(.byteCount(style: .memory))
     }
 
     /// Disk sizes use decimal units (what Finder shows).
     static func disk(_ bytes: Int64) -> String {
-        bytes == 0 ? "0 MB" : bytes.formatted(.byteCount(style: .file))
+        bytes == 0 ? zero(.file) : bytes.formatted(.byteCount(style: .file))
     }
 
+    /// "0 MB" in the user's locale.
+    private static func zero(_ style: ByteCountFormatStyle.Style) -> String {
+        Int64(0).formatted(.byteCount(style: style, allowedUnits: .mb, spellsOutZero: false))
+    }
+
+    /// `value` is in percent: 15.3 → "15.3%" ("15,3 %" in French).
     static func percent(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1))) + "%"
+        (value / 100).formatted(.percent.precision(.fractionLength(1)))
+    }
+
+    /// A count in the user's locale ("1,234", "1 234").
+    static func count(_ value: Int) -> String {
+        value.formatted()
     }
 
     static func relative(_ date: Date?) -> String {

@@ -40,7 +40,7 @@ struct MigrationView: View {
         let model = store.migration
         if let error = model.loadError {
             SectionEmptyState(section: .migration, title: "Couldn't Read OrbStack", systemImage: "exclamationmark.triangle",
-                              message: error) {
+                              message: "\(error)") {
                 Button("Try Again") { Task { await model.refresh() } }
                     .accessibilityIdentifier("migration.action.retry")
             }
@@ -71,7 +71,7 @@ struct MigrationView: View {
                 )
             case .dockerUnavailable(let message)?:
                 SectionEmptyState(section: .migration, title: "Can't Read OrbStack", systemImage: "exclamationmark.triangle",
-                                  message: message) {
+                                  message: "\(message)") {
                     Button("Check Again") { Task { await model.refresh() } }
                         .accessibilityIdentifier("migration.action.check")
                 }
@@ -410,7 +410,7 @@ private struct MigrationContainersTable: View {
             .width(min: 80, ideal: 170)
             TableColumn("In Basket") { row in
                 if let recreated = model.recreated[row.id] {
-                    Pill(text: recreated.basketID, systemImage: "checkmark.circle.fill", tint: .green)
+                    Pill(text: "\(recreated.basketID)", systemImage: "checkmark.circle.fill", tint: .green)
                         .help("Recreated in Basket as \(recreated.basketID)")
                 } else {
                     Text("—").foregroundStyle(.secondary)

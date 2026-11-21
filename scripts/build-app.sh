@@ -32,9 +32,23 @@ shopt -u nullglob
 
 cp "$ROOT/Resources/Branding/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
+# App strings: the String Catalog compiled into Contents/Resources/<lang>.lproj
+# (Localizable.strings + .stringsdict for plurals), where Bundle.main finds them. Not a SwiftPM
+# resource bundle: Bundle.module in a hand-assembled app is fragile. Every language in the
+# catalog ships; en.lproj always exists (the development region).
+log "compile String Catalog"
+xcrun xcstringstool compile "$ROOT/Resources/Localization/Localizable.xcstrings" \
+  --output-directory "$APP/Contents/Resources" >/dev/null || die "xcstringstool compile failed"
+mkdir -p "$APP/Contents/Resources/en.lproj"
+LOCALIZATIONS=""
+for lproj in "$APP/Contents/Resources"/*.lproj; do
+  LOCALIZATIONS+="<string>$(basename "$lproj" .lproj)</string>"
+done
+
 write_info_plist "$APP/Contents/Info.plist" dev.basket.app Basket Basket \
   "  <key>LSApplicationCategoryType</key><string>public.app-category.developer-tools</string>
-  <key>CFBundleIconFile</key><string>AppIcon</string>"
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundleLocalizations</key><array>${LOCALIZATIONS}</array>"
 
 IDENTITY="${BASKET_SIGN_IDENTITY:-$(developer_id_identity)}"
 IDENTITY="${IDENTITY:--}"

@@ -1,0 +1,1529 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ (%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$lld)"
+          }
+        }
+      }
+    },
+    "%@ has been idle for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has been idle for %2$@"
+          }
+        }
+      }
+    },
+    "%@ limits + ≈ %@ VM overhead = up to %@ on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ limits + ≈ %2$@ VM overhead = up to %3$@ on this Mac"
+          }
+        }
+      }
+    },
+    "%@ of images is for other CPU architectures" : {
+
+    },
+    "%@ on this Mac · %@ used by the guest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ on this Mac · %2$@ used by the guest"
+          }
+        }
+      }
+    },
+    "%@ reclaimable" : {
+
+    },
+    "%@ stranded" : {
+
+    },
+    "%@: %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@. %3$@"
+          }
+        }
+      }
+    },
+    "%@: OrbStack %@, Basket %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: OrbStack %2$@, Basket %3$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld + system default" : {
+
+    },
+    "%lld container%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld container%2$@"
+          }
+        }
+      }
+    },
+    "%lld containers are idle: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld containers are idle: %2$@"
+          }
+        }
+      }
+    },
+    "%lld image archives were kept after keeping one platform was interrupted" : {
+
+    },
+    "%lld network%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld network%2$@"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld platforms" : {
+
+    },
+    "1 second" : {
+
+    },
+    "10 seconds" : {
+
+    },
+    "2 seconds" : {
+
+    },
+    "5 seconds" : {
+
+    },
+    "8080:80" : {
+
+    },
+    "A full Linux environment that boots in its own VM and shares your home folder." : {
+
+    },
+    "A machine is a full Linux environment with your home folder mounted — like an OrbStack machine, booted on demand." : {
+
+    },
+    "Activity" : {
+
+    },
+    "Add Port" : {
+
+    },
+    "Add Variable" : {
+
+    },
+    "Add Volume" : {
+
+    },
+    "Add the docker command?" : {
+
+    },
+    "Allow Memory Saver to Stop" : {
+
+    },
+    "Allow Memory Saver to stop" : {
+
+    },
+    "Allow stopping" : {
+
+    },
+    "An image archive was kept after keeping one platform was interrupted" : {
+
+    },
+    "Automatic (/opt/homebrew/bin/container)" : {
+
+    },
+    "Automatic (e.g. 192.168.100.0/24)" : {
+
+    },
+    "Automatically check for updates" : {
+
+    },
+    "Basket" : {
+
+    },
+    "Basket %@" : {
+
+    },
+    "Basket can't read %@" : {
+
+    },
+    "Basket can't tell whether it was started with --rm. If so, restarting deletes it." : {
+
+    },
+    "Basket can't tell whether this container was started with --rm (stopping would delete it), so Memory Saver leaves it alone unless you allow it." : {
+
+    },
+    "Basket copies only this Mac's platform (%@) when OrbStack has it. Each archive is deleted as soon as it's loaded; OrbStack keeps its copy." : {
+
+    },
+    "Basket couldn’t work out which file to change for your %@ shell." : {
+
+    },
+    "Basket has a different image with this name: %@. It isn't imported or offered for cleanup; rename or delete Basket's to import OrbStack's." : {
+
+    },
+    "Basket has an image with this name, but it couldn't be compared with OrbStack's: %@. It isn't imported or offered for cleanup." : {
+
+    },
+    "Basket has an image with this name; comparing it with OrbStack's" : {
+
+    },
+    "Basket has the same image (compared by content, not just by name)" : {
+
+    },
+    "Basket only polls while its window is visible, and 3× slower while you use another app." : {
+
+    },
+    "Basket pulls only the platform this Mac runs. A multi-platform pull of alpine stores about ten variants." : {
+
+    },
+    "Basket runs each service in its own lightweight VM, with the memory shown below." : {
+
+    },
+    "Basket runs the same image with the settings below in its own lightweight VM. The OrbStack container stays as it is." : {
+
+    },
+    "Built-in" : {
+
+    },
+    "CPU" : {
+
+    },
+    "CPUs" : {
+
+    },
+    "Can't Read OrbStack" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Capacity" : {
+
+    },
+    "Check Again" : {
+
+    },
+    "Check Now" : {
+
+    },
+    "Check every listed image whose name Basket doesn't have yet" : {
+
+    },
+    "Check for Import" : {
+
+    },
+    "Check for Updates…" : {
+
+    },
+    "Check the spelling or try a different search." : {
+
+    },
+    "Checking for updates" : {
+
+    },
+    "Choose a local image" : {
+
+    },
+    "Choose the container executable" : {
+
+    },
+    "Choose…" : {
+
+    },
+    "Clear Search" : {
+
+    },
+    "Close" : {
+
+    },
+    "Collapse %@" : {
+
+    },
+    "Collecting samples…" : {
+
+    },
+    "Command" : {
+
+    },
+    "Comparing…" : {
+
+    },
+    "Compose" : {
+
+    },
+    "Compose Up…" : {
+
+    },
+    "Compose file" : {
+
+    },
+    "Compose project with %lld service%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Compose project with %1$lld service%2$@, %3$@"
+          }
+        }
+      }
+    },
+    "Container" : {
+
+    },
+    "Container System" : {
+
+    },
+    "Container System Stopped" : {
+
+    },
+    "Containers" : {
+
+    },
+    "Containers (%lld)" : {
+
+    },
+    "Containers on the same network can reach each other by IP address." : {
+
+    },
+    "Copy" : {
+
+    },
+    "Copy %@" : {
+
+    },
+    "Copy Cleanup Command" : {
+
+    },
+    "Copy Command" : {
+
+    },
+    "Copy Commands" : {
+
+    },
+    "Copy IP" : {
+
+    },
+    "Copy IP Address (%@)" : {
+
+    },
+    "Copy JSON" : {
+
+    },
+    "Copy Mount Argument" : {
+
+    },
+    "Copy Name" : {
+
+    },
+    "Copy Project Name" : {
+
+    },
+    "Copy Reference" : {
+
+    },
+    "Copy Subnet" : {
+
+    },
+    "Couldn't Read OrbStack" : {
+
+    },
+    "Create" : {
+
+    },
+    "Create & Run" : {
+
+    },
+    "Create a network to give a group of containers their own subnet." : {
+
+    },
+    "Create the networks and volumes, then start every service" : {
+
+    },
+    "Created" : {
+
+    },
+    "Custom platform" : {
+
+    },
+    "Dangling" : {
+
+    },
+    "Default" : {
+
+    },
+    "Default (512G, sparse)" : {
+
+    },
+    "Default CPUs" : {
+
+    },
+    "Default memory" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %lld Item%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delete %1$lld Item%2$@"
+          }
+        }
+      }
+    },
+    "Delete…" : {
+
+    },
+    "Deleting…" : {
+
+    },
+    "Detail" : {
+
+    },
+    "Details for %@" : {
+
+    },
+    "Details for compose project %@" : {
+
+    },
+    "Digest" : {
+
+    },
+    "Directory" : {
+
+    },
+    "Disable" : {
+
+    },
+    "Disk" : {
+
+    },
+    "Disk used in OrbStack" : {
+
+    },
+    "Disk used in OrbStack; the import copies the compressed %@ layers only" : {
+
+    },
+    "Disk: %@ (%@ reclaimable)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Disk: %1$@ (%2$@ reclaimable)"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+
+    },
+    "Distribution" : {
+
+    },
+    "Done" : {
+
+    },
+    "Down" : {
+
+    },
+    "Down and Delete Volumes…" : {
+
+    },
+    "Download Installer" : {
+
+    },
+    "Downloading… %@" : {
+
+    },
+    "Downloading… %@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Downloading… %1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "Down…" : {
+
+    },
+    "Each container runs in its own lightweight VM. Stopping it returns the memory to macOS immediately." : {
+
+    },
+    "Each service is its own VM: the guest may use its limit, and the VM costs about 240–290 MB on top" : {
+
+    },
+    "Enable" : {
+
+    },
+    "Environment" : {
+
+    },
+    "Equivalent command" : {
+
+    },
+    "Equivalent commands" : {
+
+    },
+    "Error" : {
+
+    },
+    "Everything carries over." : {
+
+    },
+    "Exactly the items listed are deleted: this list was taken when the sheet opened. Running containers, machines and everything they use are kept." : {
+
+    },
+    "Exempt" : {
+
+    },
+    "Exempt containers are never stopped automatically or by “Stop Idle Containers”." : {
+
+    },
+    "Exempt from Memory Saver" : {
+
+    },
+    "Expand %@" : {
+
+    },
+    "Follow" : {
+
+    },
+    "Format" : {
+
+    },
+    "Frees about %@" : {
+
+    },
+    "From the file" : {
+
+    },
+    "Gateway" : {
+
+    },
+    "General" : {
+
+    },
+    "Hide the services of %@" : {
+
+    },
+    "Home" : {
+
+    },
+    "Host Memory" : {
+
+    },
+    "Hostname" : {
+
+    },
+    "I Installed It Elsewhere…" : {
+
+    },
+    "IP Address" : {
+
+    },
+    "IP address" : {
+
+    },
+    "IPv6" : {
+
+    },
+    "Idle means under 1% CPU and under 1 KB/s of network traffic the whole time. A stopped container returns all its memory to macOS. With the window closed, Basket checks activity once a minute." : {
+
+    },
+    "Image" : {
+
+    },
+    "Image default" : {
+
+    },
+    "Images" : {
+
+    },
+    "Images (%lld)" : {
+
+    },
+    "Images without a tag: digest-only references and dangling layers. Dangling images can't be imported." : {
+
+    },
+    "Import" : {
+
+    },
+    "Import %@" : {
+
+    },
+    "Import from OrbStack" : {
+
+    },
+    "Imported" : {
+
+    },
+    "Imported this session; same content as OrbStack's copy" : {
+
+    },
+    "In Basket" : {
+
+    },
+    "In use" : {
+
+    },
+    "Inspect" : {
+
+    },
+    "Install and Relaunch" : {
+
+    },
+    "Install with Homebrew" : {
+
+    },
+    "Intel (linux/amd64, runs with Rosetta)" : {
+
+    },
+    "KEY=value" : {
+
+    },
+    "Keep Only %@…" : {
+
+    },
+    "Kill" : {
+
+    },
+    "Labels" : {
+
+    },
+    "Later" : {
+
+    },
+    "Launch Basket at login" : {
+
+    },
+    "Limits" : {
+
+    },
+    "Linux" : {
+
+    },
+    "Machine is ready" : {
+
+    },
+    "Machines" : {
+
+    },
+    "Make Default" : {
+
+    },
+    "Make this the default machine" : {
+
+    },
+    "Maximum size; unused space takes no room on disk" : {
+
+    },
+    "Measuring…" : {
+
+    },
+    "Memory" : {
+
+    },
+    "Memory Saver" : {
+
+    },
+    "Memory Saver stops containers idle for %@" : {
+
+    },
+    "Memory limit" : {
+
+    },
+    "Memory limit of the machine's VM" : {
+
+    },
+    "Memory usage" : {
+
+    },
+    "Memory: %@ across %lld VM%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Memory: %1$@ across %2$lld VM%3$@"
+          }
+        }
+      }
+    },
+    "Migrate from OrbStack" : {
+
+    },
+    "Mode" : {
+
+    },
+    "Mounts" : {
+
+    },
+    "Multi-platform pulls store every variant. Slim them down from the Images section." : {
+
+    },
+    "Name" : {
+
+    },
+    "Name conflict" : {
+
+    },
+    "Name in Basket" : {
+
+    },
+    "Network" : {
+
+    },
+    "Networks" : {
+
+    },
+    "New Container" : {
+
+    },
+    "New Container…" : {
+
+    },
+    "New Machine" : {
+
+    },
+    "New Machine…" : {
+
+    },
+    "New Network" : {
+
+    },
+    "New Network…" : {
+
+    },
+    "New Volume" : {
+
+    },
+    "New Volume…" : {
+
+    },
+    "New containers" : {
+
+    },
+    "No %@ in OrbStack" : {
+
+    },
+    "No Containers" : {
+
+    },
+    "No IP address" : {
+
+    },
+    "No Images" : {
+
+    },
+    "No Machines" : {
+
+    },
+    "No Networks" : {
+
+    },
+    "No Results for “%@”" : {
+
+    },
+    "No VM holds memory its guest has freed" : {
+
+    },
+    "No Volumes" : {
+
+    },
+    "No containers" : {
+
+    },
+    "No limit in the file: the default from Settings" : {
+
+    },
+    "No log output" : {
+
+    },
+    "No mounts" : {
+
+    },
+    "No published ports" : {
+
+    },
+    "No release notes." : {
+
+    },
+    "No variables" : {
+
+    },
+    "Not Running" : {
+
+    },
+    "Not compared" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Notes and what doesn't carry over (%lld)" : {
+
+    },
+    "Nothing running — container VMs use no memory" : {
+
+    },
+    "Nothing to reclaim: every VM uses about what its guest needs." : {
+
+    },
+    "OK" : {
+
+    },
+    "On Disk" : {
+
+    },
+    "On this Mac" : {
+
+    },
+    "Open" : {
+
+    },
+    "Open Basket" : {
+
+    },
+    "Open Releases Page" : {
+
+    },
+    "Open Settings…" : {
+
+    },
+    "Open Shell" : {
+
+    },
+    "Open Shell in Terminal" : {
+
+    },
+    "Open a published port in your browser" : {
+
+    },
+    "Open a shell in Terminal" : {
+
+    },
+    "Open localhost:%lld in Browser" : {
+
+    },
+    "Open localhost:%lld in your browser" : {
+
+    },
+    "Optional" : {
+
+    },
+    "Options" : {
+
+    },
+    "OrbStack" : {
+
+    },
+    "OrbStack Isn't Installed" : {
+
+    },
+    "OrbStack Isn't Running" : {
+
+    },
+    "OrbStack not running" : {
+
+    },
+    "OrbStack only has the %@ variant; it runs under Rosetta in Basket" : {
+
+    },
+    "OrbStack running" : {
+
+    },
+    "OrbStack vs Basket" : {
+
+    },
+    "Other…" : {
+
+    },
+    "Overridden by BASKET_CONTAINER_CLI for this launch." : {
+
+    },
+    "Overview" : {
+
+    },
+    "Path" : {
+
+    },
+    "Physical memory macOS pays for this machine's VM" : {
+
+    },
+    "Planned change to %@" : {
+
+    },
+    "Platform" : {
+
+    },
+    "Platforms" : {
+
+    },
+    "Port" : {
+
+    },
+    "Ports" : {
+
+    },
+    "Preview & Recreate…" : {
+
+    },
+    "Processes" : {
+
+    },
+    "Progress" : {
+
+    },
+    "Project" : {
+
+    },
+    "Project “%@”" : {
+
+    },
+    "Provide a docker command" : {
+
+    },
+    "Pull" : {
+
+    },
+    "Pull Again" : {
+
+    },
+    "Pull Image" : {
+
+    },
+    "Pull Image…" : {
+
+    },
+    "Pull an image to run containers from it. Basket pulls only this Mac's platform by default to save disk." : {
+
+    },
+    "Pulled %@" : {
+
+    },
+    "Quit Basket" : {
+
+    },
+    "Reading %@…" : {
+
+    },
+    "Reading OrbStack…" : {
+
+    },
+    "Recently Returned" : {
+
+    },
+    "Recently returned" : {
+
+    },
+    "Reclaim Disk Space" : {
+
+    },
+    "Reclaim Disk Space…" : {
+
+    },
+    "Reclaim Memory (Restart)" : {
+
+    },
+    "Reclaim Memory (Restart)…" : {
+
+    },
+    "Reclaim Memory…" : {
+
+    },
+    "Reclaim Stranded Memory" : {
+
+    },
+    "Reclaim Stranded Memory…" : {
+
+    },
+    "Reclaimable" : {
+
+    },
+    "Reclaim…" : {
+
+    },
+    "Recreate in Basket" : {
+
+    },
+    "Recreate “%@” in Basket" : {
+
+    },
+    "Recreated in Basket as %@" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh (⌘R)" : {
+
+    },
+    "Release notes" : {
+
+    },
+    "Reload" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove port %@" : {
+
+    },
+    "Remove stopped containers, unused images and volumes" : {
+
+    },
+    "Remove the other platform variants; this Mac's is kept and nothing is downloaded" : {
+
+    },
+    "Remove variable %@" : {
+
+    },
+    "Remove volume %@" : {
+
+    },
+    "Remove when stopped" : {
+
+    },
+    "Resources" : {
+
+    },
+    "Restart" : {
+
+    },
+    "Restart %lld Containers" : {
+
+    },
+    "Restart 1 Container" : {
+
+    },
+    "Restart Project…" : {
+
+    },
+    "Restart VMs that hold memory their guests have freed" : {
+
+    },
+    "Restart every service and refresh the service names" : {
+
+    },
+    "Restart the container to return about %@ to macOS. In-memory state is lost; published ports come back." : {
+
+    },
+    "Restart to Reclaim…" : {
+
+    },
+    "Restarting…" : {
+
+    },
+    "Restart…" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore loads it back into Basket and deletes the archive once the image is listed. Check the image first: it may already be fine." : {
+
+    },
+    "Reveal" : {
+
+    },
+    "Reveal Compose File in Finder" : {
+
+    },
+    "Rosetta" : {
+
+    },
+    "Run Setup Again…" : {
+
+    },
+    "Run a container from an image. Each one gets its own lightweight VM with just the memory you give it." : {
+
+    },
+    "Run it in Basket now" : {
+
+    },
+    "Running in Basket as %@" : {
+
+    },
+    "Run…" : {
+
+    },
+    "Search" : {
+
+    },
+    "Security error" : {
+
+    },
+    "Select All" : {
+
+    },
+    "Select None" : {
+
+    },
+    "Select a container to preview how it runs in Basket." : {
+
+    },
+    "Send SIGKILL to the container" : {
+
+    },
+    "Service" : {
+
+    },
+    "Service %@ of %@, container %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Service %1$@ of %2$@, container %3$@"
+          }
+        }
+      }
+    },
+    "Services" : {
+
+    },
+    "Services find each other by name through entries Basket writes into /etc/hosts of each container when the project starts; apple/container has no DNS between containers." : {
+
+    },
+    "Services, in start order" : {
+
+    },
+    "Set Up Basket" : {
+
+    },
+    "Set Up Basket…" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Setup" : {
+
+    },
+    "Setup assistant" : {
+
+    },
+    "Setup steps" : {
+
+    },
+    "Setup takes a few minutes: install Apple’s container tool, start it, and choose the extras you want. You can skip anything and come back from the Basket menu." : {
+
+    },
+    "Shell" : {
+
+    },
+    "Show" : {
+
+    },
+    "Show %@ in Finder" : {
+
+    },
+    "Show Logs" : {
+
+    },
+    "Show in Containers" : {
+
+    },
+    "Show in Finder" : {
+
+    },
+    "Show the services of %@" : {
+
+    },
+    "Show untagged (%lld)" : {
+
+    },
+    "Signed by Basket’s maintainer and verified before it replaces this copy." : {
+
+    },
+    "Size" : {
+
+    },
+    "Size of the %@ variant this Mac runs" : {
+
+    },
+    "Skip This Version" : {
+
+    },
+    "Skipped (--rm)" : {
+
+    },
+    "Space the machine's disk image occupies on your Mac" : {
+
+    },
+    "Space the sparse disk image actually occupies on your Mac" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start Basket's container system first" : {
+
+    },
+    "Start Container System" : {
+
+    },
+    "Start OrbStack to see its images and containers here. Basket only reads from OrbStack: it never starts, stops or changes it." : {
+
+    },
+    "Start Project" : {
+
+    },
+    "Start every stopped service, dependencies first" : {
+
+    },
+    "Start the container system" : {
+
+    },
+    "Start the container system first" : {
+
+    },
+    "Start the container system to compare OrbStack with Basket. It uses no memory until containers run." : {
+
+    },
+    "Start the container system to measure disk usage" : {
+
+    },
+    "Start the container system to see your containers. It uses no memory until containers run." : {
+
+    },
+    "Start the container system to see your images. It uses no memory until containers run." : {
+
+    },
+    "Start the container system to see your machines. It uses no memory until containers run." : {
+
+    },
+    "Start the container system to see your networks. It uses no memory until containers run." : {
+
+    },
+    "Start the container system to see your volumes. It uses no memory until containers run." : {
+
+    },
+    "Start the container to see live CPU and memory usage." : {
+
+    },
+    "Started" : {
+
+    },
+    "Started with --rm: stopping deletes it, so it can't be restarted." : {
+
+    },
+    "Starting… (the image is pulled first if needed)" : {
+
+    },
+    "State" : {
+
+    },
+    "Step %lld of %lld%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of %2$lld%3$@"
+          }
+        }
+      }
+    },
+    "Stop" : {
+
+    },
+    "Stop All" : {
+
+    },
+    "Stop Container System…" : {
+
+    },
+    "Stop Idle Containers" : {
+
+    },
+    "Stop Idle Containers (%@)" : {
+
+    },
+    "Stop Project" : {
+
+    },
+    "Stop Waiting" : {
+
+    },
+    "Stop and delete the project's containers and networks (volumes are kept)" : {
+
+    },
+    "Stop containers idle for" : {
+
+    },
+    "Stop every running service" : {
+
+    },
+    "Stop idle container" : {
+
+    },
+    "Stop idle containers" : {
+
+    },
+    "Stop idle containers and return their memory to macOS" : {
+
+    },
+    "Stop idle containers automatically" : {
+
+    },
+    "Stop the container system and all running containers" : {
+
+    },
+    "Stopped: no VM running." : {
+
+    },
+    "Stopping a container started with --rm deletes it, so Memory Saver never stops it." : {
+
+    },
+    "Stops containers that have been idle for a while so their memory goes back to macOS. Containers started with --rm and ones you exempt are never stopped." : {
+
+    },
+    "Stores %lld platform variants; %@ is for platforms this Mac doesn't need." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stores %1$lld platform variants; %2$@ is for platforms this Mac doesn't need."
+          }
+        }
+      }
+    },
+    "Stranded: %@, returned by a restart" : {
+
+    },
+    "Stream new log lines as they are written" : {
+
+    },
+    "Stream new log lines from every service as they are written" : {
+
+    },
+    "Subnet" : {
+
+    },
+    "Summary" : {
+
+    },
+    "Tag" : {
+
+    },
+    "The VM can use up to this much memory; most containers need far less than 1 GB." : {
+
+    },
+    "The archive can't be read; it can only be deleted" : {
+
+    },
+    "The compose file isn't known" : {
+
+    },
+    "The container runs in its own lightweight VM. Its memory is returned to macOS when it stops." : {
+
+    },
+    "The first start downloads Linux kernel files (about 650 MB) and keeps a 30 MB kernel. On a fast connection that takes a few minutes; later starts take seconds." : {
+
+    },
+    "There's nothing of this kind to migrate." : {
+
+    },
+    "These VMs still hold memory their guests have freed. A VM only returns it to macOS when it restarts." : {
+
+    },
+    "This Mac" : {
+
+    },
+    "This Mac (%@) — recommended" : {
+
+    },
+    "Time" : {
+
+    },
+    "Top consumers" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Turn it off any time in Settings to remove these lines." : {
+
+    },
+    "Turn on Memory Saver" : {
+
+    },
+    "Unused" : {
+
+    },
+    "Up" : {
+
+    },
+    "Up and running" : {
+
+    },
+    "Update containers every" : {
+
+    },
+    "Updates" : {
+
+    },
+    "Used By" : {
+
+    },
+    "Variable" : {
+
+    },
+    "Volume" : {
+
+    },
+    "Volumes" : {
+
+    },
+    "Volumes are sparse disk images: they only take the space you actually write." : {
+
+    },
+    "Volumes keep data across container restarts. They are sparse: a 512 GB volume only uses what you write." : {
+
+    },
+    "Waiting for output…" : {
+
+    },
+    "What doesn't carry over (%lld)" : {
+
+    },
+    "What restarting means" : {
+
+    },
+    "What’s New" : {
+
+    },
+    "What’s supported" : {
+
+    },
+    "When OrbStack is installed and running, Basket can import its images (this Mac's platform only) and recreate its containers." : {
+
+    },
+    "Without a limit the CLI would reserve half of your Mac's memory. Machines need more than 1 GB; 2 GB is plenty for most shells and builds." : {
+
+    },
+    "Working…" : {
+
+    },
+    "about %@" : {
+
+    },
+    "alpine:latest or ghcr.io/org/app:1.0" : {
+
+    },
+    "archlinux:latest" : {
+
+    },
+    "backend" : {
+
+    },
+    "container CLI" : {
+
+    },
+    "container CLI Not Found" : {
+
+    },
+    "container image load --input %@" : {
+
+    },
+    "default" : {
+
+    },
+    "idle for %@" : {
+
+    },
+    "linux/arm/v7" : {
+
+    },
+    "my-data" : {
+
+    },
+    "my-volume:/data or /host/path:/path" : {
+
+    },
+    "nginx:latest" : {
+
+    },
+    "real memory macOS pays for %lld VM%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "real memory macOS pays for %1$lld VM%2$@"
+          }
+        }
+      }
+    },
+    "—" : {
+
+    },
+    "“default”: no memory limit in the file. Each container is its own VM, so it gets the default from Settings." : {
+
+    },
+    "•" : {
+
+    }
+  },
+  "version" : "1.0"
+}
