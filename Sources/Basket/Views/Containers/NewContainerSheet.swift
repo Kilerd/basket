@@ -26,7 +26,7 @@ struct NewContainerSheet: View {
         ) {
             Section("Image") {
                 HStack {
-                    TextField("Image", text: $draft.image, prompt: Text("nginx:latest"))
+                    TextField("Image", text: $draft.image, prompt: Text(verbatim: "nginx:latest"))
                         .accessibilityIdentifier("new-container.image")
                     if !store.images.isEmpty {
                         Menu {
@@ -59,7 +59,7 @@ struct NewContainerSheet: View {
             } header: {
                 Text("Resources")
             } footer: {
-                Text("The VM can use up to this much memory; most containers need far less than 1 GB.")
+                Text("The VM can use up to this much memory; most containers need far less than \(memoryChoiceLabel(1024)).")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Ports") {
@@ -78,7 +78,7 @@ struct NewContainerSheet: View {
             }
             Section("Options") {
                 Picker("Network", selection: $draft.network) {
-                    Text("Default").tag("")
+                    Text("Default", comment: "The default network").tag("")
                     ForEach(store.networks.filter { !$0.isBuiltin }) { Text($0.name).tag($0.name) }
                 }
                 .accessibilityIdentifier("new-container.network")

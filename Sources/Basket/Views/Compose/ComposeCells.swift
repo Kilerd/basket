@@ -21,7 +21,9 @@ extension ComposeProject.State {
 
 extension ComposeProject {
     /// "3/4 running"
-    var runningSummary: String { "\(runningCount)/\(totalCount) running" }
+    var runningSummary: String {
+        String(localized: "\(runningCount)/\(totalCount) running", comment: "Compose project state: running services of all services")
+    }
 }
 
 /// Name cell of the containers table. With compose projects present every row gets the same two
@@ -49,9 +51,10 @@ struct ContainerNameCell: View {
                     .fontWeight(.semibold)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                    .help("Compose project \(project.name)" + (project.workingDirectory.map { " in \($0)" } ?? ""))
+                    .help(project.workingDirectory.map { String(localized: "Compose project \(project.name) in \($0)") }
+                          ?? String(localized: "Compose project \(project.name)"))
                     .accessibilityAddTraits(.isHeader)
-                    .accessibilityHint("Compose project with \(project.totalCount) service\(project.totalCount == 1 ? "" : "s"), \(project.runningSummary)")
+                    .accessibilityHint("Compose project with \(project.totalCount) services, \(project.runningSummary)")
                     .accessibilityIdentifier("containers.group.\(project.name)")
             } else if row.summary.labels[ComposeLabels.project] != nil {
                 let service = ComposeProject.serviceName(of: row.summary)
@@ -152,7 +155,7 @@ struct ComposeStateBadge: View {
         HStack(spacing: 5) {
             if let pendingVerb {
                 ProgressView().controlSize(.mini)
-                Text(pendingVerb + "…").foregroundStyle(.secondary)
+                Text(verbatim: pendingVerb).foregroundStyle(.secondary)
             } else {
                 Image(systemName: project.state.symbol).foregroundStyle(project.state.color).accessibilityHidden(true)
                 Text(project.runningSummary)
@@ -176,10 +179,13 @@ struct ComposeServiceRow: View {
     var body: some View {
         if let project = ComposeProject.projectName(of: container) {
             let dependencies = ComposeProject.dependencies(of: container)
+            let service = ComposeProject.serviceName(of: container)
             InfoRow(
                 label: "Compose",
-                value: "\(project) · service \(ComposeProject.serviceName(of: container))"
-                    + (dependencies.isEmpty ? "" : " · after \(dependencies.joined(separator: ", "))"))
+                value: dependencies.isEmpty
+                    ? String(localized: "\(project) · service \(service)", comment: "Compose project, then the service this container runs")
+                    : String(localized: "\(project) · service \(service) · after \(dependencies.localizedList)",
+                             comment: "Compose project, the service this container runs, the services it starts after"))
         }
     }
 }

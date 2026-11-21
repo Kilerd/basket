@@ -27,7 +27,8 @@ struct ComposeProjectMenuItems: View {
         }
         Button("Copy Project Name", systemImage: "doc.on.doc") { HostActions.copy(project.name) }
         Divider()
-        Button("Down…", systemImage: "arrow.down.to.line", role: .destructive) {
+        Button(String(localized: "Down…", comment: "Menu item: take a Compose project down (`compose down`): stop and remove its containers and networks"),
+               systemImage: "arrow.down.to.line", role: .destructive) {
             openWindow.mainWindowThen { store.confirmComposeDown(project.name, removeVolumes: false) }
         }
         if !store.composeVolumes(project.name).isEmpty {
@@ -41,6 +42,13 @@ struct ComposeProjectMenuItems: View {
 enum ComposeDetailTab: String, CaseIterable, Identifiable {
     case overview = "Overview", logs = "Logs"
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .overview: String(localized: "Overview", comment: "Compose project detail tab")
+        case .logs: String(localized: "Logs", comment: "Container detail tab")
+        }
+    }
 }
 
 /// Detail pane for a selected compose project: totals, services, and merged logs.
@@ -81,7 +89,7 @@ struct ComposeProjectDetailView: View {
             .layoutPriority(1)
             Spacer(minLength: 12)
             Picker("Detail", selection: Bindable(store).composeDetailTab) {
-                ForEach(ComposeDetailTab.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(ComposeDetailTab.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -101,13 +109,15 @@ struct ComposeProjectDetailView: View {
                     .disabled(pendingVerb != nil)
                     .help("Restart every service and refresh the service names")
                     .accessibilityIdentifier("containers.action.project-restart")
-                Button("Down", systemImage: "arrow.down.to.line") { store.confirmComposeDown(project.name, removeVolumes: false) }
+                Button(String(localized: "Down", comment: "Button: take a Compose project down (`compose down`): stop and remove its containers and networks"),
+                       systemImage: "arrow.down.to.line") { store.confirmComposeDown(project.name, removeVolumes: false) }
                     .disabled(pendingVerb != nil)
                     .help("Stop and delete the project's containers and networks (volumes are kept)")
                     .accessibilityIdentifier("containers.action.project-down")
                 Button("Reveal", systemImage: "folder") { store.revealComposeFile(project.name) }
                     .disabled(!store.canRevealComposeFile(project))
-                    .help(project.configFile.map { "Show \($0.path) in Finder" } ?? "The compose file isn't known")
+                    .help(project.configFile.map { String(localized: "Show \($0.path) in Finder") }
+                          ?? String(localized: "The compose file isn't known"))
                     .accessibilityIdentifier("containers.action.project-reveal")
             }
             .labelStyle(.titleAndIcon)
@@ -135,16 +145,18 @@ private struct ComposeOverview: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
                     InfoSection(title: "Project") {
-                        InfoRow(label: "Compose file", value: project.configFiles.joined(separator: ", "))
+                        InfoRow(label: "Compose file", value: project.configFiles.localizedList)
                         InfoRow(label: "Directory", value: project.workingDirectory ?? "—")
-                        InfoRow(label: "Networks", value: networks.joined(separator: ", "))
-                        InfoRow(label: "Volumes", value: volumes.isEmpty ? "—" : volumes.joined(separator: ", "))
+                        InfoRow(label: "Networks", value: networks.localizedList)
+                        InfoRow(label: "Volumes", value: volumes.isEmpty ? "—" : volumes.localizedList)
                     }
                     InfoSection(title: "Memory") {
-                        InfoRow(label: "Limits", value: "\(Format.memory(limits)) for \(project.totalCount) service\(project.totalCount == 1 ? "" : "s")")
+                        InfoRow(label: "Limits", value: String(localized: "\(Format.memory(limits)) for \(project.totalCount) services",
+                                                                comment: "Memory limits: total for this many Compose services"))
                         InfoRow(label: "In use", value: used.isEmpty ? "—" : Format.memory(used.reduce(0, +)))
                         InfoRow(label: "On this Mac", value: footprint.isEmpty ? "—" : Format.memory(footprint.reduce(0, +)))
-                        InfoRow(label: "CPUs", value: "\(running.reduce(0) { $0 + $1.cpus }) of \(project.containers.reduce(0) { $0 + $1.cpus }) running")
+                        InfoRow(label: "CPUs", value: String(localized: "\(running.reduce(0) { $0 + $1.cpus }) of \(project.containers.reduce(0) { $0 + $1.cpus }) running",
+                                                              comment: "CPUs of the running services, of all services"))
                     }
                     .frame(width: 280)
                 }
@@ -169,7 +181,7 @@ private struct ComposeOverview: View {
         var parts = [container.state.title, container.id]
         if let ip = container.ipv4Address { parts.append(ip) }
         if !container.ports.isEmpty { parts.append(Format.ports(container.ports)) }
-        parts.append(Format.memory(container.memoryLimitBytes) + " limit")
+        parts.append(String(localized: "\(Format.memory(container.memoryLimitBytes)) limit", comment: "A container's memory limit"))
         return parts.joined(separator: " · ")
     }
 }

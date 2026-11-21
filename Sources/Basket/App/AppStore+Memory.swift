@@ -86,7 +86,7 @@ extension AppStore {
         let ids = confirmed.map(\.id)
         guard !ids.isEmpty else { return }
         let before = hostMemoryByOwner
-        let ok = await perform("Stopping", ids: ids, refresh: [.containers, .stats, .footprints]) { backend in
+        let ok = await perform(.stop, ids: ids, refresh: [.containers, .stats, .footprints]) { backend in
             try await backend.stopContainers(ids)
         }
         guard ok else { return }
@@ -122,32 +122,48 @@ extension AppStore {
         let deleted = items.filter { $0.state == .running && $0.removeOnStop == true }.map(\.id)
         let unknown = items.filter { $0.state == .running && $0.removeOnStop == nil }.map(\.id)
         let restartable = items.map(\.id).filter { !deleted.contains($0) }
-        func names(_ list: [String]) -> String { list.map { "“\($0)”" }.joined(separator: ", ") }
+        let names = Format.quotedList
 
         guard !restartable.isEmpty else {
-            confirmation = Confirmation(
-                title: deleted.count == 1 ? "Can't restart \(names(deleted))" : "Can't restart these containers",
-                message: "\(deleted.count == 1 ? "It was" : "They were") started with --rm, so stopping deletes \(deleted.count == 1 ? "it" : "them") and \(deleted.count == 1 ? "it" : "they") can't come back. Stop \(deleted.count == 1 ? "it" : "them") yourself if no longer needed.",
-                confirmLabel: nil) {}
+            confirmation = deleted.count == 1
+                ? Confirmation(
+                    title: String(localized: "Can't restart \(names(deleted))"),
+                    message: String(localized: "It was started with --rm, so stopping deletes it and it can't come back. Stop it yourself if no longer needed."),
+                    confirmLabel: nil) {}
+                : Confirmation(
+                    title: String(localized: "Can't restart these containers"),
+                    message: String(localized: "They were started with --rm, so stopping deletes them and they can't come back. Stop them yourself if no longer needed."),
+                    confirmLabel: nil) {}
             return
         }
 
         var message: [String] = []
         if reclaim, restartable.count == 1, let stranded = memoryInsights[restartable[0]]?.strandedBytes, stranded > 0 {
-            message.append("Its VM holds about \(Format.memory(stranded)) the guest no longer uses; a restart returns it to macOS.")
+            message.append(String(localized: "Its VM holds about \(Format.memory(stranded)) the guest no longer uses; a restart returns it to macOS."))
         }
-        message.append("A brief interruption: published ports come back once \(restartable.count == 1 ? "it is" : "they are") running again, but anything kept only in memory is lost.")
+        message.append(restartable.count == 1
+            ? String(localized: "A brief interruption: published ports come back once it is running again, but anything kept only in memory is lost.")
+            : String(localized: "A brief interruption: published ports come back once they are running again, but anything kept only in memory is lost."))
         if !deleted.isEmpty {
-            message.append("Skipped \(names(deleted)): started with --rm, so stopping would delete \(deleted.count == 1 ? "it" : "them").")
+            message.append(deleted.count == 1
+                ? String(localized: "Skipped \(names(deleted)): started with --rm, so stopping would delete it.")
+                : String(localized: "Skipped \(names(deleted)): started with --rm, so stopping would delete them."))
         }
         if !unknown.isEmpty {
-            message.append("Basket can't tell whether \(names(unknown)) \(unknown.count == 1 ? "was" : "were") started with --rm. If so, stopping deletes \(unknown.count == 1 ? "it" : "them") for good.")
+            message.append(unknown.count == 1
+                ? String(localized: "Basket can't tell whether \(names(unknown)) was started with --rm. If so, stopping deletes it for good.")
+                : String(localized: "Basket can't tell whether \(names(unknown)) were started with --rm. If so, stopping deletes them for good."))
         }
-        let subject = restartable.count == 1 ? names(restartable) : "\(restartable.count) containers"
+        let title: String = switch (reclaim, restartable.count == 1) {
+        case (true, true): String(localized: "Restart \(names(restartable)) to reclaim memory?")
+        case (true, false): String(localized: "Restart \(restartable.count) containers to reclaim memory?")
+        case (false, true): String(localized: "Restart \(names(restartable))?")
+        case (false, false): String(localized: "Restart \(restartable.count) containers?")
+        }
         confirmation = Confirmation(
-            title: reclaim ? "Restart \(subject) to reclaim memory?" : "Restart \(subject)?",
+            title: title,
             message: message.joined(separator: "\n\n"),
-            confirmLabel: unknown.isEmpty ? "Restart" : "Restart Anyway",
+            confirmLabel: unknown.isEmpty ? String(localized: "Restart") : String(localized: "Restart Anyway"),
             isDestructive: !unknown.isEmpty
         ) { [weak self] in
             Task {
@@ -168,14 +184,21 @@ extension Format {
 
 extension MemoryActivity {
     var summary: String {
-        let freed = freedBytes.flatMap { $0 > 0 ? " · freed \(Format.memory($0))" : nil } ?? ""
-        switch kind {
-        case .autoStop:
-            return "Stopped \(containerID) after \(Format.duration(idleSeconds ?? 0)) idle\(freed)"
-        case .stopIdle:
-            return "Stopped idle \(containerID)\(freed)"
-        case .reclaim:
-            return "Restarted \(containerID)\(freed)"
+        let freed = freedBytes.flatMap { $0 > 0 ? Format.memory($0) : nil }
+        let idle = Format.duration(idleSeconds ?? 0)
+        switch (kind, freed) {
+        case (.autoStop, let freed?):
+            return String(localized: "Stopped \(containerID) after \(idle) idle · freed \(freed)", comment: "Memory Saver activity log")
+        case (.autoStop, nil):
+            return String(localized: "Stopped \(containerID) after \(idle) idle", comment: "Memory Saver activity log")
+        case (.stopIdle, let freed?):
+            return String(localized: "Stopped idle \(containerID) · freed \(freed)", comment: "Memory Saver activity log")
+        case (.stopIdle, nil):
+            return String(localized: "Stopped idle \(containerID)", comment: "Memory Saver activity log")
+        case (.reclaim, let freed?):
+            return String(localized: "Restarted \(containerID) · freed \(freed)", comment: "Memory Saver activity log")
+        case (.reclaim, nil):
+            return String(localized: "Restarted \(containerID)", comment: "Memory Saver activity log")
         }
     }
 }

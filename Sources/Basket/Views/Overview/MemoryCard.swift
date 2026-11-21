@@ -33,7 +33,7 @@ struct MemoryCard: View {
                 value: store.footprintsAvailable ? Format.memory(store.totalHostMemory) : "—",
                 caption: vmCount == 0
                     ? "Nothing running — container VMs use no memory"
-                    : "real memory macOS pays for \(vmCount) VM\(vmCount == 1 ? "" : "s")"
+                    : "real memory macOS pays for \(vmCount) VMs"
             )
             comparison(insights)
             idleRow
@@ -63,7 +63,7 @@ struct MemoryCard: View {
         }
     }
 
-    private func comparisonRow(_ label: String, _ bytes: Int64, _ scale: Double, _ color: Color, help: String) -> some View {
+    private func comparisonRow(_ label: LocalizedStringKey, _ bytes: Int64, _ scale: Double, _ color: Color, help: LocalizedStringKey) -> some View {
         GridRow {
             Text(label).foregroundStyle(.secondary).gridColumnAlignment(.leading)
             MeterBar(fraction: Double(bytes) / scale, color: color, height: 8)
@@ -82,7 +82,7 @@ struct MemoryCard: View {
                 Image(systemName: "moon.zzz").foregroundStyle(.secondary).accessibilityHidden(true)
                 Text(idle.count == 1
                      ? "\(first.id) has been idle for \(Format.duration(first.idleFor))"
-                     : "\(idle.count) containers are idle: \(idle.map(\.id).joined(separator: ", "))")
+                     : "\(idle.count) containers are idle: \(idle.map(\.id).localizedList)")
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .help(IdleMark.help(first.idleFor))

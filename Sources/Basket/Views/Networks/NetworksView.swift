@@ -19,7 +19,7 @@ struct NetworksView: View {
             }
         }
         .navigationTitle("Networks")
-        .navigationSubtitle("\(store.networks.count) network\(store.networks.count == 1 ? "" : "s")")
+        .navigationSubtitle("\(store.networks.count) networks")
         .toolbar { toolbar }
     }
 
@@ -74,7 +74,7 @@ private struct NetworksTable: View {
                     .truncationMode(.middle)
             }
             .width(min: 100, ideal: 200)
-            TableColumn("Containers", value: \.attached) { row in Text("\(row.attached)").monospacedDigit() }
+            TableColumn("Containers", value: \.attached) { row in Text(Format.count(row.attached)).monospacedDigit() }
                 .width(min: 70, ideal: 80)
             TableColumn("Created", value: \.created) { row in
                 Text(Format.relative(row.summary.createdAt)).foregroundStyle(.secondary)
@@ -111,7 +111,7 @@ struct NewNetworkSheet: View {
             identifier: "sheet.new-network", height: 340
         ) {
             Section {
-                TextField("Name", text: $name, prompt: Text("backend"))
+                TextField("Name", text: $name, prompt: Text(verbatim: "backend"))
                     .accessibilityIdentifier("new-network.name")
                 TextField("Subnet", text: $subnet, prompt: Text("Automatic (e.g. 192.168.100.0/24)"))
                     .accessibilityIdentifier("new-network.subnet")

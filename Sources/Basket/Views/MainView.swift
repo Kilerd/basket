@@ -149,7 +149,7 @@ private struct SidebarFooter: View {
         .accessibilityIdentifier("sidebar.status")
     }
 
-    private func footerLine(_ symbol: String, _ label: String, _ value: String) -> some View {
+    private func footerLine(_ symbol: String, _ label: LocalizedStringKey, _ value: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: symbol).foregroundStyle(.secondary).frame(width: 16)
             Text(label).foregroundStyle(.secondary)
@@ -161,10 +161,10 @@ private struct SidebarFooter: View {
 
     private var statusText: String {
         switch store.availability {
-        case .running: "System running"
-        case .stopped: "System stopped"
-        case .cliMissing: "CLI not found"
-        case .unknown: "Connecting…"
+        case .running: String(localized: "System running", comment: "Sidebar footer: the container system is running")
+        case .stopped: String(localized: "System stopped", comment: "Sidebar footer: the container system is stopped")
+        case .cliMissing: String(localized: "CLI not found", comment: "Sidebar footer: the container CLI is missing")
+        case .unknown: String(localized: "Connecting…")
         }
     }
 
@@ -328,10 +328,10 @@ struct CommonToolbarItems: ToolbarContent {
 
 /// Toolbar button with an icon, an accessible name, a tooltip and an AX identifier.
 struct ToolbarActionButton: View {
-    var title: String
+    var title: LocalizedStringKey
     var systemImage: String
     var identifier: String
-    var help: String?
+    var help: LocalizedStringKey?
     var action: () -> Void
 
     var body: some View {

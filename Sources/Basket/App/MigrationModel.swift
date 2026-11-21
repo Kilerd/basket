@@ -610,18 +610,3 @@ extension LaunchOptions {
         }
     }
 }
-
-extension AppSection {
-    /// Placeholder of the toolbar search field.
-    var searchPrompt: String {
-        switch self {
-        case .overview: String(localized: "Search Overview")
-        case .containers: String(localized: "Search Containers")
-        case .images: String(localized: "Search Images")
-        case .volumes: String(localized: "Search Volumes")
-        case .networks: String(localized: "Search Networks")
-        case .machines: String(localized: "Search Machines")
-        case .migration: String(localized: "Search OrbStack")
-        }
-    }
-}

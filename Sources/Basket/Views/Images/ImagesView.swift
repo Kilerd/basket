@@ -38,7 +38,7 @@ struct ImagesView: View {
 
     private var subtitle: String {
         let total = store.images.reduce(Int64(0)) { $0 + $1.totalSizeBytes }
-        return "\(store.images.count) image\(store.images.count == 1 ? "" : "s") · \(Format.disk(total))"
+        return String(localized: "\(store.images.count) images · \(Format.disk(total))", comment: "Images window subtitle: number of images and the disk space they use")
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -111,7 +111,7 @@ private struct ImagesTable: View {
             }
             .width(min: 170, ideal: 190)
             TableColumn("Used By", value: \.usedBy.count) { row in
-                Text(row.usedBy.isEmpty ? "Unused" : row.usedBy.joined(separator: ", "))
+                Text(row.usedBy.isEmpty ? String(localized: "Unused", comment: "Nothing uses it (an image or a volume)") : row.usedBy.localizedList)
                     .foregroundStyle(row.usedBy.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
             }
@@ -175,7 +175,7 @@ private struct ImageDetailView: View {
                 Spacer(minLength: 12)
                 Picker("Detail", selection: $tab) {
                     Text("Platforms").tag(0)
-                    Text("Inspect").tag(1)
+                    Text("Inspect", comment: "Detail tab: the raw `inspect` JSON").tag(1)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -292,7 +292,9 @@ private struct RecoveryArchivesStrip: View {
                 .frame(width: 76, alignment: .trailing)
             Button("Restore") { Task { await store.restoreRecoveryArchive(archive) } }
                 .disabled(!archive.isReadable || busy || store.availability != .running)
-                .help(archive.isReadable ? "container image load --input \(archive.url.path)" : "The archive can't be read; it can only be deleted")
+                .help(archive.isReadable
+                      ? Text(verbatim: "container image load --input \(archive.url.path)")
+                      : Text("The archive can't be read; it can only be deleted"))
                 .accessibilityIdentifier("images.recovery.restore.\(archive.id)")
             Button("Delete…") { store.confirmDeleteRecoveryArchive(archive) }
                 .disabled(busy)
@@ -303,9 +305,11 @@ private struct RecoveryArchivesStrip: View {
 
     private func detail(_ archive: RecoveryArchive) -> String {
         var parts: [String] = []
-        if !archive.isReadable { parts.append("unreadable archive \(archive.url.lastPathComponent)") }
-        if !archive.platforms.isEmpty { parts.append(archive.platforms.joined(separator: ", ")) }
-        if let modified = archive.modified { parts.append("kept \(Format.relative(modified))") }
+        if !archive.isReadable { parts.append(String(localized: "unreadable archive \(archive.url.lastPathComponent)")) }
+        if !archive.platforms.isEmpty { parts.append(archive.platforms.localizedList) }
+        if let modified = archive.modified {
+            parts.append(String(localized: "kept \(Format.relative(modified))", comment: "When an archive was kept, e.g. “kept 2 hr. ago”"))
+        }
         return parts.joined(separator: " · ")
     }
 }

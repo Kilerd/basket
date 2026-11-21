@@ -25,7 +25,7 @@ struct MachinesView: View {
 
     private var subtitle: String {
         let running = store.machines.filter { $0.state == .running }.count
-        return "\(running) running of \(store.machines.count)"
+        return String(localized: "\(running) running of \(store.machines.count)", comment: "Running containers or machines, of all of them")
     }
 
     private var selected: MachineSummary? {
@@ -151,9 +151,9 @@ private struct MachinesTable: View {
 
     private func homeMountTitle(_ mode: String) -> String {
         switch mode {
-        case "rw": "Read-write"
-        case "ro": "Read-only"
-        case "none": "Not mounted"
+        case "rw": String(localized: "Read-write", comment: "How a machine mounts your home folder")
+        case "ro": String(localized: "Read-only", comment: "How a machine mounts your home folder")
+        case "none": String(localized: "Not mounted", comment: "How a machine mounts your home folder")
         default: mode
         }
     }
@@ -192,7 +192,7 @@ struct NewMachineSheet: View {
             case .debian: "Debian 12"
             case .fedora: "Fedora 42"
             case .alpine: "Alpine 3.22"
-            case .custom: "Custom image…"
+            case .custom: String(localized: "Custom image…")
             }
         }
     }
@@ -209,7 +209,7 @@ struct NewMachineSheet: View {
                 }
                 .accessibilityIdentifier("new-machine.preset")
                 if preset == .custom {
-                    TextField("Image", text: $customImage, prompt: Text("archlinux:latest"))
+                    TextField("Image", text: $customImage, prompt: Text(verbatim: "archlinux:latest"))
                         .accessibilityIdentifier("new-machine.image")
                 }
                 TextField("Name", text: $name, prompt: Text(defaultName))
@@ -228,7 +228,7 @@ struct NewMachineSheet: View {
             } header: {
                 Text("Resources")
             } footer: {
-                Text("Without a limit the CLI would reserve half of your Mac's memory. Machines need more than 1 GB; 2 GB is plenty for most shells and builds.")
+                Text("Without a limit the CLI would reserve half of your Mac's memory. Machines need more than \(memoryChoiceLabel(1024)); \(memoryChoiceLabel(2048)) is plenty for most shells and builds.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if phase != .idle {
@@ -284,7 +284,7 @@ struct NewMachineSheet: View {
         let cpus = self.cpus
         let memory = MemorySize.cliString(megabytes: memoryMB)
         let makeDefault = self.makeDefault
-        lines = ["Creating \(name) from \(image)…"]
+        lines = [String(localized: "Creating \(name) from \(image)…", comment: "Creating a machine: its name, then the image")]
         phase = .creating
         task = Task {
             do {

@@ -39,6 +39,24 @@ enum Format {
         return date.formatted(date: .abbreviated, time: .shortened)
     }
 
+    /// A name in the user's quotation marks: “web”, 「web」, « web », „web“.
+    static func quoted(_ name: String) -> String {
+        String(localized: "“\(name)”", comment: "A name in quotes")
+    }
+
+    /// Names in quotation marks, joined as a list in the user's language.
+    static func quotedList(_ names: [String]) -> String {
+        names.map(quoted).localizedList
+    }
+
+    /// Whole sentences run together as one paragraph: with a space, except in languages written
+    /// without spaces between sentences (Chinese, Japanese).
+    static func sentences(_ parts: [String]) -> String {
+        let language = Bundle.main.preferredLocalizations.first ?? "en"
+        let separator = ["zh", "ja"].contains(where: { language.hasPrefix($0) }) ? "" : " "
+        return parts.joined(separator: separator)
+    }
+
     static func shortDigest(_ digest: String) -> String {
         let hex = digest.split(separator: ":").last.map(String.init) ?? digest
         return String(hex.prefix(12))

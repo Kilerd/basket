@@ -11,7 +11,7 @@ struct VolumesView: View {
         } empty: {
             SectionEmptyState(
                 section: .volumes, title: "No Volumes", systemImage: "externaldrive",
-                message: "Volumes keep data across container restarts. They are sparse: a 512 GB volume only uses what you write."
+                message: "Volumes keep data across container restarts. They are sparse: a \(Format.memory(512 << 30)) volume only uses what you write."
             ) {
                 Button("New Volume…") { store.activeSheet = .newVolume }
                     .buttonStyle(.borderedProminent)
@@ -25,7 +25,7 @@ struct VolumesView: View {
 
     private var subtitle: String {
         let used = store.volumes.reduce(Int64(0)) { $0 + ($1.allocatedBytes ?? 0) }
-        return "\(store.volumes.count) volume\(store.volumes.count == 1 ? "" : "s") · \(Format.disk(used)) on disk"
+        return String(localized: "\(store.volumes.count) volumes · \(Format.disk(used)) on disk", comment: "Volumes window subtitle: number of volumes and the disk space they use")
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -89,7 +89,7 @@ private struct VolumesTable: View {
             }
             .width(min: 50, ideal: 60)
             TableColumn("Used By") { row in
-                Text(row.usedBy.isEmpty ? "Unused" : row.usedByText)
+                Text(row.usedBy.isEmpty ? String(localized: "Unused", comment: "Nothing uses it (an image or a volume)") : row.usedByText)
                     .foregroundStyle(row.usedBy.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
             }
@@ -132,7 +132,7 @@ struct NewVolumeSheet: View {
             identifier: "sheet.new-volume", height: 340
         ) {
             Section {
-                TextField("Name", text: $name, prompt: Text("my-data"))
+                TextField("Name", text: $name, prompt: Text(verbatim: "my-data"))
                     .accessibilityIdentifier("new-volume.name")
                 TextField("Size", text: $size, prompt: Text("Default (512G, sparse)"))
                     .accessibilityIdentifier("new-volume.size")

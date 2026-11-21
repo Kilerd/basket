@@ -16,14 +16,16 @@ struct ContainerMemorySection: View {
                 GridRow {
                     HStack(spacing: 20) {
                         metric("On this Mac", Format.memory(b.hostFootprintBytes), nil,
-                               help: "Physical memory macOS pays for this container's VM.")
+                               help: String(localized: "Physical memory macOS pays for this container's VM."))
                         metric("Guest in use", Format.memory(b.guestInUseBytes), Series.aqua,
-                               help: "Memory the Linux guest reports as used.")
-                        metric("VM overhead", "about \(Format.memory(b.overheadBytes))", Self.overheadColor,
-                               help: "Estimated fixed cost of the VM itself (kernel, page tables, devices); grows slowly with the memory limit.")
-                        metric("Stranded", b.strandedBytes > 0 ? Format.memory(b.strandedBytes) : "None", Series.orange,
+                               help: String(localized: "Memory the Linux guest reports as used."))
+                        metric("VM overhead", String(localized: "about \(Format.memory(b.overheadBytes))", comment: "An estimated amount of memory"),
+                               Self.overheadColor,
+                               help: String(localized: "Estimated fixed cost of the VM itself (kernel, page tables, devices); grows slowly with the memory limit."))
+                        metric("Stranded", b.strandedBytes > 0 ? Format.memory(b.strandedBytes) : String(localized: "None", comment: "No stranded memory"),
+                               Series.orange,
                                help: b.isStranded ? StrandedMark.help(b.strandedBytes)
-                                  : "Memory the VM holds beyond what the guest and the VM itself need.")
+                                  : String(localized: "Memory the VM holds beyond what the guest and the VM itself need."))
                         Spacer(minLength: 0)
                         if b.isStranded {
                             Button("Restart to Reclaim…", systemImage: "arrow.counterclockwise") {
@@ -49,9 +51,9 @@ struct ContainerMemorySection: View {
                 GridRow {
                     HStack(spacing: 20) {
                         metric("On this Mac", store.hostMemoryByOwner[container.id].map(Format.memory) ?? "—", nil,
-                               help: "Physical memory macOS pays for this container's VM.")
+                               help: String(localized: "Physical memory macOS pays for this container's VM."))
                         metric("Guest in use", store.latestStats[container.id].map { Format.memory($0.memoryUsageBytes) } ?? "—", nil,
-                               help: "Memory the Linux guest reports as used.")
+                               help: String(localized: "Memory the Linux guest reports as used."))
                         Text(container.state == .running ? "Measuring…" : "Stopped: no VM running.")
                             .foregroundStyle(.secondary)
                             .fixedSize()
@@ -64,7 +66,7 @@ struct ContainerMemorySection: View {
     }
 
     /// Legend entry: swatch (when `color` is set), label and value at their natural width.
-    private func metric(_ label: String, _ value: String, _ color: Color?, help: String) -> some View {
+    private func metric(_ label: LocalizedStringKey, _ value: String, _ color: Color?, help: String) -> some View {
         HStack(spacing: 6) {
             if let color {
                 RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 8, height: 8).accessibilityHidden(true)
@@ -121,7 +123,9 @@ struct ContainerActivityRows: View {
 
     private var activity: String {
         guard container.state == .running else { return "—" }
-        if let idle = store.idleDuration(of: container.id) { return "Idle for \(Format.duration(idle))" }
-        return store.memorySaver.trackers[container.id]?.lastActivity == nil ? "Watching…" : "Active"
+        if let idle = store.idleDuration(of: container.id) { return String(localized: "Idle for \(Format.duration(idle))") }
+        return store.memorySaver.trackers[container.id]?.lastActivity == nil
+            ? String(localized: "Watching…", comment: "Activity: Basket is still collecting samples")
+            : String(localized: "Active", comment: "Activity: not idle")
     }
 }

@@ -32,24 +32,27 @@ struct ReclaimSheet: View {
             identifier: "sheet.reclaim", width: 560, height: 620
         ) {
             category(
-                "Stopped containers", isOn: $pruneContainers, identifier: "reclaim.containers",
+                "Stopped containers (\(plan.stoppedContainers.count))", isOn: $pruneContainers, identifier: "reclaim.containers",
                 total: df?.containers.reclaimableBytes,
                 note: "Their writable layers are deleted for good. Images and volumes only they use are added below.",
                 items: plan.stoppedContainers.map { Item(id: $0.id, name: $0.id, detail: ImageName($0.imageReference).display) })
             category(
-                "Unused images", isOn: $pruneImages, identifier: "reclaim.images", total: imageBytes(plan, snapshot),
+                "Unused images (\(plan.unusedImages.count))", isOn: $pruneImages, identifier: "reclaim.images",
+                total: imageBytes(plan, snapshot),
                 note: "Pulled images can be pulled again; ones built or loaded on this Mac are gone for good.",
                 items: plan.unusedImages.map { Item(id: $0.reference, name: ImageName($0.reference).display, bytes: $0.totalSizeBytes) },
-                unavailable: plan.imageUsageUnknown.map { "No image is offered. \($0)" })
+                unavailable: plan.imageUsageUnknown.map {
+                    String(localized: "No image is offered. \($0)", comment: "%@ is a sentence explaining why Basket can't tell which images are unused")
+                })
             category(
-                "Unused volumes", isOn: $pruneVolumes, identifier: "reclaim.volumes",
+                "Unused volumes (\(plan.unusedVolumes.count))", isOn: $pruneVolumes, identifier: "reclaim.volumes",
                 total: plan.unusedVolumes.reduce(Int64(0)) { $0 + ($1.allocatedBytes ?? 0) },
                 note: "Data stored in them is permanently lost.", warning: true,
                 items: plan.unusedVolumes.map { Item(id: $0.name, name: $0.name, bytes: $0.allocatedBytes) })
         } footer: {
             if isWorking {
                 ProgressView().controlSize(.small)
-                Text("Deleting…").foregroundStyle(.secondary)
+                Text("Deleting…", comment: "Shown in place of an item's state while it is deleted").foregroundStyle(.secondary)
             } else {
                 Text(summary(approved)).foregroundStyle(.secondary)
             }
@@ -58,10 +61,10 @@ struct ReclaimSheet: View {
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("reclaim.action.cancel")
             // Deliberately no default-button shortcut: Return must never delete.
-            Button(approved.isEmpty ? "Delete" : "Delete \(approved.count) Item\(approved.count == 1 ? "" : "s")", role: .destructive) {
+            Button(approved.isEmpty ? "Delete" : "Delete \(approved.count) Items", role: .destructive) {
                 isWorking = true
                 Task {
-                    await store.deleteApproved(approved, verb: "Reclaiming disk space")
+                    await store.deleteApproved(approved, operation: .reclaimDisk)
                     isWorking = false
                     dismiss()
                 }
@@ -73,12 +76,12 @@ struct ReclaimSheet: View {
     }
 
     private func summary(_ approved: ApprovedDeletion) -> String {
-        guard !approved.isEmpty else { return "Nothing selected" }
+        guard !approved.isEmpty else { return String(localized: "Nothing selected") }
         var parts: [String] = []
-        if !approved.containers.isEmpty { parts.append("\(approved.containers.count) container\(approved.containers.count == 1 ? "" : "s")") }
-        if !approved.images.isEmpty { parts.append("\(approved.images.count) image\(approved.images.count == 1 ? "" : "s")") }
-        if !approved.volumes.isEmpty { parts.append("\(approved.volumes.count) volume\(approved.volumes.count == 1 ? "" : "s")") }
-        return parts.joined(separator: ", ")
+        if !approved.containers.isEmpty { parts.append(String(localized: "\(approved.containers.count) containers", comment: "Status bar")) }
+        if !approved.images.isEmpty { parts.append(String(localized: "\(approved.images.count) images", comment: "Status bar")) }
+        if !approved.volumes.isEmpty { parts.append(String(localized: "\(approved.volumes.count) volumes", comment: "Status bar")) }
+        return parts.localizedList
     }
 
     /// The CLI's reclaimable figure (it includes unpacked snapshots, so it matches the Overview card)
@@ -92,20 +95,20 @@ struct ReclaimSheet: View {
 
     @ViewBuilder
     private func category(
-        _ title: String, isOn: Binding<Bool>, identifier: String, total: Int64?, note: String, warning: Bool = false,
-        items: [Item], unavailable: String? = nil
+        _ title: LocalizedStringKey, isOn: Binding<Bool>, identifier: String, total: Int64?, note: LocalizedStringKey,
+        warning: Bool = false, items: [Item], unavailable: String? = nil
     ) -> some View {
         Section {
             Toggle(isOn: isOn) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
-                        Text("\(title) (\(items.count))")
+                        Text(title)
                         Spacer(minLength: 8)
                         if let total, total > 0, !items.isEmpty {
                             Text(Format.disk(total)).monospacedDigit().foregroundStyle(.secondary)
                         }
                     }
-                    Text(unavailable ?? note)
+                    (unavailable.map { Text(verbatim: $0) } ?? Text(note))
                         .font(.caption)
                         .foregroundStyle(warning || unavailable != nil ? .orange : .secondary)
                         .fixedSize(horizontal: false, vertical: true)

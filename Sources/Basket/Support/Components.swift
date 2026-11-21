@@ -54,13 +54,15 @@ extension ContainerState {
 /// Status shown as icon + label (never colour alone).
 struct StateBadge: View {
     var state: ContainerState
+    /// A running operation's progress phrase ("Stopping…", see `PendingOperation`), shown instead
+    /// of the state.
     var pendingVerb: String?
 
     var body: some View {
         HStack(spacing: 5) {
             if let pendingVerb {
                 ProgressView().controlSize(.mini)
-                Text(pendingVerb + "…").foregroundStyle(.secondary)
+                Text(verbatim: pendingVerb).foregroundStyle(.secondary)
             } else {
                 Image(systemName: state.symbol).foregroundStyle(state.color).accessibilityHidden(true)
                 Text(state.title)

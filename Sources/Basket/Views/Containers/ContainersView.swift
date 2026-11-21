@@ -44,7 +44,7 @@ struct ContainersView: View {
 
     private var subtitle: String {
         let running = store.runningContainers.count
-        return "\(running) running of \(store.containers.count)"
+        return String(localized: "\(running) running of \(store.containers.count)", comment: "Running containers or machines, of all of them")
     }
 
     private var selection: [ContainerSummary] {
