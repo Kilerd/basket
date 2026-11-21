@@ -24,6 +24,7 @@ Sources/BasketCore/           Domain model + backends (no UI)
   Migration/                  OrbStack → Basket: read-only docker access, image import, container recreation
   Compose/                    YAML parser, compose loader/planner, project grouping, up/down/start/stop
   Update/                     Signed self-update: manifest, Ed25519 + code-signature checks, installer, swap helper
+  JSON/                       JSONFormatter: one-pass re-indent of inspect JSON + highlight tokens
 Sources/Basket/               SwiftUI app (window, sections, menu bar extra, settings)
 Sources/BasketAXKit/          Accessibility snapshot model, capture (in-process + AXUIElement), lint rules, reports
 Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; `lint` checks dumped snapshots)
@@ -160,6 +161,7 @@ and Japanese text is checked for truncation from two characters on).
 | List / table | `<section>.list` |
 | Row | `<section>.row.<id>` |
 | Detail pane | `<section>.detail` |
+| Inspect tab (containers, images) | text area `<section>.detail.inspect` (“Inspect output for <name>”), buttons `<section>.detail.inspect.{find,copy}` |
 | Empty state | `<section>.empty` |
 | Overview cards | `overview.card.<memory|disk|system|orbstack>` |
 | Card actions | `overview.action.<verb>` — e.g. `reclaim` (disk), `reclaim-memory`, `stop-idle` |
@@ -265,6 +267,26 @@ shell builtins only). Images without `sh` can't be updated (reported, not fatal)
 restarted outside Basket keeps stale entries until the project is started again from Basket.
 `BASKET_COMPOSE_LIVE=1 swift test --filter ComposeLiveTests` runs a real redis + alpine project
 (`basket-test-cmp`), proves `app` reaches `db:6379` by name, and takes it down again.
+
+## Inspect JSON
+
+The Inspect tab of containers and images (`InspectJSONView`) shows the backend's inspect output
+through `JSONFormatter` (BasketCore): a streaming tokenizer over the UTF-8 bytes that re-emits the
+document with two-space indentation, `"key": value` and `[]` / `{}` for empty containers, keeps
+key order, copies strings (escapes included) and numbers byte for byte, and returns token ranges
+in UTF-16 offsets. It is linear and iterative (an explicit stack, so nesting depth can't overflow);
+5 MB takes ~15 ms in a release build. Output that isn't exactly one JSON value is shown unchanged.
+
+`JSONHighlighter` turns the tokens into attributes off the main thread; documents over 200 K
+UTF-16 units appear as plain text first and get their colours when ready. Keys, strings, numbers,
+`true`/`false`/`null` and punctuation take `systemPurple`, `systemTeal`, `systemOrange`,
+`systemBlue` and `secondaryLabelColor`, each moved toward black or white just far enough to reach
+WCAG AA (4.5:1) against `textBackgroundColor`, which the text view draws itself
+(`ContrastRatio` in BasketAXKit; the measured table is in `JSONPalette`). The colours are dynamic,
+so appearance changes apply at once. The NSTextView (TextKit 2) is read-only and selectable, with
+the find bar (⌘F, also the Find button) and no line wrapping: `NoWrapScrollView` sizes it to the
+widest line, because an unbounded text container makes TextKit 2 lay out the whole document (seconds
+for a few MB) instead of the visible part. Copy JSON copies the formatted text.
 
 ## Updates
 

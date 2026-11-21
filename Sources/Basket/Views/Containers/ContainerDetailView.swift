@@ -173,36 +173,3 @@ private struct ContainerInfoView: View {
         }
     }
 }
-
-// MARK: - Inspect JSON (shared with images)
-
-struct InspectJSONView: View {
-    @Environment(AppStore.self) private var store
-    var identifier: String
-    var subject: String
-    var load: @Sendable (any ContainerBackend) async throws -> String
-    @State private var text = ""
-    @State private var error: String?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                (error.map { Text(verbatim: $0) } ?? Text("container inspect output", comment: "Caption above raw JSON; `container inspect` is the CLI command and stays untranslated"))
-                    .font(.caption).foregroundStyle(error == nil ? Color.secondary : Color.orange)
-                    .lineLimit(1)
-                Spacer()
-                Button("Copy JSON", systemImage: "doc.on.doc") { HostActions.copy(text) }
-                    .disabled(text.isEmpty)
-                    .accessibilityIdentifier("\(identifier).copy")
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            Divider()
-            MonospacedTextView(text: text, identifier: identifier, label: "Inspect output for \(subject)")
-        }
-        .task(id: subject) {
-            error = nil
-            do { text = try await load(store.backend) } catch { self.error = error.localizedDescription }
-        }
-    }
-}
