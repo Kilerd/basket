@@ -39,7 +39,7 @@ public enum ComposeInterpolation {
                     j += 1
                 }
                 guard j < chars.count else {
-                    throw ComposeError.invalid(path: path, message: "unterminated “${” in “\(text)”; use “$$” for a literal $")
+                    throw ComposeError.invalid(at: path, "unterminated “${” in “\(text)”; use “$$” for a literal $")
                 }
                 result += try braced(String(chars[(i + 2)..<j]), text: text, path: path, unset: &unset, lookup: lookup)
                 i = j + 1
@@ -54,7 +54,7 @@ public enum ComposeInterpolation {
                 }
                 i = j
             } else {
-                throw ComposeError.invalid(path: path, message: "invalid “$” in “\(text)”; use “$$” for a literal $")
+                throw ComposeError.invalid(at: path, "invalid “$” in “\(text)”; use “$$” for a literal $")
             }
         }
         return result
@@ -66,7 +66,7 @@ public enum ComposeInterpolation {
         let nameEnd = body.firstIndex { !($0 == "_" || $0.isASCII && ($0.isLetter || $0.isNumber)) } ?? body.endIndex
         let name = String(body[..<nameEnd])
         guard let first = name.first, first == "_" || first.isLetter else {
-            throw ComposeError.invalid(path: path, message: "invalid variable “${\(body)}” in “\(text)”")
+            throw ComposeError.invalid(at: path, "invalid variable “${\(body)}” in “\(text)”")
         }
         let rest = body[nameEnd...]
         let value = lookup(name)
@@ -91,7 +91,7 @@ public enum ComposeInterpolation {
             }
             return value!
         default:
-            throw ComposeError.invalid(path: path, message: "invalid variable “${\(body)}” in “\(text)”")
+            throw ComposeError.invalid(at: path, "invalid variable “${\(body)}” in “\(text)”")
         }
     }
 
@@ -141,14 +141,14 @@ public enum ComposeDotEnv {
             if line.hasPrefix("export ") { line = String(line.dropFirst(7)).trimmingCharacters(in: .whitespaces) }
             guard let eq = line.firstIndex(of: "=") else {
                 guard line.allSatisfy({ $0 == "_" || $0.isLetter || $0.isNumber || $0 == "." || $0 == "-" }) else {
-                    throw ComposeError.invalid(path: "\(file):\(number)", message: "expected KEY=value")
+                    throw ComposeError.invalid(at: "\(file):\(number)", "expected KEY=value")
                 }
                 result.append((line, nil))
                 continue
             }
             let key = line[..<eq].trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !key.contains(" ") else {
-                throw ComposeError.invalid(path: "\(file):\(number)", message: "invalid variable name “\(key)”")
+                throw ComposeError.invalid(at: "\(file):\(number)", "invalid variable name “\(key)”")
             }
             var raw = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
             var value: String
@@ -159,7 +159,7 @@ public enum ComposeDotEnv {
                     index += 1
                 }
                 guard closesQuote(raw, quote), let close = closingQuoteIndex(raw, quote) else {
-                    throw ComposeError.invalid(path: "\(file):\(number)", message: "unterminated \(quote) quote")
+                    throw ComposeError.invalid(at: "\(file):\(number)", "unterminated \(String(quote)) quote")
                 }
                 let inner = String(raw[raw.index(after: raw.startIndex)..<close])
                 if quote == "'" {
@@ -263,7 +263,7 @@ public enum ComposeShell {
             inWord = true
         }
         if quote != nil || escaped {
-            throw ComposeError.invalid(path: path, message: "unterminated quote or escape in “\(line)”")
+            throw ComposeError.invalid(at: path, "unterminated quote or escape in “\(line)”")
         }
         if inWord { words.append(current) }
         return words

@@ -51,7 +51,7 @@ public struct UpdateInstaller: Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         var data = Data()
         try await stream(request, limit: Int64(UpdatePolicy.maxManifestBytes), tooLarge: { _ in
-            UpdateError.invalidManifest("it is too large")
+            UpdateError.invalidManifest(String(localized: "it is too large", bundle: .main))
         }) { chunk, _, _ in data.append(chunk) }
         return try UpdateManifest.decode(data).validated(policy: policy)
     }
@@ -92,7 +92,7 @@ public struct UpdateInstaller: Sendable {
     public func download(_ offer: UpdateOffer, to file: URL, progress: @escaping @Sendable (Progress) -> Void) async throws {
         let request = URLRequest(url: offer.url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 60)
         guard FileManager.default.createFile(atPath: file.path, contents: nil) else {
-            throw UpdateError.installFailed("can't write \(file.lastPathComponent)")
+            throw UpdateError.installFailed(String(localized: "can't write \(file.lastPathComponent)", bundle: .main))
         }
         let handle = try FileHandle(forWritingTo: file)
         defer { try? handle.close() }
@@ -147,13 +147,13 @@ public struct UpdateInstaller: Sendable {
         do {
             directory = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: app, create: true)
         } catch {
-            throw UpdateError.installFailed("no temporary folder on the volume of \(app.path) (\(error.localizedDescription))")
+            throw UpdateError.installFailed(String(localized: "no temporary folder on the volume of \(app.path) (\(error.localizedDescription))", bundle: .main))
         }
         let parentVolume = try? app.deletingLastPathComponent().resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier
         let stagingVolume = try? directory.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier
         if let parentVolume, let stagingVolume, !parentVolume.isEqual(stagingVolume) {
             try? fm.removeItem(at: directory)
-            throw UpdateError.installFailed("the temporary folder isn't on the same volume as \(app.path)")
+            throw UpdateError.installFailed(String(localized: "the temporary folder isn't on the same volume as \(app.path)", bundle: .main))
         }
         return directory
     }
@@ -171,13 +171,15 @@ public struct UpdateInstaller: Sendable {
             process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
             do { try process.run() } catch {
                 process.terminationHandler = nil
-                continuation.resume(throwing: UpdateError.invalidArchive("ditto couldn't run (\(error.localizedDescription))"))
+                continuation.resume(throwing: UpdateError.invalidArchive(String(localized: "ditto couldn't run (\(error.localizedDescription))", bundle: .main)))
             }
         }
         guard status == 0 else {
             let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw UpdateError.invalidArchive("unzipping failed\(message.isEmpty ? "" : ": \(message.prefix(200))")")
+            throw UpdateError.invalidArchive(message.isEmpty
+                ? String(localized: "unzipping failed", bundle: .main)
+                : String(localized: "unzipping failed: \(String(message.prefix(200)))", bundle: .main))
         }
     }
 
@@ -185,13 +187,13 @@ public struct UpdateInstaller: Sendable {
     static func singleApp(in directory: URL) throws -> URL {
         let items = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isSymbolicLinkKey, .isDirectoryKey])) ?? []
         guard items.count == 1, let item = items.first, item.pathExtension == "app" else {
-            throw UpdateError.invalidArchive("it should contain only Basket.app")
+            throw UpdateError.invalidArchive(String(localized: "it should contain only Basket.app", bundle: .main))
         }
         // Keep `directory`'s spelling of the path (the listing resolves /var → /private/var).
         let app = directory.appending(path: item.lastPathComponent, directoryHint: .isDirectory)
         let values = try? app.resourceValues(forKeys: [.isSymbolicLinkKey, .isDirectoryKey])
         guard values?.isSymbolicLink == false, values?.isDirectory == true else {
-            throw UpdateError.invalidArchive("Basket.app isn't a folder")
+            throw UpdateError.invalidArchive(String(localized: "Basket.app isn't a folder", bundle: .main))
         }
         return app
     }
@@ -201,17 +203,21 @@ public struct UpdateInstaller: Sendable {
         let plistURL = app.appending(path: "Contents/Info.plist")
         guard let data = try? Data(contentsOf: plistURL),
               let info = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        else { throw UpdateError.bundleMismatch("it has no readable Info.plist") }
+        else { throw UpdateError.bundleMismatch(String(localized: "it has no readable Info.plist", bundle: .main)) }
         let identifier = info["CFBundleIdentifier"] as? String
         guard identifier == UpdatePolicy.bundleIdentifier else {
-            throw UpdateError.bundleMismatch("bundle identifier “\(identifier ?? "none")”")
+            throw UpdateError.bundleMismatch(identifier.map { String(localized: "its bundle identifier is “\($0)”", bundle: .main) }
+                ?? String(localized: "it has no bundle identifier", bundle: .main))
         }
-        let versionString = info["CFBundleShortVersionString"] as? String ?? "none"
-        guard let version = SemanticVersion(versionString), version == offer.version else {
-            throw UpdateError.bundleMismatch("it is version \(versionString), the update information says \(offer.version)")
+        let versionString = info["CFBundleShortVersionString"] as? String
+        guard let versionString, let version = SemanticVersion(versionString), version == offer.version else {
+            let announced = offer.version.description
+            throw UpdateError.bundleMismatch(versionString.map {
+                String(localized: "it is version \($0), the update information says \(announced)", bundle: .main)
+            } ?? String(localized: "it has no version number, the update information says \(announced)", bundle: .main))
         }
         guard version > currentVersion else {
-            throw UpdateError.bundleMismatch("version \(version) isn't newer than the installed \(currentVersion)")
+            throw UpdateError.bundleMismatch(String(localized: "version \(version.description) isn't newer than the installed \(currentVersion.description)", bundle: .main))
         }
     }
 
@@ -226,7 +232,7 @@ public struct UpdateInstaller: Sendable {
             throw Self.networkError(error)
         }
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-            throw UpdateError.network("the server answered HTTP \(http.statusCode)")
+            throw UpdateError.network(String(localized: "the server answered HTTP \(http.statusCode)", bundle: .main))
         }
         let expected = response.expectedContentLength > 0 ? response.expectedContentLength : nil
         if let expected, expected > limit { throw tooLarge(expected) }
@@ -256,7 +262,8 @@ public struct UpdateInstaller: Sendable {
             try sink(buffer, received, expected)
         }
         if let expected, received != expected {
-            throw UpdateError.network("the download ended after \(received) of \(expected) bytes")
+            let got = received.formatted(.byteCount(style: .file)), total = expected.formatted(.byteCount(style: .file))
+            throw UpdateError.network(String(localized: "the download ended after \(got) of \(total)", bundle: .main))
         }
     }
 

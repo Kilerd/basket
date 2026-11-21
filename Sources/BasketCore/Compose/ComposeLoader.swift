@@ -30,7 +30,8 @@ public enum ComposeLoader {
             throw ComposeError.yaml(error)
         }
         guard case .mapping(let top) = root else {
-            throw ComposeError.invalid(path: "(top level)", message: root.isNull ? "the file is empty" : "expected a mapping with “services:”")
+            throw ComposeError.invalid(at: String(localized: "(top level)", bundle: .main, comment: "Location in a compose file: the file as a whole"),
+                                       root.isNull ? "the file is empty" : "expected a mapping with “services:”")
         }
 
         var variables = try dotEnv(in: workingDirectory, environment: environment)
@@ -77,12 +78,12 @@ private struct Context {
             case "secrets", "configs":
                 if entry.value.mapping?.isEmpty == false {
                     file.warnings.append(ComposeWarning(
-                        .warning, "Top-level \(entry.key)",
+                        .warning, entry.key == "secrets" ? "Top-level secrets" : "Top-level configs",
                         "apple/container has no \(entry.key); services that use them won't see the files."))
                 }
             case "include":
                 file.warnings.append(ComposeWarning(
-                    .warning, "include", "Included compose files aren't read; only this file's services are planned."))
+                    .warning, key: "include", "Included compose files aren't read; only this file's services are planned."))
             default:
                 if !entry.key.hasPrefix("x-") {
                     file.warnings.append(ComposeWarning(.warning, "Unknown key", "Top-level “\(entry.key)” isn't part of the Compose format; ignored."))
@@ -92,17 +93,17 @@ private struct Context {
         if let networks = top["networks"], !networks.isNull {
             for entry in try mapping(networks, "networks").entries {
                 file.networks.append(try network(entry.key, entry.value, "networks.\(entry.key)"))
-                resourceWarnings("Network", entry.key, entry.value, defaultDriver: "bridge")
+                resourceWarnings(isNetwork: true, entry.key, entry.value, defaultDriver: "bridge")
             }
         }
         if let volumes = top["volumes"], !volumes.isNull {
             for entry in try mapping(volumes, "volumes").entries {
                 file.volumes.append(try volume(entry.key, entry.value, "volumes.\(entry.key)"))
-                resourceWarnings("Volume", entry.key, entry.value, defaultDriver: "local")
+                resourceWarnings(isNetwork: false, entry.key, entry.value, defaultDriver: "local")
             }
         }
         guard let services = top["services"], let serviceMap = services.mapping, !serviceMap.isEmpty else {
-            throw ComposeError.invalid(path: "services", message: "the file defines no services")
+            throw ComposeError.invalid(at: "services", "the file defines no services")
         }
         for entry in serviceMap.entries {
             file.services.append(try service(entry.key, entry.value))
@@ -133,13 +134,17 @@ private struct Context {
     }
 
     /// Driver options apple/container can't honour, reported once per network/volume.
-    mutating func resourceWarnings(_ kind: String, _ key: String, _ value: YAMLValue, defaultDriver: String) {
+    mutating func resourceWarnings(isNetwork: Bool, _ key: String, _ value: YAMLValue, defaultDriver: String) {
         guard let map = value.mapping, map["external"]?.bool != true else { return }
         if let driver = map["driver"]?.scalarText, driver != defaultDriver {
-            file.warnings.append(ComposeWarning(.warning, "\(kind) driver", "\(kind) “\(key)” asks for the \(driver) driver; Basket creates a regular \(kind.lowercased())."))
+            file.warnings.append(isNetwork
+                ? ComposeWarning(.warning, "Network driver", "Network “\(key)” asks for the \(driver) driver; Basket creates a regular network.")
+                : ComposeWarning(.warning, "Volume driver", "Volume “\(key)” asks for the \(driver) driver; Basket creates a regular volume."))
         }
         if map["driver_opts"]?.mapping?.isEmpty == false {
-            file.warnings.append(ComposeWarning(.info, "\(kind) options", "driver_opts of \(kind.lowercased()) “\(key)” are ignored."))
+            file.warnings.append(isNetwork
+                ? ComposeWarning(.info, "Network options", "driver_opts of network “\(key)” are ignored.")
+                : ComposeWarning(.info, "Volume options", "driver_opts of volume “\(key)” are ignored."))
         }
         if map["internal"]?.bool == true {
             file.warnings.append(ComposeWarning(.warning, "Internal network", "Network “\(key)” is internal in the file, but Basket's networks can reach the internet."))
@@ -168,15 +173,18 @@ private struct Context {
     mutating func service(_ name: String, _ value: YAMLValue) throws -> ComposeService {
         let base = "services.\(name)"
         guard let map = value.mapping else {
-            throw ComposeError.invalid(path: base, message: "expected a mapping, found a \(value.kind)")
+            throw ComposeError.invalid(at: base, "expected a mapping, found \(value.kindPhrase)")
         }
         var s = ComposeService(name: name)
         var environment: [(key: String, value: String?)] = []
         var envFiles: [(path: String, required: Bool)] = []
         var memoryFromDeploy: Int64?
 
-        func warn(_ topic: String, _ message: String) { s.warnings.append(ComposeWarning(.warning, service: name, topic, message)) }
-        func note(_ topic: String, _ message: String) { s.warnings.append(ComposeWarning(.info, service: name, topic, message)) }
+        func warn(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { s.warnings.append(ComposeWarning(.warning, service: name, topic, message)) }
+        func note(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { s.warnings.append(ComposeWarning(.info, service: name, topic, message)) }
+        // Topic = the Compose key itself, never translated.
+        func warn(key: String, _ message: LocalizedStringResource) { s.warnings.append(ComposeWarning(.warning, service: name, key: key, message)) }
+        func note(key: String, _ message: LocalizedStringResource) { s.warnings.append(ComposeWarning(.info, service: name, key: key, message)) }
 
         for entry in map.entries {
             let key = entry.key, v = entry.value, path = "\(base).\(key)"
@@ -209,14 +217,14 @@ private struct Context {
             case "tmpfs":
                 for item in try stringList(v, path) {
                     let target = String(item.split(separator: ":", maxSplits: 1).first ?? "")
-                    if item.contains(":") { note("tmpfs", "Options of the tmpfs at \(target) (\(item.dropFirst(target.count + 1))) aren't supported; it's mounted with defaults.") }
+                    if item.contains(":") { note(key: "tmpfs", "Options of the tmpfs at \(target) (\(String(item.dropFirst(target.count + 1)))) aren't supported; it's mounted with defaults.") }
                     s.tmpfs.append(target)
                 }
             case "networks":
                 s.networks = try serviceNetworks(v, path, warn: warn)
             case "network_mode":
                 s.networkMode = try string(v, path)
-                warn("network_mode", "network_mode “\(s.networkMode ?? "")” isn't supported; the service joins the project network instead.")
+                warn(key: "network_mode", "network_mode “\(s.networkMode ?? "")” isn't supported; the service joins the project network instead.")
             case "depends_on":
                 s.dependsOn = try dependencies(v, path)
             case "links":
@@ -225,12 +233,12 @@ private struct Context {
                     s.links.append(ComposeLink(parts[0], parts.count > 1 ? parts[1] : parts[0]))
                 }
             case "external_links":
-                warn("external_links", "Links to containers outside the project aren't supported.")
+                warn(key: "external_links", "Links to containers outside the project aren't supported.")
             case "container_name":
                 s.containerName = try string(v, path)
             case "hostname":
                 s.hostname = try string(v, path)
-                note("hostname", "The container keeps its own name as hostname; “\(s.hostname ?? "")” is added to /etc/hosts of the project's containers.")
+                note(key: "hostname", "The container keeps its own name as hostname; “\(s.hostname ?? "")” is added to /etc/hosts of the project's containers.")
             case "working_dir":
                 s.workingDir = try string(v, path)
             case "user":
@@ -244,9 +252,9 @@ private struct Context {
             case "mem_limit":
                 s.memoryBytes = try byteSize(v, path)
             case "mem_reservation":
-                note("mem_reservation", "Nothing is reserved up front: each container is its own VM with its memory limit.")
+                note(key: "mem_reservation", "Nothing is reserved up front: each container is its own VM with its memory limit.")
             case "memswap_limit", "mem_swappiness":
-                note(key, "Container VMs have no swap; \(key) is ignored.")
+                note(key: key, "Container VMs have no swap; \(key) is ignored.")
             case "deploy":
                 memoryFromDeploy = try deploy(v, path, service: &s)
             case "platform":
@@ -288,31 +296,31 @@ private struct Context {
             case "extra_hosts":
                 s.extraHosts = try extraHosts(v, path)
             case "logging":
-                note("logging", "Logs stay with the container (Logs tab); the logging driver is ignored.")
+                note(key: "logging", "Logs stay with the container (Logs tab); the logging driver is ignored.")
             case "stop_signal", "stop_grace_period":
-                note(key, "\(key) isn't supported; stopping sends SIGTERM and waits the CLI's default time.")
+                note(key: key, "\(key) isn't supported; stopping sends SIGTERM and waits the CLI's default time.")
             case "pull_policy":
                 let policy = try string(v, path) ?? "missing"
                 if policy != "missing", policy != "if_not_present" {
-                    note("pull_policy", "pull_policy: \(policy) isn't supported; `container run` pulls the image only when it's missing.")
+                    note(key: "pull_policy", "pull_policy: \(policy) isn't supported; `container run` pulls the image only when it's missing.")
                 }
             case "devices", "device_cgroup_rules", "gpus":
                 warn("Devices", "Device access (\(key)) isn't supported by apple/container.")
             case "secrets", "configs":
                 warn(key == "secrets" ? "Secrets" : "Configs", "\(key) aren't supported; mount the files with volumes instead.")
             case "extends":
-                warn("extends", "extends isn't supported; copy the base service's settings or use YAML anchors.")
+                warn(key: "extends", "extends isn't supported; copy the base service's settings or use YAML anchors.")
             case "scale":
                 if (v.int ?? 1) > 1 { warn("Replicas", "Only one container per service is run (scale: \(v.scalarText ?? "")).") }
             case "volumes_from":
-                warn("volumes_from", "volumes_from isn't supported; declare the shared volumes on each service.")
+                warn(key: "volumes_from", "volumes_from isn't supported; declare the shared volumes on each service.")
             case "dns_opt":
-                note("dns_opt", "DNS options aren't passed to the container.")
+                note(key: "dns_opt", "DNS options aren't passed to the container.")
             case "sysctls", "security_opt", "pid", "ipc", "uts", "userns_mode", "cgroup", "cgroup_parent", "oom_kill_disable",
                  "oom_score_adj", "runtime", "isolation", "storage_opt", "blkio_config", "cpu_shares", "cpu_quota",
                  "cpu_period", "cpuset", "cpu_rt_runtime", "cpu_rt_period", "cpu_percent", "pids_limit", "mac_address",
                  "group_add", "credential_spec", "post_start", "pre_stop", "domainname", "use_api_socket", "label_file":
-                warn(key, "\(key) isn't supported by apple/container; ignored.")
+                warn(key: key, "\(key) isn't supported by apple/container; ignored.")
             case "annotations", "attach", "develop", "provider", "models":
                 break
             default:
@@ -322,7 +330,7 @@ private struct Context {
 
         if s.memoryBytes == nil { s.memoryBytes = memoryFromDeploy }
         guard s.image != nil || s.build != nil else {
-            throw ComposeError.invalid(path: base, message: "the service needs an “image” (or a “build”)")
+            throw ComposeError.invalid(at: base, "the service needs an “image” (or a “build”)")
         }
         s.environment = try mergeEnvironment(envFiles: envFiles, environment: environment, service: name, notes: &s.warnings)
         return s
@@ -371,7 +379,7 @@ private struct Context {
                 envFile.path, base: file.workingDirectory.path, home: NSHomeDirectory()))
             guard let text = try? String(contentsOf: url, encoding: .utf8) else {
                 if envFile.required {
-                    throw ComposeError.unreadableFile(path: url.path, detail: "env_file of service \(service) doesn't exist")
+                    throw ComposeError.unreadableFile(path: url.path, detail: String(localized: "env_file of service \(service) doesn't exist", bundle: .main))
                 }
                 continue
             }
@@ -389,14 +397,14 @@ private struct Context {
             if let text = item.scalarText { return (text, true) }
             let map = try mapping(item, "\(path)[\(index)]")
             guard let file = try map["path"].flatMap({ try string($0, "\(path)[\(index)].path") }) else {
-                throw ComposeError.invalid(path: "\(path)[\(index)]", message: "missing “path”")
+                throw ComposeError.invalid(at: "\(path)[\(index)]", "missing “path”")
             }
             return (file, map["required"]?.bool ?? true)
         }
     }
 
     func serviceNetworks(
-        _ value: YAMLValue, _ path: String, warn: (String, String) -> Void
+        _ value: YAMLValue, _ path: String, warn: (LocalizedStringResource, LocalizedStringResource) -> Void
     ) throws -> [ComposeService.Network] {
         if case .sequence = value {
             return try stringList(value, path).map { .init(name: $0, aliases: [], ipv4Address: nil) }
@@ -433,7 +441,7 @@ private struct Context {
             if let single = entry.value.int { return "\(entry.key)=\(single)" }
             let map = try mapping(entry.value, "\(path).\(entry.key)")
             guard let soft = map["soft"]?.int, let hard = map["hard"]?.int else {
-                throw ComposeError.invalid(path: "\(path).\(entry.key)", message: "expected a number or soft/hard numbers")
+                throw ComposeError.invalid(at: "\(path).\(entry.key)", "expected a number or soft/hard numbers")
             }
             return "\(entry.key)=\(soft):\(hard)"
         }
@@ -452,7 +460,7 @@ private struct Context {
             // "host=1.2.3.4" or "host:1.2.3.4" (an IPv6 address contains colons, so split at the first).
             let separator = item.firstIndex(of: "=") ?? item.firstIndex(of: ":")
             guard let separator else {
-                throw ComposeError.invalid(path: "\(path)[\(index)]", message: "expected “host:address”, found “\(item)”")
+                throw ComposeError.invalid(at: "\(path)[\(index)]", "expected “host:address”, found “\(item)”")
             }
             var address = String(item[item.index(after: separator)...])
             if address.hasPrefix("["), address.hasSuffix("]") { address = String(address.dropFirst().dropLast()) }
@@ -465,7 +473,7 @@ private struct Context {
     func port(_ value: YAMLValue, _ path: String) throws -> ComposePort {
         if let map = value.mapping {
             guard let target = map["target"]?.scalarText else {
-                throw ComposeError.invalid(path: path, message: "a port needs a “target”")
+                throw ComposeError.invalid(at: path, "a port needs a “target”")
             }
             let published = map["published"]?.scalarText.flatMap { $0.isEmpty ? nil : $0 }
             let port = ComposePort(
@@ -475,7 +483,7 @@ private struct Context {
             return port
         }
         guard let text = value.scalarText else {
-            throw ComposeError.invalid(path: path, message: "expected “[host:]port[:container]” or a mapping, found a \(value.kind)")
+            throw ComposeError.invalid(at: path, "expected “[host:]port[:container]” or a mapping, found \(value.kindPhrase)")
         }
         var body = text
         var proto = "tcp"
@@ -501,7 +509,7 @@ private struct Context {
         case (2, _?):
             port = ComposePort(hostIP: hostIP, published: parts[0].isEmpty ? nil : parts[0], target: parts[1], proto: proto)
         default:
-            throw ComposeError.invalid(path: path, message: "can't read the port “\(text)”")
+            throw ComposeError.invalid(at: path, "can't read the port “\(text)”")
         }
         try validate(port, path)
         return port
@@ -510,34 +518,34 @@ private struct Context {
     func validate(_ port: ComposePort, _ path: String) throws {
         let range = /[0-9]{1,5}(-[0-9]{1,5})?/
         guard port.target.wholeMatch(of: range) != nil, port.published.map({ $0.wholeMatch(of: range) != nil }) ?? true else {
-            throw ComposeError.invalid(path: path, message: "ports must be numbers or ranges like 8000-8010")
+            throw ComposeError.invalid(at: path, "ports must be numbers or ranges like 8000-8010")
         }
         guard ["tcp", "udp"].contains(port.proto.lowercased()) else {
-            throw ComposeError.invalid(path: path, message: "protocol “\(port.proto)” isn't supported (tcp or udp)")
+            throw ComposeError.invalid(at: path, "protocol “\(port.proto)” isn't supported (tcp or udp)")
         }
     }
 
     func mount(_ value: YAMLValue, _ path: String) throws -> ComposeMount {
         if let map = value.mapping {
             guard let target = try map["target"].flatMap({ try string($0, "\(path).target") }) else {
-                throw ComposeError.invalid(path: path, message: "a volume needs a “target”")
+                throw ComposeError.invalid(at: path, "a volume needs a “target”")
             }
             let source = try map["source"].flatMap { try string($0, "\(path).source") }
             let readOnly = map["read_only"]?.bool ?? false
             switch try map["type"].flatMap({ try string($0, "\(path).type") }) ?? (source.map(Self.isHostPath) == true ? "bind" : "volume") {
             case "bind":
-                guard let source else { throw ComposeError.invalid(path: path, message: "a bind mount needs a “source”") }
+                guard let source else { throw ComposeError.invalid(at: path, "a bind mount needs a “source”") }
                 return ComposeMount(kind: .bind, source: source, target: target, readOnly: readOnly)
             case "volume":
                 return ComposeMount(kind: .volume, source: source, target: target, readOnly: readOnly)
             case "tmpfs":
                 return ComposeMount(kind: .tmpfs, source: nil, target: target)
             case let other:
-                throw ComposeError.invalid(path: "\(path).type", message: "volume type “\(other)” isn't supported (bind, volume or tmpfs)")
+                throw ComposeError.invalid(at: "\(path).type", "volume type “\(other)” isn't supported (bind, volume or tmpfs)")
             }
         }
         guard let text = value.scalarText, !text.isEmpty else {
-            throw ComposeError.invalid(path: path, message: "expected “source:target[:ro]” or a mapping, found a \(value.kind)")
+            throw ComposeError.invalid(at: path, "expected “source:target[:ro]” or a mapping, found \(value.kindPhrase)")
         }
         let parts = text.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
         switch parts.count {
@@ -548,7 +556,7 @@ private struct Context {
             let kind: ComposeMount.Kind = Self.isHostPath(parts[0]) ? .bind : .volume
             return ComposeMount(kind: kind, source: parts[0], target: parts[1], readOnly: options.contains("ro"))
         default:
-            throw ComposeError.invalid(path: path, message: "can't read the volume “\(text)”")
+            throw ComposeError.invalid(at: path, "can't read the volume “\(text)”")
         }
     }
 
@@ -566,21 +574,21 @@ private struct Context {
             let base = "services.\(service.name)"
             for dependency in service.dependsOn where !names.contains(dependency.service) {
                 if dependency.required {
-                    throw ComposeError.invalid(path: "\(base).depends_on", message: "depends on undefined service “\(dependency.service)”")
+                    throw ComposeError.invalid(at: "\(base).depends_on", "depends on undefined service “\(dependency.service)”")
                 }
             }
             for link in service.links where !names.contains(link.name) {
-                throw ComposeError.invalid(path: "\(base).links", message: "links to undefined service “\(link.name)”")
+                throw ComposeError.invalid(at: "\(base).links", "links to undefined service “\(link.name)”")
             }
             for mount in service.mounts where mount.kind == .volume {
                 if let source = mount.source, !volumes.contains(source) {
                     throw ComposeError.invalid(
-                        path: "\(base).volumes", message: "uses volume “\(source)”, which isn't declared under the top-level “volumes:”")
+                        at: "\(base).volumes", "uses volume “\(source)”, which isn't declared under the top-level “volumes:”")
                 }
             }
             for network in service.networks ?? [] where network.name != "default" && !networks.contains(network.name) {
                 throw ComposeError.invalid(
-                    path: "\(base).networks", message: "uses network “\(network.name)”, which isn't declared under the top-level “networks:”")
+                    at: "\(base).networks", "uses network “\(network.name)”, which isn't declared under the top-level “networks:”")
             }
         }
     }
@@ -590,32 +598,38 @@ private struct Context {
     func string(_ value: YAMLValue, _ path: String) throws -> String? {
         if value.isNull { return nil }
         guard let text = value.scalarText else {
-            throw ComposeError.invalid(path: path, message: "expected a string, found a \(value.kind)")
+            throw ComposeError.invalid(at: path, "expected a string, found \(value.kindPhrase)")
         }
         return text
     }
 
     func bool(_ value: YAMLValue, _ path: String) throws -> Bool {
         if value.isNull { return false }
-        guard let flag = value.bool else { throw ComposeError.invalid(path: path, message: "expected true or false, found “\(value.scalarText ?? value.kind)”") }
+        guard let flag = value.bool else {
+            if let text = value.scalarText { throw ComposeError.invalid(at: path, "expected true or false, found “\(text)”") }
+            throw ComposeError.invalid(at: path, "expected true or false, found \(value.kindPhrase)")
+        }
         return flag
     }
 
     func number(_ value: YAMLValue, _ path: String) throws -> Double? {
         if value.isNull { return nil }
-        guard let number = value.double else { throw ComposeError.invalid(path: path, message: "expected a number, found “\(value.scalarText ?? value.kind)”") }
+        guard let number = value.double else {
+            if let text = value.scalarText { throw ComposeError.invalid(at: path, "expected a number, found “\(text)”") }
+            throw ComposeError.invalid(at: path, "expected a number, found \(value.kindPhrase)")
+        }
         return number
     }
 
     func mapping(_ value: YAMLValue, _ path: String) throws -> YAMLMapping {
         if value.isNull { return YAMLMapping() }
-        guard let map = value.mapping else { throw ComposeError.invalid(path: path, message: "expected a mapping, found a \(value.kind)") }
+        guard let map = value.mapping else { throw ComposeError.invalid(at: path, "expected a mapping, found \(value.kindPhrase)") }
         return map
     }
 
     func list(_ value: YAMLValue, _ path: String) throws -> [YAMLValue] {
         if value.isNull { return [] }
-        guard let items = value.sequence else { throw ComposeError.invalid(path: path, message: "expected a list, found a \(value.kind)") }
+        guard let items = value.sequence else { throw ComposeError.invalid(at: path, "expected a list, found \(value.kindPhrase)") }
         return items
     }
 
@@ -624,7 +638,7 @@ private struct Context {
         if let single = value.scalarText { return [single] }
         return try list(value, path).enumerated().map { index, item in
             guard let text = item.scalarText else {
-                throw ComposeError.invalid(path: "\(path)[\(index)]", message: "expected a string, found a \(item.kind)")
+                throw ComposeError.invalid(at: "\(path)[\(index)]", "expected a string, found \(item.kindPhrase)")
             }
             return text
         }
@@ -641,8 +655,8 @@ private struct Context {
     func keyValues(_ value: YAMLValue, _ path: String) throws -> [(key: String, value: String?)] {
         if let map = value.mapping {
             return try map.entries.map { entry in
-                if case .sequence = entry.value { throw ComposeError.invalid(path: "\(path).\(entry.key)", message: "expected a string, found a list") }
-                if case .mapping = entry.value { throw ComposeError.invalid(path: "\(path).\(entry.key)", message: "expected a string, found a mapping") }
+                if case .sequence = entry.value { throw ComposeError.invalid(at: "\(path).\(entry.key)", "expected a string, found \(entry.value.kindPhrase)") }
+                if case .mapping = entry.value { throw ComposeError.invalid(at: "\(path).\(entry.key)", "expected a string, found \(entry.value.kindPhrase)") }
                 return (entry.key, entry.value.scalarText)
             }
         }
@@ -663,8 +677,11 @@ private struct Context {
     func byteSize(_ value: YAMLValue, _ path: String) throws -> Int64? {
         if value.isNull { return nil }
         if case .int(let bytes) = value { return Int64(bytes) }
-        guard let text = value.scalarText, let bytes = parseByteSize(text) else {
-            throw ComposeError.invalid(path: path, message: "expected a size like 512m or 1g, found “\(value.scalarText ?? value.kind)”")
+        guard let text = value.scalarText else {
+            throw ComposeError.invalid(at: path, "expected a size like 512m or 1g, found \(value.kindPhrase)")
+        }
+        guard let bytes = parseByteSize(text) else {
+            throw ComposeError.invalid(at: path, "expected a size like 512m or 1g, found “\(text)”")
         }
         return bytes
     }

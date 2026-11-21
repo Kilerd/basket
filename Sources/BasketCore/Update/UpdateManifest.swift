@@ -63,37 +63,39 @@ public struct UpdateManifest: Codable, Equatable, Sendable {
     /// Decodes `latest.json`; every field is required and must be a string (unknown keys are
     /// ignored so the format can grow).
     public static func decode(_ data: Data) throws -> UpdateManifest {
-        guard data.count <= UpdatePolicy.maxManifestBytes else { throw UpdateError.invalidManifest("it is too large") }
+        guard data.count <= UpdatePolicy.maxManifestBytes else { throw UpdateError.invalidManifest(String(localized: "it is too large", bundle: .main)) }
         do {
             return try JSONDecoder().decode(UpdateManifest.self, from: data)
         } catch DecodingError.keyNotFound(let key, _) {
-            throw UpdateError.invalidManifest("“\(key.stringValue)” is missing")
+            throw UpdateError.invalidManifest(String(localized: "“\(key.stringValue)” is missing", bundle: .main))
         } catch DecodingError.valueNotFound(_, let context), DecodingError.typeMismatch(_, let context) {
-            let key = context.codingPath.last?.stringValue ?? "a value"
-            throw UpdateError.invalidManifest("“\(key)” isn't a string")
+            guard let key = context.codingPath.last?.stringValue else {
+                throw UpdateError.invalidManifest(String(localized: "a value isn't a string", bundle: .main))
+            }
+            throw UpdateError.invalidManifest(String(localized: "“\(key)” isn't a string", bundle: .main))
         } catch {
-            throw UpdateError.invalidManifest("it isn't valid JSON")
+            throw UpdateError.invalidManifest(String(localized: "it isn't valid JSON", bundle: .main))
         }
     }
 
     /// Checks every field against the format and `policy`; the result is safe to show and download.
     public func validated(policy: UpdatePolicy) throws -> UpdateOffer {
         guard let version = SemanticVersion(version) else {
-            throw UpdateError.invalidManifest("“version” \(quoted(version)) isn't X.Y.Z")
+            throw UpdateError.invalidManifest(String(localized: "“version” \(quoted(version)) isn't X.Y.Z", bundle: .main))
         }
         guard let date = Self.parseDate(pubDate) else {
-            throw UpdateError.invalidManifest("“pub_date” \(quoted(pubDate)) isn't an ISO 8601 date")
+            throw UpdateError.invalidManifest(String(localized: "“pub_date” \(quoted(pubDate)) isn't an ISO 8601 date", bundle: .main))
         }
         guard let minimum = SystemVersion(minimumSystemVersion) else {
-            throw UpdateError.invalidManifest("“minimum_system_version” \(quoted(minimumSystemVersion)) isn't a macOS version")
+            throw UpdateError.invalidManifest(String(localized: "“minimum_system_version” \(quoted(minimumSystemVersion)) isn't a macOS version", bundle: .main))
         }
         let url = try Self.downloadURL(url, policy: policy)
         let sha = sha256.lowercased()
         guard sha.count == 64, sha.allSatisfy({ $0.isHexDigit && $0.isASCII }) else {
-            throw UpdateError.invalidManifest("“sha256” isn't 64 hexadecimal characters")
+            throw UpdateError.invalidManifest(String(localized: "“sha256” isn't 64 hexadecimal characters", bundle: .main))
         }
         guard let signature = Data(base64Encoded: signature), signature.count == 64 else {
-            throw UpdateError.invalidManifest("“signature” isn't a base64 Ed25519 signature")
+            throw UpdateError.invalidManifest(String(localized: "“signature” isn't a base64 Ed25519 signature", bundle: .main))
         }
         return UpdateOffer(version: version, date: date, notes: notes, minimumSystemVersion: minimum,
                            url: url, sha256: sha, signature: signature)
@@ -101,25 +103,28 @@ public struct UpdateManifest: Codable, Equatable, Sendable {
 
     static func downloadURL(_ string: String, policy: UpdatePolicy) throws -> URL {
         guard let prefix = policy.downloadPrefixes.first(where: { !$0.isEmpty && string.hasPrefix($0) }) else {
-            throw UpdateError.invalidManifest("“url” isn't a Basket release download (\(policy.downloadPrefixes.first ?? "none allowed"))")
+            guard let allowed = policy.downloadPrefixes.first else {
+                throw UpdateError.invalidManifest(String(localized: "“url” isn't a Basket release download (none are allowed)", bundle: .main))
+            }
+            throw UpdateError.invalidManifest(String(localized: "“url” isn't a Basket release download (\(allowed))", bundle: .main))
         }
         guard let url = URL(string: string), let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               url.absoluteString == string
-        else { throw UpdateError.invalidManifest("“url” isn't a valid URL") }
+        else { throw UpdateError.invalidManifest(String(localized: "“url” isn't a valid URL", bundle: .main)) }
         let rest = string.dropFirst(prefix.count)
         let segments = rest.split(separator: "/", omittingEmptySubsequences: false)
         guard components.query == nil, components.fragment == nil, components.user == nil, components.password == nil,
               !rest.contains("\\"), !rest.contains("%"),
               !segments.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." }),
               string.hasSuffix(".zip")
-        else { throw UpdateError.invalidManifest("“url” must name a .zip directly under \(prefix)") }
+        else { throw UpdateError.invalidManifest(String(localized: "“url” must name a .zip directly under \(prefix)", bundle: .main)) }
         // Only a test feed (DEBUG builds) can allow file:// — production only allows GitHub over https.
         if prefix.hasPrefix("file://") {
-            guard url.isFileURL else { throw UpdateError.invalidManifest("“url” must be a file URL") }
+            guard url.isFileURL else { throw UpdateError.invalidManifest(String(localized: "“url” must be a file URL", bundle: .main)) }
         } else {
             // The production prefix pins the host; a DEBUG https test feed may use a port.
             guard components.scheme == "https", components.host != nil else {
-                throw UpdateError.invalidManifest("“url” must use https")
+                throw UpdateError.invalidManifest(String(localized: "“url” must use https", bundle: .main))
             }
         }
         return url

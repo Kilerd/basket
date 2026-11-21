@@ -45,31 +45,31 @@ extension UpdateError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidManifest(let reason):
-            "The update information from GitHub is invalid: \(reason)."
+            String(localized: "The update information from GitHub is invalid: \(reason).", bundle: .main)
         case .network(let reason):
-            "Couldn't reach the update server: \(reason)."
+            String(localized: "Couldn't reach the update server: \(reason).", bundle: .main)
         case .tooLarge(let bytes):
-            "The update is unexpectedly large (\(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))), so Basket stopped downloading it."
+            String(localized: "The update is unexpectedly large (\(bytes.formatted(.byteCount(style: .file)))), so Basket stopped downloading it.", bundle: .main)
         case .checksumMismatch:
-            "The downloaded update doesn't match its published checksum. It may have been altered, so it was deleted."
+            String(localized: "The downloaded update doesn't match its published checksum. It may have been altered, so it was deleted.", bundle: .main)
         case .badSignature:
-            "The downloaded update isn't signed by Basket's maintainer. It may have been altered, so it was deleted."
+            String(localized: "The downloaded update isn't signed by Basket's maintainer. It may have been altered, so it was deleted.", bundle: .main)
         case .invalidPublicKey:
-            "Basket's update key is invalid, so updates can't be verified."
+            String(localized: "Basket's update key is invalid, so updates can't be verified.", bundle: .main)
         case .invalidArchive(let reason):
-            "The downloaded update is damaged: \(reason)."
+            String(localized: "The downloaded update is damaged: \(reason).", bundle: .main)
         case .bundleMismatch(let reason):
-            "The downloaded app isn't the announced Basket version (\(reason)), so it was deleted."
+            String(localized: "The downloaded app isn't the announced Basket version (\(reason)), so it was deleted.", bundle: .main)
         case .codeSignature(let reason):
-            "The downloaded app doesn't carry the notarized Developer ID signature of Basket's developer (\(reason)), so it was deleted."
+            String(localized: "The downloaded app doesn't carry the notarized Developer ID signature of Basket's developer (\(reason)), so it was deleted.", bundle: .main)
         case .notNewer(let current, let offered):
-            "Basket \(offered) isn't newer than the installed \(current)."
+            String(localized: "Basket \(offered) isn't newer than the installed \(current).", bundle: .main)
         case .requiresNewerSystem(let version):
-            "This update requires macOS \(version) or later."
+            String(localized: "This update requires macOS \(version) or later.", bundle: .main)
         case .unavailable(let reason):
             reason
         case .installFailed(let reason):
-            "The update couldn't be installed: \(reason). Basket was not changed."
+            String(localized: "The update couldn't be installed: \(reason). Basket was not changed.", bundle: .main)
         }
     }
 }

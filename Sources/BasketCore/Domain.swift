@@ -516,15 +516,17 @@ public enum BackendError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .cliNotFound(let searched):
-            "The `container` CLI was not found (looked in \(searched.joined(separator: ", "))). Install it with `brew install container`."
+            String(localized: "The `container` CLI was not found (looked in \(searched.joined(separator: ", "))). Install it with `brew install container`.", bundle: .main)
         case .systemNotRunning:
-            "The container system service is not running."
+            String(localized: "The container system service is not running.", bundle: .main)
         case .commandFailed(let command, let code, let stderr):
-            "`\(command)` failed (exit \(code)): \(stderr.trimmingCharacters(in: .whitespacesAndNewlines))"
+            String(localized: "`\(command)` failed (exit \(Int(code))): \(stderr.trimmingCharacters(in: .whitespacesAndNewlines))", bundle: .main,
+                   comment: "1: command line, 2: exit status, 3: the command's error output")
         case .decodingFailed(let command, let detail):
-            "Could not read the output of `\(command)`: \(detail)"
+            String(localized: "Could not read the output of `\(command)`: \(detail)", bundle: .main)
         case .unsupported(let what):
-            "\(what) is not supported by this backend."
+            String(localized: "\(what) is not supported by this backend.", bundle: .main,
+                   comment: "The argument is an operation, e.g. “Starting a machine”")
         }
     }
 }
@@ -614,19 +616,19 @@ public protocol ContainerBackend: Sendable {
 
 extension ContainerBackend {
     public func startMachine(_ id: String) async throws {
-        throw BackendError.unsupported("Starting a machine")
+        throw BackendError.unsupported(String(localized: "Starting a machine", bundle: .main))
     }
 
     public func systemProperties() async throws -> SystemProperties {
-        throw BackendError.unsupported("System properties")
+        throw BackendError.unsupported(String(localized: "Reading system properties", bundle: .main))
     }
 
     public func saveImage(_ reference: String, platform: String?, to archive: URL) async throws {
-        throw BackendError.unsupported("Saving an image")
+        throw BackendError.unsupported(String(localized: "Saving an image", bundle: .main))
     }
 
     public func loadImage(from archive: URL) async throws -> [String] {
-        throw BackendError.unsupported("Loading an image")
+        throw BackendError.unsupported(String(localized: "Loading an image", bundle: .main))
     }
 
     public func followLogBatches(_ id: String) -> AsyncThrowingStream<LogBatch, Error> {
@@ -634,7 +636,7 @@ extension ContainerBackend {
     }
 
     public func exec(_ id: String, command: [String], user: String?) async throws -> String {
-        throw BackendError.unsupported("Running a command in a container")
+        throw BackendError.unsupported(String(localized: "Running a command in a container", bundle: .main))
     }
 
     /// Runs `command` as the container's own user.

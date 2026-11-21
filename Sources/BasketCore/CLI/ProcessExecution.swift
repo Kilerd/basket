@@ -258,7 +258,9 @@ final class ProcessExecution: @unchecked Sendable {
 /// `splitMarker`, so memory stays bounded.
 struct LineSplitter: Sendable {
     static let defaultMaxLineBytes = 1 << 20
-    static let splitMarker = " […line longer than 1 MiB, continued on the next line]"
+    static let splitMarker = " " + String(
+        localized: "[…line longer than \(Int64(defaultMaxLineBytes).formatted(.byteCount(style: .memory))), continued on the next line]",
+        bundle: .main, comment: "Appended to a log line that was cut; the argument is a size such as “1 MB”")
 
     let maxLineBytes: Int
     private var buffer: [UInt8] = []

@@ -105,11 +105,12 @@ public struct CLIRunner: Sendable {
         try Task.checkCancellation()
         let (stdout, stderr, timedOut) = output.snapshot()
         if timedOut, completion.wasTerminated {
-            let seconds = timeout.map { Double($0.components.seconds) + Double($0.components.attoseconds) / 1e18 } ?? 0
+            let limit = (timeout ?? .zero).formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated))
             let partial = String(decoding: stderr, as: UTF8.self)
             throw BackendError.commandFailed(
                 command: commandLine(arguments), exitCode: 124,
-                stderr: "Timed out after \(seconds.formatted()) s. \(partial)")
+                stderr: String(localized: "Timed out after \(limit). \(partial)", bundle: .main,
+                               comment: "1: a duration such as “15 min”, 2: what the command printed so far"))
         }
         return CLIResult(exitCode: completion.exitCode, stdout: stdout, stderr: stderr)
     }
@@ -119,7 +120,8 @@ public struct CLIRunner: Sendable {
 
     /// The last line of a `lines(_:)` stream whose consumer fell so far behind that lines were dropped.
     public static func droppedLinesNotice(_ count: Int) -> String {
-        "[Basket dropped \(count) earlier line\(count == 1 ? "" : "s"): the reader fell behind]"
+        String(localized: "[Basket dropped \(count) earlier lines: the reader fell behind]", bundle: .main,
+               comment: "Last line of a log that was too fast to show completely")
     }
 
     /// Stops every child process Basket started that is still running (when the app quits: children

@@ -9,16 +9,30 @@ public struct ComposeWarning: Identifiable, Sendable, Hashable {
     public var severity: Severity
     /// nil = the whole project.
     public var service: String?
-    /// Short topic ("Restart policy", "Healthcheck").
+    /// Short topic in English ("Restart policy", "Healthcheck"): identifies the kind of warning.
     public var topic: String
+    /// The topic in the user's language, for display.
+    public var title: String
+    /// In the user's language.
     public var message: String
     public var id: String { "\(service ?? "")|\(topic)|\(message)" }
 
-    public init(_ severity: Severity, service: String? = nil, _ topic: String, _ message: String) {
+    /// `topic` and `message` are localized (String Catalog keys in English).
+    public init(_ severity: Severity, service: String? = nil, _ topic: LocalizedStringResource, _ message: LocalizedStringResource) {
         self.severity = severity
         self.service = service
-        self.topic = topic
-        self.message = message
+        self.topic = topic.key
+        self.title = String(localized: topic)
+        self.message = String(localized: message)
+    }
+
+    /// A warning whose topic is a Compose key ("tmpfs", "network_mode"): shown as is, never translated.
+    public init(_ severity: Severity, service: String? = nil, key: String, _ message: LocalizedStringResource) {
+        self.severity = severity
+        self.service = service
+        self.topic = key
+        self.title = key
+        self.message = String(localized: message)
     }
 }
 
@@ -31,14 +45,26 @@ public enum ComposeError: Error, LocalizedError, Sendable, Equatable {
     case unreadableFile(path: String, detail: String)
     case dependencyCycle([String])
 
+    /// `.invalid` with a localized message (an English String Catalog key).
+    static func invalid(at path: String, _ message: LocalizedStringResource) -> ComposeError {
+        .invalid(path: path, message: String(localized: message))
+    }
+
     public var errorDescription: String? {
         switch self {
-        case .yaml(let error): "Invalid YAML at \(error.localizedDescription)"
+        case .yaml(let error):
+            String(localized: "Invalid YAML at \(error.localizedDescription)", bundle: .main,
+                   comment: "The argument is “line 3, column 5: <problem>”")
         case .invalid(let path, let message): "\(path): \(message)"
         case .missingVariable(let name, let message, let path):
-            "\(path): required variable \(name) is not set" + (message.isEmpty ? "" : " (\(message))")
-        case .unreadableFile(let path, let detail): "Can't read \(path): \(detail)"
-        case .dependencyCycle(let services): "depends_on forms a cycle: \(services.joined(separator: " → "))"
+            message.isEmpty
+                ? String(localized: "\(path): required variable \(name) is not set", bundle: .main,
+                         comment: "1: location in the compose file (services.web.image), 2: variable name")
+                : String(localized: "\(path): required variable \(name) is not set (\(message))", bundle: .main,
+                         comment: "1: location in the compose file, 2: variable name, 3: the file's own message")
+        case .unreadableFile(let path, let detail): String(localized: "Can't read \(path): \(detail)", bundle: .main)
+        case .dependencyCycle(let services):
+            String(localized: "depends_on forms a cycle: \(services.joined(separator: " → "))", bundle: .main)
         }
     }
 }

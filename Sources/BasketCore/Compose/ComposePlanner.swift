@@ -142,11 +142,11 @@ public enum ComposePlanner {
         let skipped = file.services.map(\.name).filter { !active.contains($0) }
         if !skipped.isEmpty {
             warnings.append(ComposeWarning(
-                .info, "Profiles", "Not started (profile not active): \(skipped.joined(separator: ", ")). Set COMPOSE_PROFILES to include them."))
+                .info, "Profiles", "Not started (profile not active): \(skipped.localizedList). Set COMPOSE_PROFILES to include them."))
         }
         let ordered = try startOrder(file.services.filter { active.contains($0.name) })
         if ordered.isEmpty {
-            throw ComposeError.invalid(path: "services", message: "every service belongs to an inactive profile")
+            throw ComposeError.invalid(at: "services", "every service belongs to an inactive profile")
         }
 
         // Networks the active services use: the default one first, then in declaration order.
@@ -198,8 +198,9 @@ public enum ComposePlanner {
 
         for service in ordered {
             var notes: [ComposeWarning] = service.warnings
-            func warn(_ topic: String, _ message: String) { notes.append(ComposeWarning(.warning, service: service.name, topic, message)) }
-            func note(_ topic: String, _ message: String) { notes.append(ComposeWarning(.info, service: service.name, topic, message)) }
+            func warn(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { notes.append(ComposeWarning(.warning, service: service.name, topic, message)) }
+            func note(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { notes.append(ComposeWarning(.info, service: service.name, topic, message)) }
+            func warn(key: String, _ message: LocalizedStringResource) { notes.append(ComposeWarning(.warning, service: service.name, key: key, message)) }
 
             let containerName = service.containerName ?? "\(project)-\(service.name)-1"
             let image: String
@@ -329,7 +330,7 @@ public enum ComposePlanner {
                 }
             }
             for dependency in dependencies where dependency.condition != "service_started" {
-                warn("depends_on", "\(dependency.service) is started first, but “\(dependency.condition)” can't be checked (no healthchecks); \(service.name) starts as soon as \(dependency.service) has started.")
+                warn(key: "depends_on", "\(dependency.service) is started first, but “\(dependency.condition)” can't be checked (no healthchecks); \(service.name) starts as soon as \(dependency.service) has started.")
             }
 
             warnings += notes
@@ -341,14 +342,16 @@ public enum ComposePlanner {
         resources.services = services.count
 
         if !defaultMemoryServices.isEmpty {
-            let one = defaultMemoryServices.count == 1
-            let who = defaultMemoryServices.count == ordered.count && !one
-                ? "No service sets a memory limit"
-                : "\(defaultMemoryServices.joined(separator: ", ")) \(one ? "sets" : "set") no memory limit"
-            warnings.insert(ComposeWarning(
-                .info, "Memory",
-                "\(who). Each container is its own VM, so \(one ? "it gets" : "they get") \(options.defaultMemory)\(one ? "" : " each"); set mem_limit to change it."),
-                at: 0)
+            let memory = options.defaultMemory
+            let message: LocalizedStringResource
+            if defaultMemoryServices.count == 1 {
+                message = "\(defaultMemoryServices[0]) sets no memory limit. Each container is its own VM, so it gets \(memory); set mem_limit to change it."
+            } else if defaultMemoryServices.count == ordered.count {
+                message = "No service sets a memory limit. Each container is its own VM, so they get \(memory) each; set mem_limit to change it."
+            } else {
+                message = "\(defaultMemoryServices.localizedList) set no memory limit. Each container is its own VM, so they get \(memory) each; set mem_limit to change it."
+            }
+            warnings.insert(ComposeWarning(.info, "Memory", message), at: 0)
         }
         warnings.insert(ComposeWarning(
             .info, "Service names",
@@ -371,7 +374,7 @@ public enum ComposePlanner {
             guard !normalized.isEmpty else { continue }
             return normalized
         }
-        throw ComposeError.invalid(path: "name", message: "can't derive a project name; set “name:” in the file")
+        throw ComposeError.invalid(at: "name", "can't derive a project name; set “name:” in the file")
     }
 
     public static func normalizeProjectName(_ name: String) -> String {
@@ -434,10 +437,10 @@ public enum ComposePlanner {
         guard let targets = bounds(port.target), let hosts = bounds(port.published ?? port.target),
               hosts.count == targets.count || hosts.count >= targets.count && targets.count == 1
         else {
-            throw ComposeError.invalid(path: "services.\(service).ports", message: "can't map \(port.published ?? "?") to \(port.target)")
+            throw ComposeError.invalid(at: "services.\(service).ports", "can't map \(port.published ?? "?") to \(port.target)")
         }
         guard targets.count <= 100 else {
-            throw ComposeError.invalid(path: "services.\(service).ports", message: "port range \(port.target) is larger than 100 ports")
+            throw ComposeError.invalid(at: "services.\(service).ports", "port range \(port.target) is larger than 100 ports")
         }
         let proto = port.proto.lowercased() == "udp" ? "/udp" : ""
         let ip = port.hostIP.map { $0.contains(":") ? "[\($0)]:" : "\($0):" } ?? ""

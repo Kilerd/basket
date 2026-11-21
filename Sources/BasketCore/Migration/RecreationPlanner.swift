@@ -46,11 +46,13 @@ public enum RecreationPlanner {
         var environment: [String] = []
 
         mutating func flag(_ name: String, _ value: String) { arguments += [name, value] }
-        mutating func warn(_ topic: String, _ message: String) { warnings.append(MigrationWarning(.warning, topic, message)) }
-        mutating func note(_ topic: String, _ message: String) { warnings.append(MigrationWarning(.info, topic, message)) }
+        mutating func warn(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { warnings.append(MigrationWarning(.warning, topic, message)) }
+        mutating func note(_ topic: LocalizedStringResource, _ message: LocalizedStringResource) { warnings.append(MigrationWarning(.info, topic, message)) }
+        /// Topic = a technical name shown as is ("tmpfs").
+        mutating func note(key: String, _ message: LocalizedStringResource) { warnings.append(MigrationWarning(.info, key: key, message)) }
     }
 
-    static func list(_ items: [String]) -> String { items.joined(separator: ", ") }
+    static func list(_ items: [String]) -> String { items.localizedList }
 
     // MARK: Sections
 
@@ -118,7 +120,12 @@ public enum RecreationPlanner {
             builder.flag("--env", variable)
         }
         if !bare.isEmpty {
-            builder.warn("Environment", "Docker lists \(bare.joined(separator: ", ")) without a value, which leaves \(bare.count == 1 ? "it" : "them") unset; \(bare.count == 1 ? "it is" : "they are") left out rather than passed as --env \(bare.count == 1 ? "NAME" : "NAMES"), which would copy \(bare.count == 1 ? "a value" : "values") from the environment `container run` is started in.")
+            // Separate sentences for one and several: the count itself isn't shown.
+            if bare.count == 1 {
+                builder.warn("Environment", "Docker lists \(bare[0]) without a value, which leaves it unset; it is left out rather than passed as --env NAME, which would copy a value from the environment `container run` is started in.")
+            } else {
+                builder.warn("Environment", "Docker lists \(list(bare)) without a value, which leaves them unset; they are left out rather than passed as --env NAMES, which would copy values from the environment `container run` is started in.")
+            }
         }
         let imageLabels = defaults?.labels ?? [:]
         for (key, value) in container.labels.sorted(by: { $0.key < $1.key }) where imageLabels[key] != value {
@@ -228,7 +235,7 @@ public enum RecreationPlanner {
             case .tmpfs:
                 builder.flag("--tmpfs", mount.destination)
                 if let options = mount.options {
-                    builder.note("tmpfs", "tmpfs options for \(mount.destination) (\(options)) aren't supported; Basket uses its defaults.")
+                    builder.note(key: "tmpfs", "tmpfs options for \(mount.destination) (\(options)) aren't supported; Basket uses its defaults.")
                 }
             case .other:
                 builder.warn("Mounts", "The mount at \(mount.destination) isn't a bind, volume or tmpfs mount and is left out.")
@@ -241,7 +248,11 @@ public enum RecreationPlanner {
             builder.warn("Volume data", "Anonymous volumes at \(list(anonymous)) aren't recreated; their data stays in OrbStack and the container starts with what the image has there.")
         }
         if !missing.isEmpty {
-            builder.warn("Bind mounts", "\(list(missing)) \(missing.count == 1 ? "doesn't" : "don't") exist on this Mac (\(missing.count == 1 ? "it may be a path" : "they may be paths") inside OrbStack's Linux machine), so \(missing.count == 1 ? "it is" : "they are") left out.")
+            if missing.count == 1 {
+                builder.warn("Bind mounts", "\(missing[0]) doesn't exist on this Mac (it may be a path inside OrbStack's Linux machine), so it is left out.")
+            } else {
+                builder.warn("Bind mounts", "\(list(missing)) don't exist on this Mac (they may be paths inside OrbStack's Linux machine), so they are left out.")
+            }
         }
         if !container.volumesFrom.isEmpty {
             builder.warn("Volumes", "--volumes-from \(list(container.volumesFrom)) isn't supported.")

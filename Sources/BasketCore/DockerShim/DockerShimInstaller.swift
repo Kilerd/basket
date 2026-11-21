@@ -41,13 +41,13 @@ public enum DockerShimError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .missingShimSource:
-            "The docker shim (basket-docker) wasn't found inside Basket.app."
+            String(localized: "The docker shim (basket-docker) wasn't found inside Basket.app.", bundle: .main)
         case .unsupportedShell(let shell):
-            "Basket can set up zsh, bash and fish; for \(shell), add ~/.basket/bin to PATH yourself."
+            String(localized: "Basket can set up zsh, bash and fish; for \(shell), add ~/.basket/bin to PATH yourself.", bundle: .main)
         case .unterminatedBlock(let file):
-            "\(file) has a “\(DockerShimInstaller.startMarker)” line without its end marker. Fix or remove it, then try again."
+            String(localized: "\(file) has a “\(DockerShimInstaller.startMarker)” line without its end marker. Fix or remove it, then try again.", bundle: .main)
         case .unreadableFile(let file):
-            "\(file) isn't a UTF-8 text file, so Basket won't edit it."
+            String(localized: "\(file) isn't a UTF-8 text file, so Basket won't edit it.", bundle: .main)
         }
     }
 }

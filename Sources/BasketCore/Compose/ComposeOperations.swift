@@ -29,26 +29,26 @@ public struct ComposeOperations: Sendable {
             if networks.contains(network.name) { continue }
             if network.external {
                 throw ComposeError.invalid(
-                    path: "networks.\(network.key)",
-                    message: "the external network \(network.name) doesn't exist; create it first (container network create \(network.name))")
+                    at: "networks.\(network.key)",
+                    "the external network \(network.name) doesn't exist; create it first (container network create \(network.name))")
             }
-            progress("Creating network \(network.name)")
+            progress(String(localized: "Creating network \(network.name)", bundle: .main))
             try await backend.createNetwork(name: network.name, subnet: network.subnet, labels: network.labels)
         }
         let volumes = Set(try await backend.listVolumes().map(\.name))
         for volume in plan.volumes where !volumes.contains(volume.name) {
             if volume.external {
                 throw ComposeError.invalid(
-                    path: "volumes.\(volume.key)",
-                    message: "the external volume \(volume.name) doesn't exist; create it first (container volume create \(volume.name))")
+                    at: "volumes.\(volume.key)",
+                    "the external volume \(volume.name) doesn't exist; create it first (container volume create \(volume.name))")
             }
-            progress("Creating volume \(volume.name)")
+            progress(String(localized: "Creating volume \(volume.name)", bundle: .main))
             try await backend.createVolume(name: volume.name, size: nil, labels: volume.labels)
         }
         let existing = Dictionary(try await backend.listContainers().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         for service in plan.services {
             for directory in service.bindDirectories {
-                progress("Creating directory \(directory)")
+                progress(String(localized: "Creating directory \(directory)", bundle: .main))
                 try createDirectory(directory)
             }
             let name = service.containerName
@@ -56,21 +56,26 @@ public struct ComposeOperations: Sendable {
                 guard ComposeProject.projectName(of: container) == plan.project else {
                     throw BackendError.commandFailed(
                         command: "container run --name \(name)", exitCode: 1,
-                        stderr: "a container named \(name) already exists and isn't part of project \(plan.project); rename or delete it")
+                        stderr: String(localized: "a container named \(name) already exists and isn't part of project \(plan.project); rename or delete it", bundle: .main))
                 }
                 if container.state == .running {
-                    progress("\(name) is already running")
+                    progress(String(localized: "\(name) is already running", bundle: .main))
                 } else {
-                    progress("Starting \(name)")
+                    progress(String(localized: "Starting \(name)", bundle: .main))
                     try await backend.startContainer(name)
                 }
                 continue
             }
-            progress("Creating and starting \(name) (\(service.spec.image), \(service.spec.memory ?? "default memory"))")
+            if let memory = service.spec.memory {
+                progress(String(localized: "Creating and starting \(name) (\(service.spec.image), \(memory))", bundle: .main,
+                                comment: "1: container name, 2: image, 3: memory limit such as 512M"))
+            } else {
+                progress(String(localized: "Creating and starting \(name) (\(service.spec.image), default memory)", bundle: .main))
+            }
             _ = try await backend.run(service.spec)
         }
         await refreshHosts(project: plan.project, progress: progress)
-        progress("Project \(plan.project) is up (\(plan.services.count) service\(plan.services.count == 1 ? "" : "s"))")
+        progress(String(localized: "Project \(plan.project) is up (\(plan.services.count) services)", bundle: .main))
     }
 
     /// Stops and deletes the project's containers and the networks it created; its volumes too when
@@ -82,28 +87,32 @@ public struct ComposeOperations: Sendable {
         let containers = try await members(of: project).filter { approved?.containers.contains($0.id) ?? true }
         let running = containers.filter { $0.state == .running }.map(\.id)
         if !running.isEmpty {
-            progress("Stopping \(running.joined(separator: ", "))")
+            progress(String(localized: "Stopping \(running.localizedList)", bundle: .main))
             try await backend.stopContainers(running)
         }
         if !containers.isEmpty {
-            progress("Deleting \(containers.map(\.id).joined(separator: ", "))")
+            progress(String(localized: "Deleting \(containers.map(\.id).localizedList)", bundle: .main))
             try await backend.deleteContainers(containers.map(\.id), force: true)
         }
         let networks = try await backend.listNetworks()
             .filter { !$0.isBuiltin && $0.labels[ComposeLabels.project] == project }.map(\.name)
             .filter { approved?.networks.contains($0) ?? true }
         if !networks.isEmpty {
-            progress("Deleting network\(networks.count == 1 ? "" : "s") \(networks.joined(separator: ", "))")
+            progress(networks.count == 1
+                ? String(localized: "Deleting network \(networks[0])", bundle: .main)
+                : String(localized: "Deleting networks \(networks.localizedList)", bundle: .main))
             try await backend.deleteNetworks(networks)
         }
         if removeVolumes {
             let volumes = try await projectVolumes(project).filter { approved?.volumes.contains($0) ?? true }
             if !volumes.isEmpty {
-                progress("Deleting volume\(volumes.count == 1 ? "" : "s") \(volumes.joined(separator: ", "))")
+                progress(volumes.count == 1
+                    ? String(localized: "Deleting volume \(volumes[0])", bundle: .main)
+                    : String(localized: "Deleting volumes \(volumes.localizedList)", bundle: .main))
                 try await backend.deleteVolumes(volumes)
             }
         }
-        progress("Project \(project) is down")
+        progress(String(localized: "Project \(project) is down", bundle: .main))
     }
 
     /// Volumes Basket created for `project` (by label).
@@ -119,7 +128,7 @@ public struct ComposeOperations: Sendable {
         let members = try await members(of: project)
         for container in ComposeProject(name: project, containers: members).startOrder
         where container.state != .running && only.map({ $0.contains(container.id) }) != false {
-            progress("Starting \(container.id)")
+            progress(String(localized: "Starting \(container.id)", bundle: .main))
             try await backend.startContainer(container.id)
         }
         await refreshHosts(project: project, progress: progress)
@@ -131,7 +140,7 @@ public struct ComposeOperations: Sendable {
         let running = ComposeProject(name: project, containers: members).startOrder.reversed()
             .filter { container in container.state == .running && only.map { $0.contains(container.id) } != false }
         guard !running.isEmpty else { return }
-        progress("Stopping \(running.map(\.id).joined(separator: ", "))")
+        progress(String(localized: "Stopping \(running.map(\.id).localizedList)", bundle: .main))
         try await backend.stopContainers(running.map(\.id))
     }
 
@@ -150,7 +159,7 @@ public struct ComposeOperations: Sendable {
             .filter { only?.contains($0) ?? true }
         let outcome = await MemoryReclaim.restart(ids, using: backend, onlyRunning: false, progress: progress)
         await refreshHosts(project: project, progress: progress)
-        progress(outcome.report?.title ?? "Project \(project) restarted (\(ids.count) service\(ids.count == 1 ? "" : "s"))")
+        progress(outcome.report?.title ?? String(localized: "Project \(project) restarted (\(ids.count) services)", bundle: .main))
         return outcome
     }
 
@@ -168,11 +177,11 @@ public struct ComposeOperations: Sendable {
                 _ = try await backend.exec(target.id, command: ComposeHosts.command(block: block), user: "0")
             } catch {
                 failed.append(target.id)
-                progress("Couldn't update /etc/hosts in \(target.id): \(Self.reason(error))")
+                progress(String(localized: "Couldn't update /etc/hosts in \(target.id): \(Self.reason(error))", bundle: .main))
             }
         }
         let updated = containers.filter { $0.state == .running }.count - failed.count
-        if updated > 0 { progress("Service names written to /etc/hosts in \(updated) container\(updated == 1 ? "" : "s")") }
+        if updated > 0 { progress(String(localized: "Service names written to /etc/hosts in \(updated) containers", bundle: .main)) }
         return failed
     }
 
@@ -183,7 +192,7 @@ public struct ComposeOperations: Sendable {
     private static func reason(_ error: Error) -> String {
         if case BackendError.commandFailed(_, _, let stderr) = error {
             let trimmed = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty { return "the command failed" }
+            if trimmed.isEmpty { return String(localized: "the command failed", bundle: .main) }
             return trimmed.split(whereSeparator: \.isNewline).last.map(String.init) ?? trimmed
         }
         return error.localizedDescription

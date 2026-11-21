@@ -23,10 +23,10 @@ public enum CodeSignature {
         /// A team to require of updates, or why there is none (updates are then disabled).
         public func updateTeam() throws -> String {
             guard isSigned else {
-                throw UpdateError.unavailable("This copy of Basket isn't code signed (a development build), so it can't verify updates. Get new versions from GitHub Releases.")
+                throw UpdateError.unavailable(String(localized: "This copy of Basket isn't code signed (a development build), so it can't verify updates. Get new versions from GitHub Releases.", bundle: .main))
             }
             guard !isAdHoc, let teamID, CodeSignature.isValidTeamID(teamID) else {
-                throw UpdateError.unavailable("This copy of Basket is signed ad hoc (a development build or a fork), so it can't verify updates. Get new versions from GitHub Releases.")
+                throw UpdateError.unavailable(String(localized: "This copy of Basket is signed ad hoc (a development build or a fork), so it can't verify updates. Get new versions from GitHub Releases.", bundle: .main))
             }
             return teamID
         }
@@ -89,9 +89,9 @@ public enum CodeSignature {
     #endif
 
     private static func developerIDRequirement(teamID: String, identifier: String) throws -> String {
-        guard isValidTeamID(teamID) else { throw UpdateError.codeSignature("invalid team identifier") }
+        guard isValidTeamID(teamID) else { throw UpdateError.codeSignature(String(localized: "the team identifier is invalid", bundle: .main)) }
         guard !identifier.isEmpty, identifier.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "." || $0 == "-") }) else {
-            throw UpdateError.codeSignature("invalid bundle identifier")
+            throw UpdateError.codeSignature(String(localized: "the bundle identifier is invalid", bundle: .main))
         }
         return "anchor apple generic and identifier \"\(identifier)\" and certificate leaf[subject.OU] = \"\(teamID)\""
             + " and certificate 1[field.1.2.840.113635.100.6.2.6] exists"
@@ -109,7 +109,7 @@ public enum CodeSignature {
     public static func verify(bundle: URL, requirement text: String) throws {
         var requirement: SecRequirement?
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, let requirement else {
-            throw UpdateError.codeSignature("the signing requirement can't be compiled")
+            throw UpdateError.codeSignature(String(localized: "the signing requirement can't be compiled", bundle: .main))
         }
         var staticCode: SecStaticCode?
         let created = SecStaticCodeCreateWithPath(bundle as CFURL, [], &staticCode)
