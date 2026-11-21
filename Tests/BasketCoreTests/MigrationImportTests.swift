@@ -258,6 +258,26 @@ struct MigrationImportTests {
         }
     }
 
+    /// Regression (#19): the export watchdog reports through the same progress handler and wasn't
+    /// awaited, so under load an "exporting" update could arrive after "loading" or even "done". A
+    /// slow handler for the watchdog's updates (the archive size) makes that window wide every run.
+    @Test func exportProgressNeverArrivesAfterTheExportEnds() async throws {
+        let demo = TestFixtures.set("demo")
+        let migrator = OrbStackMigrator.fixtures(demo)
+        let image = try #require(try await migrator.listImages().first { $0.reference == "busybox:latest" })
+        let phases = PhaseLog()
+        try await migrator.performImport(image, backend: FixtureBackend(directory: demo)) { step in
+            if case .exporting(let bytes) = step.phase, bytes > 0 { Thread.sleep(forTimeInterval: 0.3) }
+            phases.append(step.phase)
+        }
+        let all = phases.all
+        let loading = try #require(all.firstIndex { if case .loading = $0 { true } else { false } }, "\(all)")
+        #expect(all[..<loading].contains { if case .exporting(let bytes) = $0 { bytes > 0 } else { false } },
+                "the watchdog's update was delivered before the import moved on: \(all)")
+        #expect(!all[loading...].contains { if case .exporting = $0 { true } else { false } }, "\(all)")
+        #expect({ if case .done? = all.last { true } else { false } }(), "\(all)")
+    }
+
     /// Regression: an unrelated image Basket holds under the same name made the import skip
     /// OrbStack's copy as "already in Basket". Now it's a name conflict and nothing is exported.
     @Test func fixtureImportRefusesANameConflict() async throws {
@@ -342,4 +362,11 @@ final class MessageLog: @unchecked Sendable {
     private var messages: [String] = []
     func append(_ message: String) { lock.withLock { messages.append(message) } }
     var all: [String] { lock.withLock { messages } }
+}
+
+final class PhaseLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var phases: [ImportPhase] = []
+    func append(_ phase: ImportPhase) { lock.withLock { phases.append(phase) } }
+    var all: [ImportPhase] { lock.withLock { phases } }
 }

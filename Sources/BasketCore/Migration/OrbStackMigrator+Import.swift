@@ -105,12 +105,16 @@ extension OrbStackMigrator {
                     }
                 }
             }
+            // The watchdog reports through `progress` too: wait for it to stop before returning, or
+            // a late "exporting" update can arrive after "loading" (or even after "done").
             let result: CLIResult
             do {
                 result = try await withTaskCancellationHandler { try await save.value } onCancel: { save.cancel() }
                 monitor.cancel()
+                await monitor.value
             } catch {
                 monitor.cancel()
+                await monitor.value
                 if stalled.isSet, !Task.isCancelled {
                     throw MigrationError.dockerFailed(
                         command: Self.commandLine(arguments),

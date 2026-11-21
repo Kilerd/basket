@@ -9,6 +9,11 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Migration: an image import could report "Exporting" again after it had moved on to loading,
+  or even after it had finished (#19).
+
 ## [0.0.1] - 2026-11-20
 
 The first public version.
