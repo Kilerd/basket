@@ -131,12 +131,15 @@ func hasImplicitPlaceholders(_ format: String) -> Bool {
         .contains { $0.output.1 == nil && $0.output.2 != "%" }
 }
 
-/// Whether a key holds text a translator has to look at (anything beyond placeholders,
-/// digits and punctuation).
+/// Whether a key holds something a translator has to look at: words, or punctuation that
+/// differs between languages (quotes, ellipsis, colons, parentheses: “%@” is 「%@」 in Japanese,
+/// "%@: %@" needs a no-break space in French). Bare placeholders and data such as "8080:80" don't.
 func needsTranslation(_ key: String, _ entry: JSONObject) -> Bool {
     if (entry["shouldTranslate"] as? Bool) == false { return false }
     let stripped = key.replacing(#/%(?:\d+\$)?[-+ 0#']*(?:\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?[@dDiuUxXoOfFeEgGaAcCsSp%]/#, with: "")
-    return stripped.unicodeScalars.contains { CharacterSet.letters.contains($0) }
+    if stripped.unicodeScalars.contains(where: { CharacterSet.letters.contains($0) }) { return true }
+    if key.wholeMatch(of: #/[0-9:./\-]+/#) != nil { return false }
+    return stripped.contains { "“”‘’\"'«»「」『』…:;!?()".contains($0) }
 }
 
 /// Languages without plural categories for integers (CLDR: only "other").

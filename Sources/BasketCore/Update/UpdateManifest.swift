@@ -135,7 +135,9 @@ public struct UpdateManifest: Codable, Equatable, Sendable {
         return try? Date(string, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
     }
 
-    private func quoted(_ s: String) -> String { "“\(s.prefix(40))”" }
+    private func quoted(_ s: String) -> String {
+        String(localized: "“\(String(s.prefix(40)))”", bundle: .main, comment: "A name in quotes")
+    }
 }
 
 /// A validated manifest: what the update sheet shows and the installer downloads.
