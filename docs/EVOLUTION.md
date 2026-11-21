@@ -99,6 +99,24 @@ and disk first) → implement → verify. Findings and decisions are logged here
   maintainer pushes tags); keep CHANGELOG additions conflict-friendly (every PR appends to the
   same Unreleased block — rebases needed manual merges).
 
+### 0.0.2 — six languages (2026-11-21)
+- Maintainer asked for multiple languages, then widened the scope twice (zh/ja/en/fr/de, then
+  繁體中文). One String Catalog compiled by the build script into `<lang>.lproj` (no SwiftPM
+  resource bundle), keys extracted with `swiftc -emit-localized-strings`, `check-l10n.sh` in CI.
+  1,319 keys, fully translated in zh-Hans, zh-Hant, ja, fr, de.
+- Two independent translation reviews (CJK; French + German) found real errors — zh-Hant
+  translated `compose down` as "close" (it deletes), German used "laden" for pull, load and
+  download, zh-Hans "项目" meant both "Compose project" and "items" — and settled conventions:
+  CJK spacing (space between CJK and Latin/digits, none between a number and a CJK unit),
+  Up/Down translated in zh/ja but kept in fr/de, `-AppleLocale` in self-tests so screenshots show
+  real number formatting.
+- Gates: self-test 0/0 in all six languages (demo + onboarding; empty/stopped in en/zh-Hans/de),
+  CI runs zh-Hans and de self-tests. The out-of-process E2E needs an unlocked screen; it runs on
+  `main` before the tag is pushed.
+- Flaky tests fixed at the root: a watchdog that was cancelled but not awaited (#19), and
+  macOS's first-launch check of every new executable serializing fake CLIs (#20) — the whole
+  suite went from ~12 s to ~3 s.
+
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
   Third-party: `container-compose` (mcrich23), `apple-compose` (Go). Known gap: service-name DNS on

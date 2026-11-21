@@ -85,7 +85,7 @@ Available in `0.0.1`:
   identifier, and the UI is tested through the accessibility tree; see
   [How the UI is tested](#how-the-ui-is-tested).
 
-Coming in the next release: **six languages** — English, 简体中文, 繁體中文, 日本語, Français and
+**Six languages** (since 0.0.2) — English, 简体中文, 繁體中文, 日本語, Français and
 Deutsch. Basket follows the macOS language, or the one chosen in Settings ▸ General ▸ Language.
 
 Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes and
