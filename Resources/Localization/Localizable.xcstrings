@@ -27,6 +27,58 @@
         }
       }
     },
+    "%@ A copy of the image is kept at %@ — load it with: container image load --input %@" : {
+      "comment" : "1: what went wrong (a sentence), 2: folder of the kept archive, 3: the archive path for the command",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ A copy of the image is kept at %2$@ — load it with: container image load --input %3$@"
+          }
+        }
+      }
+    },
+    "%@ Nothing was changed." : {
+      "comment" : "The argument is the error message (a sentence)"
+    },
+    "%@ The original image is unchanged." : {
+      "comment" : "The argument is the error message (a sentence)"
+    },
+    "%@ already holds only this Mac's platform." : {
+
+    },
+    "%@ aren't supported; mount the files with volumes instead." : {
+
+    },
+    "%@ doesn't exist on this Mac (it may be a path inside OrbStack's Linux machine), so it is left out." : {
+
+    },
+    "%@ doesn't exist; Up creates it as an empty directory." : {
+
+    },
+    "%@ don't exist on this Mac (they may be paths inside OrbStack's Linux machine), so they are left out." : {
+
+    },
+    "%@ gets the named volume %@, so it survives restarts; Down with volumes removes it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ gets the named volume %2$@, so it survives restarts; Down with volumes removes it."
+          }
+        }
+      }
+    },
+    "%@ has a “%@” line without its end marker. Fix or remove it, then try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has a “%2$@” line without its end marker. Fix or remove it, then try again."
+          }
+        }
+      }
+    },
     "%@ has been idle for %@" : {
       "localizations" : {
         "en" : {
@@ -36,6 +88,59 @@
           }
         }
       }
+    },
+    "%@ has no %@ variant to keep." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has no %2$@ variant to keep."
+          }
+        }
+      }
+    },
+    "%@ has no value here or in the shell environment, so it isn't passed." : {
+
+    },
+    "%@ is already running" : {
+
+    },
+    "%@ is mounted, but Basket has no Docker engine; the mount is left out." : {
+
+    },
+    "%@ is no longer listed." : {
+
+    },
+    "%@ is not an OCI index" : {
+
+    },
+    "%@ is not supported by this backend." : {
+      "comment" : "The argument is an operation, e.g. “Starting a machine”"
+    },
+    "%@ is started first, but “%@” can't be checked (no healthchecks); %@ starts as soon as %@ has started." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is started first, but “%2$@” can't be checked (no healthchecks); %3$@ starts as soon as %4$@ has started."
+          }
+        }
+      }
+    },
+    "%@ is unexpectedly large" : {
+
+    },
+    "%@ isn't a UTF-8 text file, so Basket won't edit it." : {
+
+    },
+    "%@ isn't set, so it's replaced by an empty string. Set it in .env next to the compose file." : {
+
+    },
+    "%@ isn't supported by apple/container; ignored." : {
+
+    },
+    "%@ isn't supported; stopping sends SIGTERM and waits the CLI's default time." : {
+
     },
     "%@ limits + ≈ %@ VM overhead = up to %@ on this Mac" : {
       "localizations" : {
@@ -63,8 +168,52 @@
     "%@ reclaimable" : {
 
     },
+    "%@ runs under Rosetta on this Mac, which is slower than a native arm64 image." : {
+
+    },
+    "%@ set no memory limit. Each container is its own VM, so they get %@ each; set mem_limit to change it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ set no memory limit. Each container is its own VM, so they get %2$@ each; set mem_limit to change it."
+          }
+        }
+      }
+    },
+    "%@ sets no memory limit. Each container is its own VM, so it gets %@; set mem_limit to change it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ sets no memory limit. Each container is its own VM, so it gets %2$@; set mem_limit to change it."
+          }
+        }
+      }
+    },
     "%@ stranded" : {
 
+    },
+    "%@ was skipped: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ was skipped: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "comment" : "Container name: why it couldn't be restarted",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
     },
     "%@: %@. %@" : {
       "localizations" : {
@@ -82,6 +231,28 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@: OrbStack %2$@, Basket %3$@"
+          }
+        }
+      }
+    },
+    "%@: required variable %@ is not set" : {
+      "comment" : "1: location in the compose file (services.web.image), 2: variable name",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: required variable %2$@ is not set"
+          }
+        }
+      }
+    },
+    "%@: required variable %@ is not set (%@)" : {
+      "comment" : "1: location in the compose file, 2: variable name, 3: the file's own message",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: required variable %2$@ is not set (%3$@)"
           }
         }
       }
@@ -135,7 +306,24 @@
         }
       }
     },
+    "%lld of %lld containers couldn't be restarted" : {
+      "comment" : "Banner title; the second number is at least 2",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld containers couldn't be restarted"
+          }
+        }
+      }
+    },
     "%lld platforms" : {
+
+    },
+    "(top level)" : {
+      "comment" : "Location in a compose file: the file as a whole"
+    },
+    "--volumes-from %@ isn't supported." : {
 
     },
     "1 second" : {
@@ -174,6 +362,9 @@
     "Add the docker command?" : {
 
     },
+    "After loading, the image has no %@ variant." : {
+
+    },
     "Allow Memory Saver to Stop" : {
 
     },
@@ -184,6 +375,15 @@
 
     },
     "An image archive was kept after keeping one platform was interrupted" : {
+
+    },
+    "An untagged, unnamed image has no reference to import under." : {
+
+    },
+    "Anonymous volume" : {
+
+    },
+    "Anonymous volumes at %@ aren't recreated; their data stays in OrbStack and the container starts with what the image has there." : {
 
     },
     "Automatic (/opt/homebrew/bin/container)" : {
@@ -201,7 +401,36 @@
     "Basket %@" : {
 
     },
+    "Basket %@ isn't newer than the installed %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Basket %1$@ isn't newer than the installed %2$@."
+          }
+        }
+      }
+    },
+    "Basket already has a different image named %@: %@. Rename or delete it in Basket to import OrbStack's." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Basket already has a different image named %1$@: %2$@. Rename or delete it in Basket to import OrbStack's."
+          }
+        }
+      }
+    },
+    "Basket already has the same image as %@." : {
+
+    },
+    "Basket can set up zsh, bash and fish; for %@, add ~/.basket/bin to PATH yourself." : {
+
+    },
     "Basket can't read %@" : {
+
+    },
+    "Basket can't replace itself in “%@” (no write permission). Move it to a folder you can write to, such as Applications." : {
 
     },
     "Basket can't tell whether it was started with --rm. If so, restarting deletes it." : {
@@ -213,8 +442,37 @@
     "Basket copies only this Mac's platform (%@) when OrbStack has it. Each archive is deleted as soon as it's loaded; OrbStack keeps its copy." : {
 
     },
+    "Basket couldn't list the machines, so it can't tell which images they boot from." : {
+
+    },
+    "Basket couldn't read which image machine %@ boots from (`container machine inspect` failed), so any image may be in use." : {
+
+    },
+    "Basket couldn't read which image machines %@ boot from (`container machine inspect` failed), so any image may be in use." : {
+
+    },
     "Basket couldn’t work out which file to change for your %@ shell." : {
 
+    },
+    "Basket doesn't build images. Build it first: container build -t %@ %@ — then Up runs it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Basket doesn't build images. Build it first: container build -t %1$@ %2$@ — then Up runs it."
+          }
+        }
+      }
+    },
+    "Basket doesn't build images; it runs %@. Build it first if it isn't in a registry: container build -t %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Basket doesn't build images; it runs %1$@. Build it first if it isn't in a registry: container build -t %2$@ %3$@"
+          }
+        }
+      }
     },
     "Basket has a different image with this name: %@. It isn't imported or offered for cleanup; rename or delete Basket's to import OrbStack's." : {
 
@@ -226,6 +484,9 @@
 
     },
     "Basket has the same image (compared by content, not just by name)" : {
+
+    },
+    "Basket isn't running from an app bundle (a development run), so it can't update itself." : {
 
     },
     "Basket only polls while its window is visible, and 3× slower while you use another app." : {
@@ -240,6 +501,34 @@
     "Basket runs the same image with the settings below in its own lightweight VM. The OrbStack container stays as it is." : {
 
     },
+    "Basket's copy has no %@ variant" : {
+
+    },
+    "Basket's copy has no %@ variant; it has %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Basket's copy has no %1$@ variant; it has %2$@"
+          }
+        }
+      }
+    },
+    "Basket's update key is invalid, so updates can't be verified." : {
+
+    },
+    "Basket.app isn't a folder" : {
+
+    },
+    "Bind mount" : {
+
+    },
+    "Bind mounts" : {
+
+    },
+    "Build" : {
+
+    },
     "Built-in" : {
 
     },
@@ -251,6 +540,16 @@
     },
     "Can't Read OrbStack" : {
 
+    },
+    "Can't read %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Can't read %1$@: %2$@"
+          }
+        }
+      }
     },
     "Cancel" : {
 
@@ -276,7 +575,19 @@
     "Check the spelling or try a different search." : {
 
     },
+    "Checking Basket for %@" : {
+
+    },
     "Checking for updates" : {
+
+    },
+    "Checking free disk space" : {
+
+    },
+    "Checking the archive" : {
+
+    },
+    "Checking the image" : {
 
     },
     "Choose a local image" : {
@@ -325,6 +636,9 @@
         }
       }
     },
+    "Configs" : {
+
+    },
     "Container" : {
 
     },
@@ -332,6 +646,9 @@
 
     },
     "Container System Stopped" : {
+
+    },
+    "Container VMs have no swap; %@ is ignored." : {
 
     },
     "Containers" : {
@@ -382,8 +699,41 @@
     "Copy Subnet" : {
 
     },
+    "Could not read the output of `%@`: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not read the output of `%1$@`: %2$@"
+          }
+        }
+      }
+    },
     "Couldn't Read OrbStack" : {
 
+    },
+    "Couldn't reach the update server: %@." : {
+
+    },
+    "Couldn't restart %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't restart %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't update /etc/hosts in %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't update /etc/hosts in %1$@: %2$@"
+          }
+        }
+      }
     },
     "Create" : {
 
@@ -400,7 +750,43 @@
     "Created" : {
 
     },
+    "Creating and starting %@ (%@, %@)" : {
+      "comment" : "1: container name, 2: image, 3: memory limit such as 512M",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Creating and starting %1$@ (%2$@, %3$@)"
+          }
+        }
+      }
+    },
+    "Creating and starting %@ (%@, default memory)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Creating and starting %1$@ (%2$@, default memory)"
+          }
+        }
+      }
+    },
+    "Creating directory %@" : {
+
+    },
+    "Creating network %@" : {
+
+    },
+    "Creating volume %@" : {
+
+    },
+    "Custom hostname “%@” isn't supported; the container's hostname is its name." : {
+
+    },
     "Custom platform" : {
+
+    },
+    "DNS options aren't passed to the container." : {
 
     },
     "Dangling" : {
@@ -434,6 +820,21 @@
     "Delete…" : {
 
     },
+    "Deleting %@" : {
+
+    },
+    "Deleting network %@" : {
+
+    },
+    "Deleting networks %@" : {
+
+    },
+    "Deleting volume %@" : {
+
+    },
+    "Deleting volumes %@" : {
+
+    },
     "Deleting…" : {
 
     },
@@ -446,6 +847,15 @@
     "Details for compose project %@" : {
 
     },
+    "Device access (%@) isn't supported by apple/container." : {
+
+    },
+    "Device passthrough (%@) isn't supported." : {
+
+    },
+    "Devices" : {
+
+    },
     "Digest" : {
 
     },
@@ -453,6 +863,9 @@
 
     },
     "Disable" : {
+
+    },
+    "Disabling networking isn't supported; the container joins Basket's default network." : {
 
     },
     "Disk" : {
@@ -478,6 +891,40 @@
 
     },
     "Distribution" : {
+
+    },
+    "Docker had no memory limit. Every Basket container is its own VM, so it gets %@; raise it if the workload needs more." : {
+
+    },
+    "Docker limited it to %@ CPUs; Basket allocates whole CPUs (%lld)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Docker limited it to %1$@ CPUs; Basket allocates whole CPUs (%2$lld)."
+          }
+        }
+      }
+    },
+    "Docker lists %@ without a value, which leaves it unset; it is left out rather than passed as --env NAME, which would copy a value from the environment `container run` is started in." : {
+
+    },
+    "Docker lists %@ without a value, which leaves them unset; they are left out rather than passed as --env NAMES, which would copy values from the environment `container run` is started in." : {
+
+    },
+    "Docker network “%@” isn't recreated: the container joins Basket's default network, and other containers can't reach it by name." : {
+
+    },
+    "Docker picked random host ports for %@; Basket publishes them on the same port numbers." : {
+
+    },
+    "Docker published all exposed ports (-P), but the image exposes none." : {
+
+    },
+    "Docker published all exposed ports on random host ports (-P); Basket publishes %@ on the same port numbers." : {
+
+    },
+    "Docker socket" : {
 
     },
     "Done" : {
@@ -547,6 +994,12 @@
     "Expand %@" : {
 
     },
+    "Exporting %@ from OrbStack" : {
+
+    },
+    "Extra /etc/hosts entries (%@) aren't supported." : {
+
+    },
     "Follow" : {
 
     },
@@ -559,10 +1012,22 @@
     "From the file" : {
 
     },
+    "GPU" : {
+
+    },
+    "GPU requests aren't supported: Linux containers on macOS have no GPU access." : {
+
+    },
     "Gateway" : {
 
     },
     "General" : {
+
+    },
+    "Healthcheck" : {
+
+    },
+    "Healthchecks aren't supported; the container never reports healthy or unhealthy." : {
 
     },
     "Hide the services of %@" : {
@@ -572,6 +1037,9 @@
 
     },
     "Host Memory" : {
+
+    },
+    "Host networking isn't supported: the container gets its own IP on Basket's default network. Publish the ports it listens on instead." : {
 
     },
     "Hostname" : {
@@ -587,6 +1055,9 @@
 
     },
     "IPv6" : {
+
+    },
+    "IPv6-only bindings (%@) aren't recreated." : {
 
     },
     "Idle means under 1% CPU and under 1 KB/s of network traffic the whole time. A stopped container returns all its memory to macOS. With the window closed, Basket checks activity once a minute." : {
@@ -619,6 +1090,9 @@
     "Imported" : {
 
     },
+    "Imported %@" : {
+
+    },
     "Imported this session; same content as OrbStack's copy" : {
 
     },
@@ -626,6 +1100,9 @@
 
     },
     "In use" : {
+
+    },
+    "Included compose files aren't read; only this file's services are planned." : {
 
     },
     "Inspect" : {
@@ -640,10 +1117,19 @@
     "Intel (linux/amd64, runs with Rosetta)" : {
 
     },
+    "Internal network" : {
+
+    },
+    "Invalid YAML at %@" : {
+      "comment" : "The argument is “line 3, column 5: <problem>”"
+    },
     "KEY=value" : {
 
     },
     "Keep Only %@…" : {
+
+    },
+    "Kernel parameters (%@) aren't applied." : {
 
     },
     "Kill" : {
@@ -658,10 +1144,34 @@
     "Launch Basket at login" : {
 
     },
+    "Legacy links (%@) aren't supported." : {
+
+    },
     "Limits" : {
 
     },
+    "Links to containers outside the project aren't supported." : {
+
+    },
     "Linux" : {
+
+    },
+    "Loading an image" : {
+
+    },
+    "Loading failed: %@" : {
+
+    },
+    "Loading into Basket" : {
+
+    },
+    "Loading into Basket failed: %@" : {
+
+    },
+    "Loading it back" : {
+      "comment" : "Slimming an image: loading the saved archive back"
+    },
+    "Logs stay with the container (Logs tab); the logging driver is ignored." : {
 
     },
     "Machine is ready" : {
@@ -731,7 +1241,32 @@
     "Name in Basket" : {
 
     },
+    "Namespaces" : {
+
+    },
     "Network" : {
+
+    },
+    "Network aliases (%@) aren't supported." : {
+
+    },
+    "Network driver" : {
+
+    },
+    "Network options" : {
+
+    },
+    "Network “%@” asks for the %@ driver; Basket creates a regular network." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Network “%1$@” asks for the %2$@ driver; Basket creates a regular network."
+          }
+        }
+      }
+    },
+    "Network “%@” is internal in the file, but Basket's networks can reach the internet." : {
 
     },
     "Networks" : {
@@ -809,13 +1344,42 @@
     "No release notes." : {
 
     },
+    "No service sets a memory limit. Each container is its own VM, so they get %@ each; set mem_limit to change it." : {
+
+    },
     "No variables" : {
 
     },
     "Not Running" : {
 
     },
+    "Not a usable image archive: %@." : {
+
+    },
     "Not compared" : {
+
+    },
+    "Not enough free disk space: needs %@, %@ available. Nothing was changed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Not enough free disk space: needs %1$@, %2$@ available. Nothing was changed."
+          }
+        }
+      }
+    },
+    "Not enough free disk space: the export needs about %@, %@ is free." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Not enough free disk space: the export needs about %1$@, %2$@ is free."
+          }
+        }
+      }
+    },
+    "Not started (profile not active): %@. Set COMPOSE_PROFILES to include them." : {
 
     },
     "Notes" : {
@@ -824,7 +1388,16 @@
     "Notes and what doesn't carry over (%lld)" : {
 
     },
+    "Nothing is reserved up front: each container is its own VM with its memory limit." : {
+
+    },
+    "Nothing is reserved up front; the limits apply." : {
+
+    },
     "Nothing running — container VMs use no memory" : {
+
+    },
+    "Nothing to export." : {
 
     },
     "Nothing to reclaim: every VM uses about what its guest needs." : {
@@ -837,6 +1410,12 @@
 
     },
     "On this Mac" : {
+
+    },
+    "Only one container per service is run (replicas: %lld)." : {
+
+    },
+    "Only one container per service is run (scale: %@)." : {
 
     },
     "Open" : {
@@ -875,6 +1454,16 @@
     "Options" : {
 
     },
+    "Options of the tmpfs at %@ (%@) aren't supported; it's mounted with defaults." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Options of the tmpfs at %1$@ (%2$@) aren't supported; it's mounted with defaults."
+          }
+        }
+      }
+    },
     "OrbStack" : {
 
     },
@@ -884,8 +1473,21 @@
     "OrbStack Isn't Running" : {
 
     },
+    "OrbStack has no content for it on this Mac's platform or linux/amd64" : {
+
+    },
     "OrbStack not running" : {
 
+    },
+    "OrbStack only has the %@ variant of this image, so it runs under Rosetta. Pull the %@ variant for native speed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "OrbStack only has the %1$@ variant of this image, so it runs under Rosetta. Pull the %2$@ variant for native speed."
+          }
+        }
+      }
     },
     "OrbStack only has the %@ variant; it runs under Rosetta in Basket" : {
 
@@ -894,6 +1496,9 @@
 
     },
     "OrbStack vs Basket" : {
+
+    },
+    "OrbStack's Docker engine isn't running. Start OrbStack yourself to migrate; Basket never launches it." : {
 
     },
     "Other…" : {
@@ -923,13 +1528,35 @@
     "Port" : {
 
     },
+    "Port %@ has no host port in the file; it's published on the same number (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Port %1$@ has no host port in the file; it's published on the same number (%2$@)."
+          }
+        }
+      }
+    },
     "Ports" : {
 
     },
     "Preview & Recreate…" : {
 
     },
+    "Privileged" : {
+
+    },
+    "Privileged mode isn't supported; add the specific capabilities with cap_add instead." : {
+
+    },
+    "Privileged mode isn't supported; the container runs unprivileged. Grant specific capabilities with --cap-add if it needs them." : {
+
+    },
     "Processes" : {
+
+    },
+    "Profiles" : {
 
     },
     "Progress" : {
@@ -937,6 +1564,53 @@
     },
     "Project" : {
 
+    },
+    "Project %@ is down" : {
+
+    },
+    "Project %@ is up (%lld services)" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Project %1$@ is up (%2$lld service)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Project %1$@ is up (%2$lld services)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Project %@ restarted (%lld services)" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Project %1$@ restarted (%2$lld service)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Project %1$@ restarted (%2$lld services)"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Project “%@”" : {
 
@@ -971,6 +1645,9 @@
     "Reading OrbStack…" : {
 
     },
+    "Reading system properties" : {
+
+    },
     "Recently Returned" : {
 
     },
@@ -1001,6 +1678,9 @@
     "Reclaimable" : {
 
     },
+    "Reclaiming disk space" : {
+
+    },
     "Reclaim…" : {
 
     },
@@ -1017,6 +1697,9 @@
 
     },
     "Refresh (⌘R)" : {
+
+    },
+    "Refusing to run `%@`: Basket only reads from OrbStack." : {
 
     },
     "Release notes" : {
@@ -1046,6 +1729,12 @@
     "Remove when stopped" : {
 
     },
+    "Replicas" : {
+
+    },
+    "Reservations" : {
+
+    },
     "Resources" : {
 
     },
@@ -1067,10 +1756,30 @@
     "Restart every service and refresh the service names" : {
 
     },
+    "Restart policy" : {
+
+    },
+    "Restart policy “%@” isn't supported: Basket doesn't restart the container when it exits or after a reboot." : {
+
+    },
     "Restart the container to return about %@ to macOS. In-memory state is lost; published ports come back." : {
 
     },
     "Restart to Reclaim…" : {
+
+    },
+    "Restarted %lld of %lld containers" : {
+      "comment" : "Banner title; the second number is at least 2",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Restarted %1$lld of %2$lld containers"
+          }
+        }
+      }
+    },
+    "Restarting %@" : {
 
     },
     "Restarting…" : {
@@ -1103,16 +1812,34 @@
     "Run it in Basket now" : {
 
     },
+    "Running a command in a container" : {
+
+    },
     "Running in Basket as %@" : {
 
     },
     "Run…" : {
 
     },
+    "Saving an image" : {
+
+    },
+    "Saving the %@ variant" : {
+
+    },
     "Search" : {
 
     },
+    "Secrets" : {
+
+    },
+    "Security" : {
+
+    },
     "Security error" : {
+
+    },
+    "Security options (%@) are ignored." : {
 
     },
     "Select All" : {
@@ -1136,6 +1863,31 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Service %1$@ of %2$@, container %3$@"
+          }
+        }
+      }
+    },
+    "Service names" : {
+
+    },
+    "Service names written to /etc/hosts in %lld containers" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Service names written to /etc/hosts in %lld container"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Service names written to /etc/hosts in %lld containers"
+                }
+              }
+            }
           }
         }
       }
@@ -1168,6 +1920,12 @@
 
     },
     "Setup takes a few minutes: install Apple’s container tool, start it, and choose the extras you want. You can skip anything and come back from the Basket menu." : {
+
+    },
+    "Sharing another container's network (%@) isn't supported." : {
+
+    },
+    "Sharing namespaces (%@) isn't supported." : {
 
     },
     "Shell" : {
@@ -1205,6 +1963,16 @@
     },
     "Skip This Version" : {
 
+    },
+    "Skipped %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Skipped %1$@: %2$@"
+          }
+        }
+      }
     },
     "Skipped (--rm)" : {
 
@@ -1266,13 +2034,28 @@
     "Started" : {
 
     },
+    "Started although its profile isn't active, because %@ depends on it." : {
+
+    },
     "Started with --rm: stopping deletes it, so it can't be restarted." : {
+
+    },
+    "Starting %@" : {
+
+    },
+    "Starting a machine" : {
 
     },
     "Starting… (the image is pulled first if needed)" : {
 
     },
     "State" : {
+
+    },
+    "Static IP" : {
+
+    },
+    "Static IP addresses (%@) aren't supported." : {
 
     },
     "Step %lld of %lld%@" : {
@@ -1333,6 +2116,9 @@
     "Stopped: no VM running." : {
 
     },
+    "Stopping %@" : {
+
+    },
     "Stopping a container started with --rm deletes it, so Memory Saver never stops it." : {
 
     },
@@ -1364,10 +2150,19 @@
     "Summary" : {
 
     },
+    "Sysctls" : {
+
+    },
     "Tag" : {
 
     },
+    "The OrbStack container is running and holds %@. Stop it in OrbStack before starting the Basket copy, or change the ports." : {
+
+    },
     "The VM can use up to this much memory; most containers need far less than 1 GB." : {
+
+    },
+    "The `container` CLI was not found (looked in %@). Install it with `brew install container`." : {
 
     },
     "The archive can't be read; it can only be deleted" : {
@@ -1376,10 +2171,70 @@
     "The compose file isn't known" : {
 
     },
+    "The container CLI kept the other platform variants of %@; nothing was removed." : {
+
+    },
+    "The container couldn't be restarted" : {
+
+    },
+    "The container keeps its own name as hostname; “%@” is added to /etc/hosts of the project's containers." : {
+
+    },
     "The container runs in its own lightweight VM. Its memory is returned to macOS when it stops." : {
 
     },
+    "The container system service is not running." : {
+
+    },
+    "The container was created from image ID %@; there is no name to run it by in Basket." : {
+
+    },
+    "The container wasn't restarted" : {
+
+    },
+    "The docker CLI that ships with OrbStack wasn't found." : {
+
+    },
+    "The docker shim (basket-docker) wasn't found inside Basket.app." : {
+
+    },
+    "The downloaded app doesn't carry the notarized Developer ID signature of Basket's developer (%@), so it was deleted." : {
+
+    },
+    "The downloaded app isn't the announced Basket version (%@), so it was deleted." : {
+
+    },
+    "The downloaded update doesn't match its published checksum. It may have been altered, so it was deleted." : {
+
+    },
+    "The downloaded update is damaged: %@." : {
+
+    },
+    "The downloaded update isn't signed by Basket's maintainer. It may have been altered, so it was deleted." : {
+
+    },
     "The first start downloads Linux kernel files (about 650 MB) and keeps a 30 MB kernel. On a fast connection that takes a few minutes; later starts take seconds." : {
+
+    },
+    "The healthcheck isn't supported; Basket won't report the container's health." : {
+
+    },
+    "The image isn't in OrbStack; `container run` will pull it" : {
+
+    },
+    "The image isn't listed after loading." : {
+
+    },
+    "The mount at %@ isn't a bind, volume or tmpfs mount and is left out." : {
+
+    },
+    "The update couldn't be installed: %@. Basket was not changed." : {
+
+    },
+    "The update information from GitHub is invalid: %@." : {
+
+    },
+    "The update is unexpectedly large (%@), so Basket stopped downloading it." : {
 
     },
     "There's nothing of this kind to migrate." : {
@@ -1394,10 +2249,39 @@
     "This Mac (%@) — recommended" : {
 
     },
+    "This copy of Basket is signed ad hoc (a development build or a fork), so it can't verify updates. Get new versions from GitHub Releases." : {
+
+    },
+    "This copy of Basket isn't code signed (a development build), so it can't verify updates. Get new versions from GitHub Releases." : {
+
+    },
+    "This update requires macOS %@ or later." : {
+
+    },
     "Time" : {
 
     },
+    "Timed out after %@. %@" : {
+      "comment" : "1: a duration such as “15 min”, 2: what the command printed so far",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Timed out after %1$@. %2$@"
+          }
+        }
+      }
+    },
     "Top consumers" : {
+
+    },
+    "Top-level configs" : {
+
+    },
+    "Top-level secrets" : {
+
+    },
+    "Top-level “%@” isn't part of the Compose format; ignored." : {
 
     },
     "Try Again" : {
@@ -1407,6 +2291,9 @@
 
     },
     "Turn on Memory Saver" : {
+
+    },
+    "Unknown key" : {
 
     },
     "Unused" : {
@@ -1427,11 +2314,56 @@
     "Used By" : {
 
     },
+    "Using Basket's %@; it couldn't be compared with OrbStack's (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Using Basket's %1$@; it couldn't be compared with OrbStack's (%2$@)"
+          }
+        }
+      }
+    },
     "Variable" : {
+
+    },
+    "Variables" : {
 
     },
     "Volume" : {
 
+    },
+    "Volume %@ uses the “%@” driver; Basket creates a local volume instead." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Volume %1$@ uses the “%2$@” driver; Basket creates a local volume instead."
+          }
+        }
+      }
+    },
+    "Volume data" : {
+
+    },
+    "Volume data isn't copied: Basket creates empty volumes named %@. Copy the data over yourself if you need it." : {
+
+    },
+    "Volume driver" : {
+
+    },
+    "Volume options" : {
+
+    },
+    "Volume “%@” asks for the %@ driver; Basket creates a regular volume." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Volume “%1$@” asks for the %2$@ driver; Basket creates a regular volume."
+          }
+        }
+      }
     },
     "Volumes" : {
 
@@ -1466,16 +2398,185 @@
     "Working…" : {
 
     },
+    "[Basket dropped %lld earlier lines: the reader fell behind]" : {
+      "comment" : "Last line of a log that was too fast to show completely",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "[Basket dropped %lld earlier line: the reader fell behind]"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "[Basket dropped %lld earlier lines: the reader fell behind]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "[…line longer than %@, continued on the next line]" : {
+      "comment" : "Appended to a log line that was cut; the argument is a size such as “1 MB”"
+    },
+    "`%@` failed (exit %lld): %@" : {
+      "comment" : "1: command line, 2: exit status, 3: the command's error output",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "`%1$@` failed (exit %2$lld): %3$@"
+          }
+        }
+      }
+    },
+    "`%@` failed: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "`%1$@` failed: %2$@"
+          }
+        }
+      }
+    },
+    "a bind mount needs a “source”" : {
+
+    },
+    "a boolean" : {
+      "comment" : "YAML value kind: “expected …, found a boolean”"
+    },
+    "a container named %@ already exists and isn't part of project %@; rename or delete it" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "a container named %1$@ already exists and isn't part of project %2$@; rename or delete it"
+          }
+        }
+      }
+    },
+    "a leading blank line of this block scalar is indented more than its text" : {
+
+    },
+    "a list" : {
+      "comment" : "YAML value kind: “expected …, found a list”"
+    },
+    "a list can't start on the same line as its key; put “- item” on the next line" : {
+
+    },
+    "a list item can't appear among mapping keys; indent the list under its key" : {
+
+    },
+    "a mapping" : {
+      "comment" : "YAML value kind: “expected …, found a mapping”"
+    },
+    "a mapping key must fit on one line" : {
+
+    },
+    "a merge key (<<) needs a mapping or a list of mappings, but found %@" : {
+
+    },
+    "a node can only have one anchor" : {
+
+    },
+    "a node can only have one tag" : {
+
+    },
+    "a node can't have two sets of anchors or tags" : {
+
+    },
+    "a null value" : {
+      "comment" : "YAML value kind: “expected …, found a null value”"
+    },
+    "a number" : {
+      "comment" : "YAML value kind: “expected …, found a number”"
+    },
+    "a plain value can't start with “%@”; quote it" : {
+
+    },
+    "a port needs a “target”" : {
+
+    },
+    "a string" : {
+      "comment" : "YAML value kind: “expected …, found a string”"
+    },
+    "a value isn't a string" : {
+
+    },
+    "a volume needs a “target”" : {
+
+    },
     "about %@" : {
 
     },
     "alpine:latest or ghcr.io/org/app:1.0" : {
 
     },
+    "an alias (*) needs a name" : {
+
+    },
+    "an alias used as a key must refer to a scalar" : {
+
+    },
+    "an anchor (&) needs a name" : {
+
+    },
+    "an integer" : {
+      "comment" : "YAML value kind: “expected …, found an integer”"
+    },
+    "apple/container has no %@; services that use them won't see the files." : {
+
+    },
+    "apple/container has no DNS between containers. After starting the project Basket writes every service name into /etc/hosts of each container (container exec … sh). Images without a shell can't be updated, and the entries are only refreshed when Basket starts or restarts a container." : {
+
+    },
     "archlinux:latest" : {
 
     },
     "backend" : {
+
+    },
+    "bad indentation: keys of this mapping start at column %lld" : {
+
+    },
+    "bad indentation: list items under this list start at column %lld" : {
+
+    },
+    "can't derive a project name; set “name:” in the file" : {
+
+    },
+    "can't map %@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "can't map %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "can't read the port “%@”" : {
+
+    },
+    "can't read the volume “%@”" : {
+
+    },
+    "can't write %@" : {
+
+    },
+    "cancelled" : {
+      "comment" : "Why a container wasn't restarted"
+    },
+    "collections can't be used as mapping keys" : {
+
+    },
+    "complex mapping keys (“? ”) aren't supported" : {
 
     },
     "container CLI" : {
@@ -1487,13 +2588,266 @@
     "container image load --input %@" : {
 
     },
+    "couldn't inspect Basket's copy: %@" : {
+
+    },
+    "couldn't read OrbStack's copy: %@" : {
+
+    },
+    "couldn't read its state: %@" : {
+
+    },
+    "cpus: %@ is rounded up to %lld: containers get whole CPUs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "cpus: %1$@ is rounded up to %2$lld: containers get whole CPUs."
+          }
+        }
+      }
+    },
     "default" : {
+
+    },
+    "depends on undefined service “%@”" : {
+
+    },
+    "depends_on forms a cycle: %@" : {
+
+    },
+    "deploy.restart_policy isn't supported; Basket doesn't restart containers that exit." : {
+
+    },
+    "ditto couldn't run (%@)" : {
+
+    },
+    "driver_opts of network “%@” are ignored." : {
+
+    },
+    "driver_opts of volume “%@” are ignored." : {
+
+    },
+    "duplicate key “%@”" : {
+
+    },
+    "env_file of service %@ doesn't exist" : {
+
+    },
+    "every service belongs to an inactive profile" : {
+
+    },
+    "expected KEY=value" : {
+
+    },
+    "expected a list, found %@" : {
+
+    },
+    "expected a mapping with “services:”" : {
+
+    },
+    "expected a mapping, found %@" : {
+
+    },
+    "expected a number or soft/hard numbers" : {
+
+    },
+    "expected a number, found %@" : {
+
+    },
+    "expected a number, found “%@”" : {
+
+    },
+    "expected a size like 512m or 1g, found %@" : {
+
+    },
+    "expected a size like 512m or 1g, found “%@”" : {
+
+    },
+    "expected a string, found %@" : {
+
+    },
+    "expected a value" : {
+
+    },
+    "expected true or false, found %@" : {
+
+    },
+    "expected true or false, found “%@”" : {
+
+    },
+    "expected “,” or “]” in a flow sequence" : {
+
+    },
+    "expected “,” or “}” in a flow mapping" : {
+
+    },
+    "expected “:” after the key “%@”" : {
+
+    },
+    "expected “[host:]port[:container]” or a mapping, found %@" : {
+
+    },
+    "expected “host:address”, found “%@”" : {
+
+    },
+    "expected “source:target[:ro]” or a mapping, found %@" : {
+
+    },
+    "extends isn't supported; copy the base service's settings or use YAML anchors." : {
 
     },
     "idle for %@" : {
 
     },
+    "invalid \\%@ escape" : {
+
+    },
+    "invalid \\%@ escape: expected %lld hex digits" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "invalid \\%1$@ escape: expected %2$lld hex digits"
+          }
+        }
+      }
+    },
+    "invalid block scalar header; only “|” or “>” with “-”, “+” or a digit may precede the line break" : {
+
+    },
+    "invalid variable name “%@”" : {
+
+    },
+    "invalid variable “${%@}” in “%@”" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "invalid variable “${%1$@}” in “%2$@”"
+          }
+        }
+      }
+    },
+    "invalid “$” in “%@”; use “$$” for a literal $" : {
+
+    },
+    "ipv4_address %@ on %@ isn't supported; the network assigns an address." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ipv4_address %1$@ on %2$@ isn't supported; the network assigns an address."
+          }
+        }
+      }
+    },
+    "it can't be read (%@)" : {
+
+    },
+    "it has no bundle identifier" : {
+
+    },
+    "it has no readable Info.plist" : {
+
+    },
+    "it has no version number, the update information says %@" : {
+
+    },
+    "it holds %@ instead of only %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "it holds %1$@ instead of only %2$@"
+          }
+        }
+      }
+    },
+    "it holds no platform instead of only %@" : {
+
+    },
+    "it is %@, smaller than the %@ variant (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "it is %1$@, smaller than the %2$@ variant (%3$@)"
+          }
+        }
+      }
+    },
+    "it is labelled %@ instead of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "it is labelled %1$@ instead of %2$@"
+          }
+        }
+      }
+    },
+    "it is no longer running" : {
+
+    },
+    "it is too large" : {
+
+    },
+    "it is version %@, the update information says %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "it is version %1$@, the update information says %2$@"
+          }
+        }
+      }
+    },
+    "it isn't valid JSON" : {
+
+    },
+    "it no longer exists" : {
+
+    },
+    "it printed no container ID" : {
+
+    },
+    "it should contain only Basket.app" : {
+
+    },
+    "it was started with --rm, so stopping would delete it" : {
+
+    },
+    "its bundle identifier is “%@”" : {
+
+    },
+    "its layers differ" : {
+
+    },
+    "line %lld, column %lld: %@" : {
+      "comment" : "Position of a syntax error in a YAML file, then the problem",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "line %1$lld, column %2$lld: %3$@"
+          }
+        }
+      }
+    },
+    "links to undefined service “%@”" : {
+
+    },
     "linux/arm/v7" : {
+
+    },
+    "macOS runs this copy of Basket from a temporary read-only location because it was opened where it was downloaded. Move Basket to the Applications folder and open it again to get updates." : {
+
+    },
+    "machine %@" : {
+      "comment" : "A Linux machine named in a list of image users"
+    },
+    "missing “path”" : {
 
     },
     "my-data" : {
@@ -1502,7 +2856,32 @@
     "my-volume:/data or /host/path:/path" : {
 
     },
+    "network_mode “%@” isn't supported; the service joins the project network instead." : {
+
+    },
     "nginx:latest" : {
+
+    },
+    "no temporary folder on the volume of %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "no temporary folder on the volume of %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "port range %@ is larger than 100 ports" : {
+
+    },
+    "ports must be numbers or ranges like 8000-8010" : {
+
+    },
+    "protocol “%@” isn't supported (tcp or udp)" : {
+
+    },
+    "pull_policy: %@ isn't supported; `container run` pulls the image only when it's missing." : {
 
     },
     "real memory macOS pays for %lld VM%@" : {
@@ -1515,10 +2894,276 @@
         }
       }
     },
+    "restart: %@ isn't supported; Basket doesn't restart containers that exit or after a reboot." : {
+
+    },
+    "same layers and configuration, but built at a different time" : {
+
+    },
+    "same layers, but its configuration differs" : {
+
+    },
+    "starting failed: %@" : {
+
+    },
+    "stopping deleted it (it was probably started with --rm)" : {
+
+    },
+    "stopping failed: %@" : {
+
+    },
+    "tabs can't be used for indentation; use spaces" : {
+
+    },
+    "the archive %@ does not exist" : {
+
+    },
+    "the archive can't be opened" : {
+
+    },
+    "the archive has no index.json" : {
+
+    },
+    "the archive is empty (%@)" : {
+
+    },
+    "the archive is not a tar file" : {
+
+    },
+    "the bundle identifier is invalid" : {
+
+    },
+    "the command failed" : {
+
+    },
+    "the download ended after %@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "the download ended after %1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "the export made no progress for %@ and was stopped" : {
+
+    },
+    "the external network %@ doesn't exist; create it first (container network create %@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "the external network %1$@ doesn't exist; create it first (container network create %2$@)"
+          }
+        }
+      }
+    },
+    "the external volume %@ doesn't exist; create it first (container volume create %@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "the external volume %1$@ doesn't exist; create it first (container volume create %2$@)"
+          }
+        }
+      }
+    },
+    "the file defines no services" : {
+
+    },
+    "the file holds more than one YAML document; Compose files have exactly one" : {
+
+    },
+    "the file is empty" : {
+
+    },
+    "the index blob %@ is missing" : {
+
+    },
+    "the installer couldn't start (%@)" : {
+
+    },
+    "the installer has no code requirement" : {
+
+    },
+    "the server answered HTTP %lld" : {
+
+    },
+    "the service needs an “image” (or a “build”)" : {
+
+    },
+    "the signing requirement can't be compiled" : {
+
+    },
+    "the staged update is in an unexpected place" : {
+
+    },
+    "the team identifier is invalid" : {
+
+    },
+    "the temporary folder isn't on the same volume as %@" : {
+
+    },
+    "the two couldn't be compared: %@" : {
+
+    },
+    "their layer lists couldn't be read" : {
+
+    },
+    "this line reads as a mapping key inside a multi-line value; check the indentation" : {
+
+    },
+    "tmpfs options for %@ (%@) aren't supported; Basket uses its defaults." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "tmpfs options for %1$@ (%2$@) aren't supported; Basket uses its defaults."
+          }
+        }
+      }
+    },
+    "unexpected content; check the indentation" : {
+
+    },
+    "unexpected end of file inside a flow collection" : {
+
+    },
+    "unexpected text “%@” after a value" : {
+
+    },
+    "unexpected “,” in a flow mapping" : {
+
+    },
+    "unexpected “,” in a flow sequence" : {
+
+    },
+    "unexpected “: ” in a value; quote the value, or move a nested mapping to the next line and indent it" : {
+
+    },
+    "unexpected “: ” inside a value; quote the value or move a nested mapping to its own line" : {
+
+    },
+    "unknown alias “*%@” (anchors must be defined before use)" : {
+
+    },
+    "unknown escape sequence “\\%@”" : {
+
+    },
+    "unterminated %@ quote" : {
+
+    },
+    "unterminated double-quoted string" : {
+
+    },
+    "unterminated escape sequence" : {
+
+    },
+    "unterminated flow mapping “{”" : {
+
+    },
+    "unterminated flow sequence “[”" : {
+
+    },
+    "unterminated quote or escape in “%@”" : {
+
+    },
+    "unterminated quoted string" : {
+
+    },
+    "unterminated single-quoted string" : {
+
+    },
+    "unterminated “${” in “%@”; use “$$” for a literal $" : {
+
+    },
+    "unzipping failed" : {
+
+    },
+    "unzipping failed: %@" : {
+
+    },
+    "uses network “%@”, which isn't declared under the top-level “networks:”" : {
+
+    },
+    "uses volume “%@”, which isn't declared under the top-level “volumes:”" : {
+
+    },
+    "version %@ isn't newer than the installed %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "version %1$@ isn't newer than the installed %2$@"
+          }
+        }
+      }
+    },
+    "volume type “%@” isn't supported (bind, volume or tmpfs)" : {
+
+    },
+    "volumes_from isn't supported; declare the shared volumes on each service." : {
+
+    },
     "—" : {
 
     },
+    "“%@”" : {
+      "comment" : "A name in quotes"
+    },
+    "“%@” is missing" : {
+
+    },
+    "“%@” is not a boolean (!!bool)" : {
+
+    },
+    "“%@” is not a number (!!float)" : {
+
+    },
+    "“%@” is not an integer (!!int)" : {
+
+    },
+    "“%@” isn't a string" : {
+
+    },
+    "“%@” isn't part of the Compose format; ignored." : {
+
+    },
     "“default”: no memory limit in the file. Each container is its own VM, so it gets the default from Settings." : {
+
+    },
+    "“minimum_system_version” %@ isn't a macOS version" : {
+
+    },
+    "“pub_date” %@ isn't an ISO 8601 date" : {
+
+    },
+    "“sha256” isn't 64 hexadecimal characters" : {
+
+    },
+    "“signature” isn't a base64 Ed25519 signature" : {
+
+    },
+    "“url” isn't a Basket release download (%@)" : {
+
+    },
+    "“url” isn't a Basket release download (none are allowed)" : {
+
+    },
+    "“url” isn't a valid URL" : {
+
+    },
+    "“url” must be a file URL" : {
+
+    },
+    "“url” must name a .zip directly under %@" : {
+
+    },
+    "“url” must use https" : {
+
+    },
+    "“version” %@ isn't X.Y.Z" : {
 
     },
     "•" : {
