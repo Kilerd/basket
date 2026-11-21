@@ -125,7 +125,10 @@ private struct ContainerInfoView: View {
                         ContainerActivityRows(container: container)
                     }
                     // Short values: a fixed width, so General and Network get room for long ones.
-                    .frame(width: 250)
+                    // 250 pt fits the English labels; longer ones (German, French) widen it.
+                    .frame(width: InfoRow.sectionWidth(
+                        labels: ["CPUs", "Memory limit", "Processes", "Activity", "Memory Saver"],
+                        valueWidth: 130, minimum: 250))
                     InfoSection(title: "Network") {
                         InfoRow(label: "IP address", value: container.ipv4Address ?? "—", monospaced: true)
                         InfoRow(label: "Hostname", value: container.hostname ?? "—")

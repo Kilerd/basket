@@ -295,14 +295,14 @@ private struct MigrationImagesTable: View {
                     .help(row.image.reference ?? row.image.imageID)
                     .accessibilityIdentifier("migration.row.\(row.id)")
             }
-            .width(min: 140, ideal: 220)
+            .width(min: 140, ideal: 200)
             TableColumn("Tag", value: \.tag) { row in
                 Text(row.image.tag ?? (row.image.isDangling ? "<none>" : Format.shortDigest(row.image.reference.map { String($0.split(separator: "@").last ?? "") } ?? "")))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            .width(min: 60, ideal: 130)
+            .width(min: 60, ideal: 150)
             TableColumn("Size", value: \.size) { row in
                 Text(Format.disk(row.size)).monospacedDigit()
                     .help("Disk used in OrbStack; the import copies the compressed \(row.image.exportPlatform) layers only")

@@ -88,11 +88,11 @@ private struct MachinesTable: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .width(min: 120, ideal: 190)
+            .width(min: 120, ideal: 170)
             TableColumn("Image", value: \.image) { row in
                 Text(ImageName(row.image).display).foregroundStyle(.secondary).lineLimit(1).help(row.image)
             }
-                .width(min: 90, ideal: 130)
+                .width(min: 90, ideal: 120)
             TableColumn("State", value: \.stateOrder) { row in
                 StateBadge(state: row.summary.state, pendingVerb: store.pending[row.id])
             }
@@ -119,11 +119,11 @@ private struct MachinesTable: View {
             .width(min: 70, ideal: 80)
             .alignment(.numeric)
             TableColumn("Home") { row in Text(homeMountTitle(row.summary.homeMount)).foregroundStyle(.secondary) }
-                .width(min: 70, ideal: 90)
+                .width(min: 112, ideal: 120)  // "Schreibgeschützt", "Lecture seule"
             TableColumn("IP Address") { row in
                 Text(row.summary.ipv4Address ?? "—").font(.body.monospaced()).foregroundStyle(.secondary)
             }
-            .width(min: 100, ideal: 120)
+            .width(min: 100, ideal: 110)
         }
         .contextMenu(forSelectionType: String.self) { ids in
             if ids.count == 1, let id = ids.first, let m = store.machines.first(where: { $0.id == id }) {

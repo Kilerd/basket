@@ -69,6 +69,10 @@ struct ContainerNameCell: View {
                 .lineLimit(1)
                 .help("Service \(service) of \(row.summary.labels[ComposeLabels.project] ?? ""), container \(row.summary.id)")
                 .accessibilityElement(children: .combine)
+                // Name and container as label and value: VoiceOver reads both, and no language's
+                // list separator ("、") makes the combined text wider than the two texts on screen.
+                .accessibilityLabel(Text(verbatim: service))
+                .accessibilityValue(Text(verbatim: row.summary.id))
                 .accessibilityIdentifier("containers.row.\(row.id)")
             } else {
                 Text(row.name)

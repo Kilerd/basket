@@ -345,6 +345,8 @@ struct InfoRow: View {
     var label: Text
     var value: String
     var monospaced = false
+    /// UI labels are short and never truncated; data labels (long label keys) may be.
+    private var labelIsUIText = true
 
     /// A row whose label is UI text ("Image", "Created").
     init(label: LocalizedStringKey, value: String, monospaced: Bool = false) {
@@ -358,6 +360,16 @@ struct InfoRow: View {
         self.label = Text(verbatim: verbatimLabel)
         self.value = value
         self.monospaced = monospaced
+        self.labelIsUIText = false
+    }
+
+    /// Width of an `InfoSection` whose rows have these labels and values up to `valueWidth`:
+    /// `minimum` (sized for English) or more when the translated labels are longer.
+    static func sectionWidth(labels: [String.LocalizationValue], valueWidth: CGFloat, minimum: CGFloat) -> CGFloat {
+        let font = NSFont.preferredFont(forTextStyle: .callout)
+        let widest = labels.map { (String(localized: $0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+        // Section padding (12 + 12) and the grid's column spacing (12).
+        return max(minimum, (widest + 12 + valueWidth + 24).rounded(.up))
     }
 
     var body: some View {
@@ -365,6 +377,9 @@ struct InfoRow: View {
             label
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                // A UI label keeps its full width (German and French run long); the value
+                // takes what is left.
+                .fixedSize(horizontal: labelIsUIText, vertical: false)
                 .gridColumnAlignment(.leading)
             Text(value.isEmpty ? "—" : value)
                 .font(monospaced ? .callout.monospaced() : .callout)

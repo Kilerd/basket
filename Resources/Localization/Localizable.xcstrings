@@ -4123,7 +4123,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lldプラットフォーム"
+            "value" : "%lldバリアント"
           }
         },
         "zh-Hans" : {
@@ -27741,7 +27741,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lecture et écriture"
+            "value" : "Lecture/écriture"
           }
         },
         "ja" : {
@@ -31247,13 +31247,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Container durchsuchen"
+            "value" : "Suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des conteneurs"
+            "value" : "Rechercher"
           }
         },
         "ja" : {
@@ -31281,13 +31281,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Images durchsuchen"
+            "value" : "Suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des images"
+            "value" : "Rechercher"
           }
         },
         "ja" : {
@@ -31315,13 +31315,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Maschinen durchsuchen"
+            "value" : "Suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des machines"
+            "value" : "Rechercher"
           }
         },
         "ja" : {
@@ -31349,13 +31349,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Netzwerke durchsuchen"
+            "value" : "Suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des réseaux"
+            "value" : "Rechercher"
           }
         },
         "ja" : {
@@ -31383,13 +31383,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OrbStack durchsuchen"
+            "value" : "In OrbStack suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher dans OrbStack"
+            "value" : "Rechercher"
           }
         },
         "ja" : {
@@ -31417,13 +31417,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Volumes durchsuchen"
+            "value" : "Suchen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des volumes"
+            "value" : "Rechercher"
           }
         },
         "ja" : {

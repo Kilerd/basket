@@ -111,7 +111,7 @@ private struct ImagesTable: View {
             }
             .width(min: 170, ideal: 190)
             TableColumn("Used By", value: \.usedBy.count) { row in
-                Text(row.usedBy.isEmpty ? String(localized: "Unused", comment: "Nothing uses it (an image or a volume)") : row.usedBy.localizedList)
+                Text(row.usedBy.isEmpty ? String(localized: "Unused", comment: "Nothing uses it (an image or a volume)") : row.usedBy.compactList)
                     .foregroundStyle(row.usedBy.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
             }

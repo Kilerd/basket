@@ -89,7 +89,7 @@ struct ContainerActivityRows: View {
         InfoRow(label: "Activity", value: activity)
         if !MemorySaverPolicy.isMachineBacked(container) {
             GridRow {
-                Text("Memory Saver").foregroundStyle(.secondary).lineLimit(1)
+                Text("Memory Saver").foregroundStyle(.secondary).lineLimit(1).fixedSize(horizontal: true, vertical: false)
                 saverControl
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

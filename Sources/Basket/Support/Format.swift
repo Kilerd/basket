@@ -29,9 +29,11 @@ enum Format {
         value.formatted()
     }
 
+    /// "5 days ago", "1 wk. ago". Numeric: the named forms ("la semaine dernière") run much
+    /// longer in some languages, and these dates sit in narrow table columns.
     static func relative(_ date: Date?) -> String {
         guard let date else { return "—" }
-        return date.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
+        return date.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated))
     }
 
     static func dateTime(_ date: Date?) -> String {

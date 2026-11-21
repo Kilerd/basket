@@ -46,7 +46,7 @@ struct VolumeRow: Identifiable, Hashable {
     var capacity: Int64
     var created: Double
     var usedBy: [String]
-    var usedByText: String { usedBy.isEmpty ? "—" : usedBy.localizedList }
+    var usedByText: String { usedBy.isEmpty ? "—" : usedBy.compactList }
 }
 
 struct NetworkRow: Identifiable, Hashable {

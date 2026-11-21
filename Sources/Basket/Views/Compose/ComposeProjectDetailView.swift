@@ -158,7 +158,9 @@ private struct ComposeOverview: View {
                         InfoRow(label: "CPUs", value: String(localized: "\(running.reduce(0) { $0 + $1.cpus }) of \(project.containers.reduce(0) { $0 + $1.cpus }) running",
                                                               comment: "CPUs of the running services, of all services"))
                     }
-                    .frame(width: 280)
+                    // 280 pt fits the English labels; longer ones (German, French) widen it.
+                    .frame(width: InfoRow.sectionWidth(labels: ["Limits", "In use", "On this Mac", "CPUs"],
+                                                       valueWidth: 160, minimum: 280))
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 InfoSection(title: "Services") {
