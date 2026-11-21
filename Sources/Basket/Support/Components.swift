@@ -290,7 +290,7 @@ struct ServiceUnavailableView: View {
         case .cliMissing(let message):
             SectionEmptyState(section: section, title: "container CLI Not Found", systemImage: "exclamationmark.triangle",
                               message: "\(message)") {
-                SettingsLink { Text("Open Settings…") }
+                Button("Open Settings…") { store.selectedSection = .settings }
                     .accessibilityIdentifier("\(section.rawValue).action.settings")
             }
         default:
@@ -301,7 +301,7 @@ struct ServiceUnavailableView: View {
     /// One full sentence per section: languages inflect the noun differently.
     private static func stoppedMessage(_ section: AppSection) -> LocalizedStringKey {
         switch section {
-        case .overview, .containers:
+        case .overview, .containers, .settings:
             "Start the container system to see your containers. It uses no memory until containers run."
         case .images: "Start the container system to see your images. It uses no memory until containers run."
         case .volumes: "Start the container system to see your volumes. It uses no memory until containers run."

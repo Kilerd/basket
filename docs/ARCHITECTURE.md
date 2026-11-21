@@ -25,7 +25,7 @@ Sources/BasketCore/           Domain model + backends (no UI)
   Compose/                    YAML parser, compose loader/planner, project grouping, up/down/start/stop
   Update/                     Signed self-update: manifest, Ed25519 + code-signature checks, installer, swap helper
   JSON/                       JSONFormatter: one-pass re-indent of inspect JSON + highlight tokens
-Sources/Basket/               SwiftUI app (window, sections, menu bar extra, settings)
+Sources/Basket/               SwiftUI app (main window and its sections, Settings included; menu bar extra)
 Sources/BasketAXKit/          Accessibility snapshot model, capture (in-process + AXUIElement), lint rules, reports
 Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; `lint` checks dumped snapshots)
 Fixtures/demo/                Rich, deterministic raw-CLI JSON used by FixtureBackend in E2E runs
@@ -61,8 +61,14 @@ French and German; terms and typography are in [l10n/glossary.md](l10n/glossary.
   variations (a plural form must contain the number; it varies on the first integer argument);
   lists use `ListFormatStyle`, and sizes, percentages, durations and dates use formatters.
   Accessibility identifiers are never localized.
-- **Language**: macOS's preferred languages, or Settings ▸ General ▸ Language, which writes
-  `AppleLanguages` in Basket's own defaults and takes effect after a relaunch. Self-test and E2E
+- **Language**: macOS's preferred languages, or Settings ▸ General ▸ Language (the Settings
+  section at the bottom of the sidebar, ⌘,), which writes `AppleLanguages` in Basket's own
+  defaults. It takes effect after a relaunch: the section then says “Relaunch Basket to switch to
+  <language>” next to Relaunch Now, which quits normally and reopens Basket on Settings. It is
+  not applied live on purpose: injecting `.environment(\.locale, …)` re-resolves only SwiftUI
+  `Text("…")` literals, while the ~650 `String(localized:)` texts (sidebar, window titles, status
+  bars, states, BasketCore messages), the formatters (`Format`, dates) and the AppKit menus keep
+  the launch language — a window half in one language and half in another. Self-test and E2E
   pick one with `BASKET_LANGUAGE=<id>`: `-AppleLanguages (<id>)` plus the matching region format
   `-AppleLocale` (`app_locale` in `scripts/_common.sh`: fr_FR, de_DE, ja_JP, zh_CN, zh_TW, en_US),
   for that run only, so screenshots show the language's number and date formats ("4,21 Go"); the
@@ -83,8 +89,8 @@ replace it later without touching the UI.
 | `BASKET_FIXTURES_DIR` | directory for `FixtureBackend` (e.g. `Fixtures/demo`) |
 | `BASKET_CONTAINER_CLI` | explicit path to the `container` binary |
 | `BASKET_UI_TEST` | `1` = deterministic UI: fixed 1280×820 window, no animations, no polling jitter |
-| `BASKET_INITIAL_SECTION` | sidebar section to open first (`overview`, `containers`, …) |
-| `BASKET_SELFTEST_DIR` | self-test: visit every section, write `<section>.png` + `<section>.ax.json`, then quit |
+| `BASKET_INITIAL_SECTION` | sidebar section to open first (`overview`, `containers`, …, `settings`) |
+| `BASKET_SELFTEST_DIR` | self-test: visit every section, write `<section>.png` + `<section>.ax.json` (plus `settings-end`, the end of the Settings form, and `settings-language`, the relaunch prompt after a language change; UI-test runs never save the language), then quit |
 | `BASKET_DOCKER_CLI` | explicit path to the `docker` binary used to read OrbStack (default: OrbStack's own) |
 | `BASKET_ONBOARDING` | `1` = open "Set Up Basket" at launch even in UI-test/self-test runs (otherwise it opens only on first launch or when the CLI is missing, and never in UI tests); with `BASKET_SELFTEST_DIR` the self-test walks every step first (`onboarding-<step>[-<state>].png/.ax.json`, plus `-dark.png`) |
 | `BASKET_FAKE_BREW` | UI-test/fixture runs only: `1` = pretend Homebrew is installed so the onboarding shows "Install with Homebrew" (a simulated install); fixture runs never look at the real Homebrew |
@@ -154,7 +160,7 @@ and Japanese text is checked for truncation from two characters on).
 | Element | Identifier |
 |---|---|
 | Main window | `basket.main` |
-| Sidebar items | `sidebar.<section>` — `overview`, `containers`, `images`, `volumes`, `networks`, `machines`, `migration` |
+| Sidebar items | `sidebar.<section>` — `overview`, `containers`, `images`, `volumes`, `networks`, `machines`, `migration`, and `settings` (pinned at the bottom, above the status footer) |
 | Section root | `section.<section>` |
 | Toolbar / header actions | `<section>.action.<verb>` (e.g. `containers.action.new`, `images.action.pull`) |
 | Search field | `<section>.search` |
@@ -167,7 +173,7 @@ and Japanese text is checked for truncation from two characters on).
 | Card actions | `overview.action.<verb>` — e.g. `reclaim` (disk), `reclaim-memory`, `stop-idle` |
 | Sheets | `sheet.<name>` (e.g. `sheet.reclaim-memory`); its controls `<name>.<control>` (`reclaim-memory.action.confirm`, `reclaim-memory.container.<id>`) |
 | Disk reclaim / image recovery | `sheet.reclaim` with items `reclaim.{containers,images,volumes}.item.<id>`; Images recovery strip `images.recovery`, `images.recovery.{restore,delete}.<archive file>` |
-| Settings controls | `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`); General ▸ Language: picker `settings.language` (System + every shipped language, each named in itself) and, after a change, `settings.language-relaunch` (“Relaunch Now”) |
+| Settings section | root `section.settings` (title “Settings”, ⌘, and the app menu's and menu bar's “Settings…” select it); controls `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`); General ▸ Language: picker `settings.language` (System + every shipped language, each named in itself) and, after a change, the prompt `settings.language-pending` with `settings.language-relaunch` (“Relaunch Now”) |
 | Compose | header rows `containers.group.<project>` (disclosure `containers.group.<project>.toggle`), service rows keep `containers.row.<id>`; `containers.action.compose-up` (toolbar, ⇧⌘O), project detail `containers.detail` with `containers.action.project-{start,stop,restart,down,reveal}`; sheet `sheet.compose-plan` with `compose-plan.{file,memory,cpus,service-names,existing,services,service.<name>,warning.<n>,commands,progress,error,copy,cancel,up,show,done}` |
 | Onboarding (“Set Up Basket” window) | window `onboarding.window`; one step root `onboarding.step.<welcome|install|system|orbstack|docker|done>`; every button/link `onboarding.action.<verb>` (`back`, `continue`, `skip`, `later`, `not-now`, `install-brew`, `cancel`, `download`, `check-again`, `choose-cli`, `start-system`, `migrate`, `enable-docker`, `disable-docker`, `docs`, `open-basket`); other elements `onboarding.<control>` (`progress`, `title`, `status`, `log`, `error`, `requirement.<name>`, `compare.<memory|disk>`, `planned-change`, `summary`, `memory-saver`). Linted with this contract instead of `basket.main`. Settings: `settings.run-setup`, `settings.docker-command` |
 | Updates | sheet `sheet.update`: title `update.version` (“Basket X.Y.Z is available”), `update.notes`, `update.progress`, `update.error`, buttons `update.{install,later,skip,cancel,retry,done,releases}`; checking / up to date / unavailable / failed-check title `update.status`. Settings: `settings.updates.{automatic,check,status}` |
@@ -175,6 +181,7 @@ and Japanese text is checked for truncation from two characters on).
 
 Every list section (`containers`, `images`, `volumes`, `networks`, `machines`, `migration`) must expose
 `<section>.search`, `<section>.action.refresh`, and either `<section>.list` or `<section>.empty`.
+`settings` is a form, not a list: it needs only `sidebar.settings` and `section.settings`.
 
 ## First run (“Set Up Basket”)
 

@@ -208,7 +208,7 @@ extension AppStore {
         default: break
         }
         switch section {
-        case .overview:
+        case .overview, .settings:
             return ""
         case .containers:
             let running = runningContainers

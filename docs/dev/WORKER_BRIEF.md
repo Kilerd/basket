@@ -50,7 +50,7 @@ No full diffs or files.
 - **Quality gate for any UI change:** `BASKET_SCRATCH=.build-<lane> BASKET_BUILD_DIR=$PWD/build/<lane> scripts/selftest.sh demo` (also `empty`
   and `stopped` if you touched states) must end with 0 errors and 0 warnings, and you must look at the PNGs
   it writes under `artifacts/selftest/` (Read renders images) — misaligned, clipped or inconsistent UI is a
-  failure even if the lint passes. `BASKET_SELFTEST_EXTRAS=1` also captures sheets/detail tabs/Settings.
+  failure even if the lint passes. `BASKET_SELFTEST_EXTRAS=1` also captures sheets/detail tabs (Settings is a section, always captured).
 - New sections/sheets must follow the AX identifier contract in docs/ARCHITECTURE.md; extend the contract
   doc and `AXAuditor` contract rule together if you add a section.
 - Full test suite: `swift test --scratch-path .build-<lane>` (all 142+ tests must stay green).

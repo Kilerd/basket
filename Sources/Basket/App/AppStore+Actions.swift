@@ -138,7 +138,7 @@ extension AppStore {
 
     var newItemTitle: String {
         switch selectedSection {
-        case .overview, .containers: String(localized: "New Container…")
+        case .overview, .containers, .settings: String(localized: "New Container…")
         case .images: String(localized: "Pull Image…")
         case .volumes: String(localized: "New Volume…")
         case .networks: String(localized: "New Network…")
@@ -149,7 +149,7 @@ extension AppStore {
 
     func newItem() {
         switch selectedSection {
-        case .overview, .containers: activeSheet = .newContainer(.defaults())
+        case .overview, .containers, .settings: activeSheet = .newContainer(.defaults())
         case .images: activeSheet = .pullImage("")
         case .volumes: activeSheet = .newVolume
         case .networks: activeSheet = .newNetwork
@@ -160,7 +160,7 @@ extension AppStore {
 
     var canDeleteSelection: Bool {
         switch selectedSection {
-        case .overview: false
+        case .overview, .settings: false
         case .containers: !containerSelection.isEmpty
         case .images: !imageSelection.isEmpty
         case .volumes: !volumeSelection.isEmpty
@@ -172,7 +172,7 @@ extension AppStore {
 
     func deleteSelection() {
         switch selectedSection {
-        case .overview: break
+        case .overview, .settings: break
         case .containers: confirmDeleteContainers(Array(containerSelection))
         case .images: confirmDeleteImages(Array(imageSelection))
         case .volumes: confirmDeleteVolumes(Array(volumeSelection))

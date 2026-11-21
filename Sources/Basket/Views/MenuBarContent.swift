@@ -56,7 +56,7 @@ struct MenuBarContent: View {
             NSApp.activate()
             if store.updates.offer != nil { store.updates.showAvailableUpdate() } else { store.updates.checkForUpdates() }
         }
-        SettingsLink { Text("Settings…") }
+        Button("Settings…") { store.showSettings(openWindow) }
             .keyboardShortcut(",")
         Divider()
         Button("Quit Basket") { NSApp.terminate(nil) }

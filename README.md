@@ -78,7 +78,8 @@ Available in `0.0.1`:
 - **Guided setup.** First launch checks the Mac, installs `container` (Homebrew or the official
   installer), starts it, offers OrbStack migration and the `docker` command.
 - **Volumes, networks, Linux machines** (`container machine`), a **menu bar extra** and
-  **Settings** (CLI path, refresh interval, default memory, launch at login).
+  **Settings** at the bottom of the sidebar (language, CLI path, refresh interval, default
+  memory, launch at login).
 - **Signed updates.** Basket checks GitHub Releases daily (Settings ▸ Updates) and installs a
   new version only after verifying its signature and code signature ([how](docs/updates.md)).
 - **Accessible by construction.** Every control has an accessible name and a stable
@@ -86,7 +87,8 @@ Available in `0.0.1`:
   [How the UI is tested](#how-the-ui-is-tested).
 
 **Six languages** (since 0.0.2) — English, 简体中文, 繁體中文, 日本語, Français and
-Deutsch. Basket follows the macOS language, or the one chosen in Settings ▸ General ▸ Language.
+Deutsch. Basket follows the macOS language, or the one chosen in Settings ▸ General ▸ Language
+(Settings is at the bottom of the sidebar, or press ⌘,; Basket relaunches to switch).
 
 Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes and
 optional Docker API compatibility. See the

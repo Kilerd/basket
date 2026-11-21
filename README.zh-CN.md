@@ -47,11 +47,11 @@ Apple 的 [`container`](https://github.com/apple/container) 让**每个容器运
 - **从 OrbStack 迁移**。导入 OrbStack 的镜像（仅本机平台，按内容校验），并把容器重新创建为 `container run` 命令，对无法迁移的设置给出警告。Basket 只读取 OrbStack，且只通过一份只读 `docker` 命令白名单。
 - **`docker` 命令**。可选的 `docker` 垫片会把日常的 `docker` 命令转换为 `container` 命令（[支持范围](docs/docker-shim.md)）；只有你同意后才会启用，并且会先给出要写入的确切 shell 配置行。
 - **引导式设置**。首次启动时检查这台 Mac，安装 `container`（通过 Homebrew 或官方安装器）并启动它，然后提供 OrbStack 迁移和 `docker` 命令。
-- **卷、网络、Linux 机器**（`container machine`）、**菜单栏附加项**和**设置**（CLI 路径、刷新间隔、默认内存、登录时打开）。
+- **卷、网络、Linux 机器**（`container machine`）、**菜单栏附加项**，以及边栏底部的**设置**（语言、CLI 路径、刷新间隔、默认内存、登录时打开）。
 - **签名更新**。Basket 每天检查 GitHub Releases（设置 ▸ 更新），只有在验证签名和代码签名之后才安装新版本（[说明](docs/updates.md)）。
 - **从设计上就支持辅助功能**。每个控件都有可读的辅助功能名称和稳定的标识符，界面通过辅助功能树进行测试；参见[界面如何测试](#界面如何测试)。
 
-下一个版本将提供：**六种语言**——English、简体中文、繁體中文、日本語、Français 和 Deutsch。Basket 跟随 macOS 的语言，也可以在“设置 ▸ 通用 ▸ 语言”中另选。
+**六种语言**（自 0.0.2 起）——English、简体中文、繁體中文、日本語、Français 和 Deutsch。Basket 跟随 macOS 的语言，也可以在“设置 ▸ 通用 ▸ 语言”中另选（“设置”位于边栏底部，或按 ⌘,；Basket 重新打开后即切换）。
 
 计划中：类似 `*.orb.local` 的 DNS 名称、`container build`、Kubernetes，以及可选的 Docker API 兼容。参见[功能对照表](docs/EVOLUTION.md#orbstack--basket-feature-map)和尚未关闭的 issue。
 

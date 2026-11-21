@@ -36,24 +36,4 @@ extension SelfTestRunner {
         }
         updates.showForSelfTest(.idle, offer: nil, size: nil)
     }
-
-    /// The end of the (scrolling) Settings form, where Updates is: `settings-end`.
-    func captureSettingsEnd(_ settings: NSWindow) async {
-        guard let scroll = Self.firstScrollView(in: settings.contentView), let document = scroll.documentView,
-              document.frame.height > scroll.contentView.bounds.height else { return }
-        let bottom = document.isFlipped ? document.frame.height - scroll.contentView.bounds.height : 0
-        scroll.contentView.scroll(to: NSPoint(x: 0, y: bottom))
-        scroll.reflectScrolledClipView(scroll.contentView)
-        try? await Task.sleep(for: .milliseconds(500))
-        await capture(settings, as: "settings-end")
-    }
-
-    private static func firstScrollView(in view: NSView?) -> NSScrollView? {
-        guard let view else { return nil }
-        if let scroll = view as? NSScrollView { return scroll }
-        for subview in view.subviews {
-            if let found = firstScrollView(in: subview) { return found }
-        }
-        return nil
-    }
 }

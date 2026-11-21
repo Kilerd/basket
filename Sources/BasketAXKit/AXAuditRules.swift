@@ -127,7 +127,9 @@ public enum AXAuditRules {
 
     // MARK: Identifier contract (docs/ARCHITECTURE.md)
     public static let mainWindowIdentifier = "basket.main"
-    public static let sections = ["overview", "containers", "images", "volumes", "networks", "machines", "migration"]
+    /// Sidebar order. `settings` (pinned at the bottom) is a form, not a list: it needs only its
+    /// sidebar item and section root.
+    public static let sections = ["overview", "containers", "images", "volumes", "networks", "machines", "migration", "settings"]
     public static let listSections: Set<String> = ["containers", "images", "volumes", "networks", "machines", "migration"]
     /// Section titles that aren't just the capitalized section name.
     public static let sectionTitles = ["migration": "Migrate from OrbStack"]

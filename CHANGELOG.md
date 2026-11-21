@@ -16,6 +16,11 @@ next patch. Expect breaking changes until `0.1.0`.
   colours that keep WCAG AA contrast in light and dark mode (#32). Find (⌘F) searches it, long
   lines scroll sideways instead of wrapping, and Copy JSON copies the tidied text. Large documents
   are formatted and coloured off the main thread.
+- Settings in the sidebar (#30): a Settings item at the bottom of the sidebar shows the settings
+  in the main window, with the language first (Settings ▸ General ▸ Language). ⌘, and
+  “Settings…” in the app menu and the menu bar open it; the separate Settings window is gone.
+  After choosing another language, Basket names it and offers Relaunch Now, which reopens on
+  Settings in the new language.
 
 ### Fixed
 

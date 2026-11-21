@@ -2,8 +2,8 @@ import AppKit
 import BasketAXKit
 
 /// `BASKET_SELFTEST_DIR`: visits every section, writes `<section>.png` (the window including its
-/// toolbar; see `WindowSnapshot`) and `<section>.ax.json` (the window's accessibility tree), then
-/// quits with status 0.
+/// toolbar; see `WindowSnapshot`) and `<section>.ax.json` (the window's accessibility tree), plus
+/// `settings-end` and `settings-language` (see SelfTestRunner+Settings), then quits with status 0.
 @MainActor
 struct SelfTestRunner {
     let store: AppStore
@@ -37,6 +37,7 @@ struct SelfTestRunner {
             writePNG(of: window, to: directory.appending(path: "\(section.rawValue).png"))
             await writeAX(of: window, to: directory.appending(path: "\(section.rawValue).ax.json"))
             log("captured \(section.rawValue) (window \(Int(window.frame.width))×\(Int(window.frame.height)))")
+            if section == .settings { await captureSettingsStates(window) }
         }
         if ProcessInfo.processInfo.environment["BASKET_SELFTEST_EXTRAS"] == "1" {
             await captureExtras()
@@ -45,8 +46,8 @@ struct SelfTestRunner {
         NSApp.terminate(nil)
     }
 
-    /// Opt-in (`BASKET_SELFTEST_EXTRAS=1`): container detail tabs, every sheet and Settings, for
-    /// visual review. Sheets/Settings are separate windows, captured as `sheet-<id>` / `settings`.
+    /// Opt-in (`BASKET_SELFTEST_EXTRAS=1`): container detail tabs and every sheet, for visual
+    /// review. Sheets are separate windows, captured as `sheet-<id>`.
     private func captureExtras() async {
         guard let window = store.mainWindow else { return }
         store.selectedSection = .containers
@@ -77,16 +78,6 @@ struct SelfTestRunner {
             }
             store.activeSheet = nil
             try? await Task.sleep(for: .milliseconds(500))
-        }
-        let before = Set(NSApp.windows.map(ObjectIdentifier.init))
-        store.openSettings?()
-        try? await Task.sleep(for: .milliseconds(900))
-        if let settings = NSApp.windows.first(where: { !before.contains(ObjectIdentifier($0)) && $0.isVisible }) {
-            await capture(settings, as: "settings")
-            await captureSettingsEnd(settings)
-            settings.close()
-        } else {
-            log("settings window not found: \(NSApp.windows.map { "\($0.className) \($0.identifier?.rawValue ?? "")" })")
         }
         await captureMigrationExtras(window)
         await captureImageExtras(window)

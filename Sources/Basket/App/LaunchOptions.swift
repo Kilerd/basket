@@ -3,8 +3,16 @@ import BasketCore
 
 enum AppSection: String, CaseIterable, Identifiable, Sendable {
     case overview, containers, images, volumes, networks, machines, migration
+    /// Pinned at the bottom of the sidebar; opened with ⌘, (not ⌘1…⌘7).
+    case settings
 
     var id: String { rawValue }
+
+    /// The sections with a ⌘1…⌘7 shortcut in the View menu (Settings has ⌘, in the app menu).
+    static var browsable: [AppSection] { allCases.filter { $0 != .settings } }
+
+    /// List sections have a toolbar search field (⌥⌘F).
+    var hasSearch: Bool { self != .overview && self != .settings }
 
     var title: String {
         switch self {
@@ -15,13 +23,14 @@ enum AppSection: String, CaseIterable, Identifiable, Sendable {
         case .networks: String(localized: "Networks")
         case .machines: String(localized: "Machines")
         case .migration: String(localized: "Migrate from OrbStack")
+        case .settings: String(localized: "Settings", comment: "Sidebar section and its title: Basket's settings")
         }
     }
 
     /// Placeholder (and accessible name) of the toolbar search field.
     var searchPrompt: String {
         switch self {
-        case .overview: String(localized: "Search")
+        case .overview, .settings: String(localized: "Search")
         case .containers: String(localized: "Search Containers")
         case .images: String(localized: "Search Images")
         case .volumes: String(localized: "Search Volumes")
@@ -40,6 +49,7 @@ enum AppSection: String, CaseIterable, Identifiable, Sendable {
         case .networks: "network"
         case .machines: "desktopcomputer"
         case .migration: "square.and.arrow.down.on.square"
+        case .settings: "gearshape"
         }
     }
 }
