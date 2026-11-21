@@ -80,19 +80,7 @@ private struct DiskCard: View {
                     .init(label: "Volumes", value: df.volumes.sizeBytes, color: Series.aqua),
                 ])
                 .frame(height: 10)
-                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-                    GridRow {
-                        Text(verbatim: "")
-                        Text("In use").gridColumnAlignment(.trailing)
-                        Text("Size").gridColumnAlignment(.trailing)
-                        Text("Reclaimable").gridColumnAlignment(.trailing)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    categoryRow("Containers", df.containers, Series.blue)
-                    categoryRow("Images", df.images, Series.orange)
-                    categoryRow("Volumes", df.volumes, Series.aqua)
-                }
+                breakdown(df)
                 let bloat = store.images.reduce(Int64(0)) { $0 + max(0, $1.totalSizeBytes - $1.hostVariantSizeBytes) }
                 if bloat > 0 {
                     Label("\(Format.disk(bloat)) of images is for other CPU architectures", systemImage: "exclamationmark.triangle")
@@ -104,15 +92,37 @@ private struct DiskCard: View {
         }
     }
 
-    private func categoryRow(_ name: LocalizedStringKey, _ c: DiskUsageCategory, _ color: Color) -> some View {
+    /// Spans the card like the bar above it: the category takes the leading, flexible column; the
+    /// numbers sit in fixed right-aligned slots that end at the card's trailing edge, where the
+    /// bar and the Memory card's values end.
+    private func breakdown(_ df: DiskUsage) -> some View {
+        let count = CardSlot.count, size = CardSlot.disk
+        return Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                Text("In use").cardSlot(count).gridColumnAlignment(.trailing)
+                Text("Size").cardSlot(size).gridColumnAlignment(.trailing)
+                Text("Reclaimable").cardSlot(size).gridColumnAlignment(.trailing)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            categoryRow("Containers", df.containers, Series.blue, slots: (count, size))
+            categoryRow("Images", df.images, Series.orange, slots: (count, size))
+            categoryRow("Volumes", df.volumes, Series.aqua, slots: (count, size))
+        }
+    }
+
+    private func categoryRow(_ name: LocalizedStringKey, _ c: DiskUsageCategory, _ color: Color,
+                             slots: (count: CGFloat, size: CGFloat)) -> some View {
         GridRow {
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
-                Text(name)
+                Text(name).lineLimit(1)
             }
-            Text("\(c.active) of \(c.total)").monospacedDigit().foregroundStyle(.secondary)
-            Text(Format.disk(c.sizeBytes)).monospacedDigit()
-            Text(c.reclaimableBytes > 0 ? Format.disk(c.reclaimableBytes) : "—").monospacedDigit()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(c.active) of \(c.total)").cardSlot(slots.count).foregroundStyle(.secondary)
+            Text(Format.disk(c.sizeBytes)).cardSlot(slots.size)
+            Text(c.reclaimableBytes > 0 ? Format.disk(c.reclaimableBytes) : "—").cardSlot(slots.size)
                 .foregroundStyle(c.reclaimableBytes > 0 ? .primary : .secondary)
         }
         .font(.callout)
@@ -263,10 +273,15 @@ private struct OrbStackCard: View {
                  tint: orb?.isRunning == true ? .orange : .secondary)
         } content: {
             if let orb {
-                comparison(title: "Memory", orbStack: orb.memoryFootprintBytes, basket: store.totalHostMemory,
-                           format: Format.memory)
-                comparison(title: "Disk", orbStack: orb.dataAllocatedBytes ?? 0, basket: store.diskUsage?.totalBytes ?? 0,
-                           format: Format.disk)
+                // One grid for both comparisons, so their bars and values share columns; the values
+                // end at the card's trailing edge like the other cards'.
+                let slot = max(CardSlot.memory, CardSlot.disk)
+                Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
+                    comparison(title: "Memory", orbStack: orb.memoryFootprintBytes, basket: store.totalHostMemory,
+                               format: Format.memory, slot: slot)
+                    comparison(title: "Disk", orbStack: orb.dataAllocatedBytes ?? 0, basket: store.diskUsage?.totalBytes ?? 0,
+                               format: Format.disk, slot: slot, spaceAbove: 8)
+                }
                 Text(summary(orb))
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -275,22 +290,23 @@ private struct OrbStackCard: View {
         }
     }
 
-    private func comparison(title: LocalizedStringKey, orbStack: Int64, basket: Int64, format: (Int64) -> String) -> some View {
+    /// A title spanning the grid, then OrbStack's and Basket's rows.
+    @ViewBuilder
+    private func comparison(title: LocalizedStringKey, orbStack: Int64, basket: Int64, format: (Int64) -> String,
+                            slot: CGFloat, spaceAbove: CGFloat = 0) -> some View {
         let scale = Double(max(orbStack, basket, 1))
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
-                bar("OrbStack", orbStack, scale, Series.orange, format)
-                bar("Basket", basket, scale, Series.blue, format)
-            }
-        }
+        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            .padding(.top, spaceAbove)
+        bar("OrbStack", orbStack, scale, Series.orange, format, slot: slot)
+        bar("Basket", basket, scale, Series.blue, format, slot: slot)
     }
 
-    private func bar(_ label: String, _ bytes: Int64, _ scale: Double, _ color: Color, _ format: (Int64) -> String) -> some View {
+    private func bar(_ label: String, _ bytes: Int64, _ scale: Double, _ color: Color, _ format: (Int64) -> String,
+                     slot: CGFloat) -> some View {
         GridRow {
-            Text(label).frame(width: 70, alignment: .leading)
+            Text(label).lineLimit(1).fixedSize()
             MeterBar(fraction: Double(bytes) / scale, color: color, height: 8).frame(minWidth: 80)
-            Text(format(bytes)).monospacedDigit().gridColumnAlignment(.trailing)
+            Text(format(bytes)).cardSlot(slot).gridColumnAlignment(.trailing)
         }
         .font(.callout)
     }

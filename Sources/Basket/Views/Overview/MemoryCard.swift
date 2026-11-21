@@ -68,7 +68,7 @@ struct MemoryCard: View {
             Text(label).foregroundStyle(.secondary).gridColumnAlignment(.leading)
             MeterBar(fraction: Double(bytes) / scale, color: color, height: 8)
                 .frame(minWidth: 80)
-            Text(Format.memory(bytes)).monospacedDigit().gridColumnAlignment(.trailing)
+            Text(Format.memory(bytes)).cardSlot(CardSlot.memory).gridColumnAlignment(.trailing)
         }
         .font(.callout)
         .help(help)
@@ -122,7 +122,7 @@ struct MemoryCard: View {
         } else {
             let maxBytes = Double(max(top.first?.bytes ?? 1, 1))
             // Fixed name/mark/value widths: bars start and end at the same x in every row and the
-            // values' right edges line up.
+            // values' right edges line up. The value slot is the one the comparison above uses.
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(top) { c in
                     HStack(spacing: 10) {
@@ -146,8 +146,7 @@ struct MemoryCard: View {
                             }
                         }
                         .frame(width: 14)
-                        Text(Format.memory(c.bytes)).monospacedDigit().lineLimit(1)
-                            .frame(width: 72, alignment: .trailing)
+                        Text(Format.memory(c.bytes)).cardSlot(CardSlot.memory)
                     }
                     .font(.callout)
                 }

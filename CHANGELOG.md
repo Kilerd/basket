@@ -9,6 +9,13 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Overview: the Disk card's breakdown now spans the card, its numbers ending where the usage bar
+  ends, like the Memory card's values; the number columns are sized for every language, and the
+  OrbStack comparison's memory and disk bars line up (#31). A new accessibility-audit rule,
+  `card-trailing-alignment`, flags a card whose value column stops short of the card's edge.
+
 ## [0.0.2] - 2026-11-21
 
 ### Added
