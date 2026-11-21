@@ -74,7 +74,7 @@ custom (image, platform) → 自定
 check (tick checkboxes: “Check for Import”) → 勾选
 Enable / Disable → 启用 / 停用; Dismiss → 关闭
 login item → 登录项
-Setup assistant / Setup (section, step-list subtitle) → 设置助理 / 设置
+Setup assistant / Setup (section, step-list subtitle) → 设置助理 / 初始设置 (not bare 设置, which is Settings: the Setup group sits inside the Settings section)
 setup step list: Welcome 欢迎, Install container 安装 container, Start container 启动 container, From OrbStack OrbStack 迁移, docker Command docker 命令, Ready 就绪; “Coming from OrbStack?” 从 OrbStack 迁移？
 detail tabs: Info 信息, Logs 日志, Inspect 检查, Stats 统计, Overview 概览
 Follow / following (logs) → 跟随 / 跟随中

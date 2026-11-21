@@ -3,7 +3,6 @@ import BasketCore
 
 struct MainView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         @Bindable var store = store
@@ -19,10 +18,7 @@ struct MainView: View {
                 }
         }
         .frame(minWidth: 1100, minHeight: 700)
-        .background(WindowAccessor { window in
-            store.openSettings = { openSettings() }
-            store.attach(window: window)
-        })
+        .background(WindowAccessor { window in store.attach(window: window) })
         .sheet(item: $store.activeSheet) { sheet in
             SheetHost(sheet: sheet)
         }
@@ -61,6 +57,7 @@ private struct SectionHost: View {
             case .networks: NetworksView()
             case .machines: MachinesView()
             case .migration: MigrationView()
+            case .settings: SettingsView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -94,37 +91,78 @@ private struct SidebarView: View {
     @Environment(AppStore.self) private var store
 
     var body: some View {
-        List(selection: Binding(get: { store.selectedSection }, set: { if let s = $0 { store.selectedSection = s } })) {
-            row(.overview)
+        List(selection: selection) {
+            SidebarItem(section: .overview)
             Section("Resources") {
-                row(.containers)
-                row(.images)
-                row(.volumes)
-                row(.networks)
+                SidebarItem(section: .containers)
+                SidebarItem(section: .images)
+                SidebarItem(section: .volumes)
+                SidebarItem(section: .networks)
             }
             Section("Linux") {
-                row(.machines)
+                SidebarItem(section: .machines)
             }
             Section("OrbStack") {
-                row(.migration)
+                SidebarItem(section: .migration)
             }
         }
         .listStyle(.sidebar)
-        .safeAreaInset(edge: .bottom, spacing: 0) { SidebarFooter() }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                SidebarSettingsItem(selection: selection)
+                SidebarFooter()
+            }
+        }
     }
 
-    private func row(_ section: AppSection) -> some View {
+    private var selection: Binding<AppSection?> {
+        Binding(get: { store.selectedSection }, set: { if let s = $0 { store.selectedSection = s } })
+    }
+}
+
+private struct SidebarItem: View {
+    @Environment(AppStore.self) private var store
+    var section: AppSection
+
+    var body: some View {
         Label(section.title, systemImage: section.systemImage)
-            .badge(badge(for: section))
+            .badge(badgeCount)
             .tag(section)
             .accessibilityIdentifier("sidebar.\(section.rawValue)")
     }
 
-    private func badge(for section: AppSection) -> Int {
+    private var badgeCount: Int {
         switch section {
         case .containers: store.runningContainers.count
         case .machines: store.machines.filter { $0.state == .running }.count
         default: 0
+        }
+    }
+}
+
+/// Settings, pinned under the sections and above the footer: a one-row sidebar list sharing the
+/// selection, so it looks, highlights and reads (VoiceOver) like the rows above.
+private struct SidebarSettingsItem: View {
+    var selection: Binding<AppSection?>
+    @Environment(\.sidebarRowSize) private var rowSize
+
+    var body: some View {
+        List(selection: selection) {
+            SidebarItem(section: .settings)
+        }
+        .listStyle(.sidebar)
+        .scrollDisabled(true)
+        .scrollContentBackground(.hidden)
+        .frame(height: height)
+    }
+
+    /// The row (24, 32 or 40 pt for the sidebar icon size in System Settings ▸ Appearance,
+    /// measured on macOS 26) and 12 pt above the footer. The list adds no top inset here.
+    private var height: CGFloat {
+        switch rowSize {
+        case .small: 36
+        case .large: 52
+        default: 44
         }
     }
 }

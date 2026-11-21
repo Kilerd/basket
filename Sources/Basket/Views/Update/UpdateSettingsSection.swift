@@ -5,7 +5,6 @@ import BasketCore
 /// can't update themselves.
 struct UpdateSettingsSection: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let updates = store.updates
@@ -16,11 +15,7 @@ struct UpdateSettingsSection: View {
                 .disabled(!updates.isAvailable)
                 .accessibilityIdentifier("settings.updates.automatic")
             LabeledContent("Basket \(updates.currentVersionText)") {
-                Button("Check Now") {
-                    openWindow(id: "main")
-                    NSApp.activate()
-                    updates.checkForUpdates()
-                }
+                Button("Check Now") { updates.checkForUpdates() }
                 .disabled(!updates.isAvailable || updates.isBusy)
                 .accessibilityIdentifier("settings.updates.check")
             }

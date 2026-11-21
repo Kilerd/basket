@@ -75,6 +75,14 @@ func basketWindow(
             group([text(card.capitalized, at(220 + Double(i) * 340, 120, 100, 16))],
                   id: "overview.card.\(card)", frame: at(210 + Double(i) * 340, 110, 320, 200))
         }
+    } else if section == "settings" {
+        // A grouped form: no search field, refresh action or list.
+        content.append(node("AXScrollArea", nil, at(210, 60, 1060, 750), children: [
+            AXNode(role: "AXPopUpButton", identifier: "settings.language", title: "Language", value: "System",
+                   frame: at(520, 80, 400, 24), isEnabled: true),
+            AXNode(role: "AXCheckBox", identifier: "settings.launch-at-login", title: "Launch Basket at login",
+                   value: "0", frame: at(520, 116, 400, 22), isEnabled: true),
+        ]))
     } else {
         content.append(field("\(section).search", at(210, searchY, searchWidth, 24)))
         let refreshFrame = at(530, 70, 80, refreshHeight)

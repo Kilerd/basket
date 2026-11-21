@@ -89,7 +89,7 @@ A pull request is merged when all of these hold:
    with 0 errors and 0 warnings, in English and in German (`BASKET_LANGUAGE=de`, the longest
    labels). **Someone has also looked at the PNGs.** Clipped, misaligned or inconsistent UI fails
    even when the lint passes. Attach fixture screenshots to the PR.
-   `BASKET_SELFTEST_EXTRAS=1` also captures sheets, detail tabs and Settings.
+   `BASKET_SELFTEST_EXTRAS=1` also captures sheets and detail tabs.
 3. It has at least one approving review and no unresolved conversations.
 
 ## Workflow

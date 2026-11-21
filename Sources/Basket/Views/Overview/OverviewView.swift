@@ -181,7 +181,7 @@ private struct SystemCard: View {
                     .help("Start the container system")
                     .accessibilityIdentifier("overview.action.start-system")
             case .cliMissing:
-                SettingsLink { Text("Settings…") }
+                Button("Settings…") { store.selectedSection = .settings }
                     .accessibilityIdentifier("overview.action.settings")
             }
         } content: {

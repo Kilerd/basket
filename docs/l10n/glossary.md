@@ -114,7 +114,7 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | dangling / untagged image | 悬空 / 无标签 | 懸空 / 無標記 | ダングリング / タグなし | orpheline / sans tag | verwaist / ohne Tag | |
 | disk image (sparse) | 磁盘映像（稀疏） | 磁碟映像檔（稀疏） | ディスクイメージ（スパース） | image disque (fragmentée) | Festplattenimage (mitwachsend) | de: never bare “Image”, which is a container image. |
 | file-system volume | 宗卷 | 宗卷 | ボリューム | volume | Volume | The disk, as in Disk Utility — not a container volume. |
-| setup, Setup assistant | 设置、设置助理 | 初始設定、設定輔助程式 | セットアップ、設定アシスタント | configuration, Assistant de configuration | Einrichtung, Einrichtungsassistent | |
+| setup, Setup assistant | 初始设置、设置助理 | 初始設定、設定輔助程式 | セットアップ、設定アシスタント | configuration, Assistant de configuration | Einrichtung, Einrichtungsassistent | |
 
 Per-language decisions beyond this table (Compose and YAML vocabulary, update and signing terms,
 progress-line style, column abbreviations) are in [terms-zh-Hans.md](terms-zh-Hans.md),

@@ -8352,40 +8352,6 @@
         }
       }
     },
-    "Basket uses the new language after it relaunches." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basket verwendet die neue Sprache nach einem Neustart."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basket utilisera la nouvelle langue après sa relance."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新しい言語は、Basketを再起動すると適用されます。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basket 重新打开后将使用新语言。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basket 重新開啟後會使用新語言。"
-          }
-        }
-      }
-    },
     "Basket will stop the container API server. You can start it again at any time." : {
       "localizations" : {
         "de" : {
@@ -28645,6 +28611,41 @@
         }
       }
     },
+    "Relaunch Basket to switch to %@." : {
+      "comment" : "Settings ▸ General, after choosing another language. The placeholder is that language's name in itself, e.g. “Deutsch”",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte Basket neu, um zu „%@“ zu wechseln."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relancez Basket pour passer à « %@ »."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basketを再起動すると「%@」に切り替わります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新打开 Basket 以切换到“%@”。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新開啟 Basket 以切換至「%@」。"
+          }
+        }
+      }
+    },
     "Relaunch Now" : {
       "localizations" : {
         "de" : {
@@ -30810,7 +30811,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "重新运行设置…"
+            "value" : "重新运行初始设置…"
           }
         },
         "zh-Hant" : {
@@ -32129,6 +32130,41 @@
         }
       }
     },
+    "Settings" : {
+      "comment" : "Sidebar section and its title: Basket's settings",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réglages"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
     "Settings…" : {
       "localizations" : {
         "de" : {
@@ -32187,7 +32223,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置"
+            "value" : "初始设置"
           }
         },
         "zh-Hant" : {

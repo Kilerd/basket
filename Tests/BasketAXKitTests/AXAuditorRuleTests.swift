@@ -424,6 +424,19 @@ import Testing
         #expect(!AXAuditRules.requiredIdentifiers(section: "overview").joined().contains("overview.search"))
     }
 
+    @Test func settingsIsASectionButNotAList() {
+        #expect(contract(basketWindow(section: "settings"), "settings").isEmpty)
+        let required = AXAuditRules.requiredIdentifiers(section: "settings").joined()
+        #expect(required.contains("section.settings"))
+        #expect(!required.contains("settings.search") && !required.contains("settings.action.refresh")
+            && !required.contains("settings.list"))
+        let tree = strip(basketWindow(section: "settings"), ids: ["section.settings", "sidebar.settings"])
+        #expect(Set(contract(tree, "settings").compactMap(\.identifier)) == ["section.settings", "sidebar.settings"])
+        // Every section's sidebar lists the pinned Settings item.
+        let withoutItem = strip(basketWindow(section: "images"), ids: ["sidebar.settings"])
+        #expect(contract(withoutItem, "images").map(\.identifier) == ["sidebar.settings"])
+    }
+
     /// Removes the identifier (not the node) from every node carrying one of `ids`.
     func strip(_ n: AXNode, ids: Set<String>) -> AXNode {
         var copy = n

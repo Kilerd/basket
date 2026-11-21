@@ -38,18 +38,19 @@ struct BasketApp: App {
                 .modifier(OnboardingLaunchPresenter(store: store))
         }
         .menuBarExtraStyle(.menu)
-
-        Settings {
-            SettingsView()
-                .environment(store)
-        }
+        // No Settings scene: settings live in the main window (sidebar ▸ Settings, ⌘,).
     }
 }
 
 struct BasketCommands: Commands {
     let store: AppStore
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") { store.showSettings(openWindow) }
+                .keyboardShortcut(",")
+        }
         CommandGroup(replacing: .newItem) {
             Button(store.newItemTitle) { store.newItem() }
                 .keyboardShortcut("n")
@@ -62,9 +63,9 @@ struct BasketCommands: Commands {
                 .keyboardShortcut("r")
             Button("Search") { store.focusSearch() }
                 .keyboardShortcut("f", modifiers: [.command, .option])
-                .disabled(store.selectedSection == .overview)
+                .disabled(!store.selectedSection.hasSearch)
             Divider()
-            ForEach(Array(AppSection.allCases.enumerated()), id: \.element) { index, section in
+            ForEach(Array(AppSection.browsable.enumerated()), id: \.element) { index, section in
                 Button(section.title) { store.selectedSection = section }
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
             }

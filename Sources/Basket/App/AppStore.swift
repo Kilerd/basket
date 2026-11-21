@@ -161,12 +161,12 @@ final class AppStore {
     let memorySaver: MemorySaverState
     /// Signed self-updates from GitHub Releases (see `UpdateController`, docs/updates.md).
     let updates: UpdateController
+    /// Settings ▸ General ▸ Language (applies after a relaunch).
+    let language: LanguageChoice
 
     // MARK: Window & polling
     @ObservationIgnored weak var mainWindow: NSWindow?
     @ObservationIgnored weak var searchField: NSSearchField?
-    /// SwiftUI's `openSettings`, captured by the main window (the self-test opens Settings).
-    @ObservationIgnored var openSettings: (() -> Void)?
     @ObservationIgnored private var windowObservers: [NSObjectProtocol] = []
     @ObservationIgnored private var pollTasks: [Task<Void, Never>] = []
     @ObservationIgnored private var windowVisible = false
@@ -188,7 +188,9 @@ final class AppStore {
         self.backend = options.makeBackend(settingsCLIPath: cliPath)
         self.orbInspector = OrbStackInspector(fixturesDirectory: options.fixturesDirectory)
         self.migration = MigrationModel(migrator: options.makeMigrator())
-        self.selectedSection = options.initialSection ?? .overview
+        self.selectedSection = options.initialSection
+            ?? (options.isUITest ? nil : AppRelaunch.takeReopenSection()) ?? .overview
+        self.language = LanguageChoice(persistent: !options.isUITest)
         self.memorySaver = MemorySaverState(persistent: !options.isUITest)
         self.updates = UpdateController(isUITest: options.isUITest)
         migration.store = self
@@ -532,7 +534,7 @@ final class AppStore {
 
     func isLoaded(_ section: AppSection) -> Bool {
         switch section {
-        case .overview: true
+        case .overview, .settings: true
         case .containers: loaded.contains(.containers)
         case .images: loaded.contains(.images)
         case .volumes: loaded.contains(.volumes)
