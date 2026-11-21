@@ -317,7 +317,8 @@ private struct MigrationImagesTable: View {
             TableColumn("In Basket", value: \.basketOrder) { row in
                 MigrationImageStatus(row: row)
             }
-            .width(min: 90, ideal: 110)
+            // Room for the longest status pill in German and French ("Nicht verglichen").
+            .width(min: 120, ideal: 140)
             TableColumn("Created", value: \.created) { row in
                 Text(Format.relative(row.image.createdAt)).foregroundStyle(.secondary)
                     .help(Format.dateTime(row.image.createdAt))
@@ -353,8 +354,12 @@ private struct MigrationImageStatus: View {
             Pill(text: "In Basket", systemImage: "checkmark", tint: Series.blue)
                 .help("Basket has the same image (compared by content, not just by name)")
         case .checking:
-            Text("Comparing…").foregroundStyle(.secondary)
+            // A spinner fits the column in every language (a "Comparing…" label didn't, #17); the
+            // tooltip and VoiceOver say what is going on.
+            ProgressView()
+                .controlSize(.small)
                 .help("Basket has an image with this name; comparing it with OrbStack's")
+                .accessibilityLabel("Comparing with Basket")
         case .unverified(let reason):
             Pill(text: "Not compared", systemImage: "questionmark.circle", tint: .secondary)
                 .help("Basket has an image with this name, but it couldn't be compared with OrbStack's: \(reason). It isn't imported or offered for cleanup.")

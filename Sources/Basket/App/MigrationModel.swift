@@ -77,7 +77,9 @@ final class MigrationModel {
     /// OrbStack row id → content comparison with Basket's image of the same reference, valid while
     /// `key` (OrbStack image ID + Basket digest) still matches. See `basketPresence(_:)`.
     private(set) var presenceCache: [String: (key: String, value: BasketPresence)] = [:]
-    private(set) var isComparing = false
+    /// Bumped whenever `presenceCache` is cleared, so the comparison task restarts even when
+    /// OrbStack's images read back unchanged.
+    private var presenceGeneration = 0
     /// Image row id → what was imported this session.
     var imported: [String: ItemState] = [:]
     /// OrbStack container id → the Basket container made from it.
@@ -100,6 +102,7 @@ final class MigrationModel {
         let migrator = self.migrator
         // Re-read means re-compare: OrbStack may have changed under the same image IDs' names.
         presenceCache = [:]
+        presenceGeneration += 1
         let status = await migrator.status()
         self.status = status
         guard status.isReady else {
@@ -161,6 +164,7 @@ final class MigrationModel {
     /// Changes whenever OrbStack's images or what Basket's references point at change.
     var presenceSignature: Int {
         var hasher = Hasher()
+        hasher.combine(presenceGeneration)
         for image in images { hasher.combine(image.id); hasher.combine(image.imageID) }
         for image in store?.images ?? [] { hasher.combine(image.reference); hasher.combine(image.digest) }
         return hasher.finalize()
@@ -177,8 +181,6 @@ final class MigrationModel {
             return presenceCache[image.id]?.key != Self.presenceKey(image, digest)
         }
         guard !pending.isEmpty else { return }
-        isComparing = true
-        defer { isComparing = false }
         let migrator = self.migrator
         let backend = store.backend
         for image in pending {
@@ -187,6 +189,12 @@ final class MigrationModel {
             let result = await migrator.basketPresence(of: [image], basket: basket, backend: backend)[image.id] ?? .absent
             presenceCache[image.id] = (Self.presenceKey(image, digest), result)
         }
+    }
+
+    /// Whether some image Basket lists under the same reference hasn't been compared yet.
+    var hasPendingComparisons: Bool {
+        let digests = basketDigests
+        return images.contains { basketPresence($0, digests: digests) == nil }
     }
 
     var canImport: Bool {

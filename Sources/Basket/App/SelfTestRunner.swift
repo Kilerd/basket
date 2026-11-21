@@ -25,7 +25,7 @@ struct SelfTestRunner {
             if section == .containers, let first = store.containerRows.first {
                 store.containerSelection = [first.id]
             }
-            if section == .migration { await store.migration.refresh() }
+            if section == .migration { await refreshMigrationAndWait() }
             // Let SwiftUI lay out the section (and the detail pane) before capturing.
             try? await Task.sleep(for: .milliseconds(600))
             guard let window = store.mainWindow else {
@@ -135,7 +135,7 @@ struct SelfTestRunner {
         }
     }
 
-    private func log(_ message: String) {
+    func log(_ message: String) {
         FileHandle.standardError.write(Data("basket selftest: \(message)\n".utf8))
     }
 }
