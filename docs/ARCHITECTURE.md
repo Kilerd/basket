@@ -27,14 +27,15 @@ Sources/BasketCore/           Domain model + backends (no UI)
   JSON/                       JSONFormatter: one-pass re-indent of inspect JSON + highlight tokens
 Sources/Basket/               SwiftUI app (main window and its sections, Settings included; menu bar extra)
 Sources/BasketAXKit/          Accessibility snapshot model, capture (in-process + AXUIElement), lint rules, reports
-Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; `lint` checks dumped snapshots)
+Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; `lint` checks dumped snapshots;
+                              `update-install` installs an update through the UI, for update-e2e.sh)
 Fixtures/demo/                Rich, deterministic raw-CLI JSON used by FixtureBackend in E2E runs
 Fixtures/fresh/               A new Mac: no `container` CLI (`cli-missing`), OrbStack installed — onboarding self-test
 Tests/BasketCoreTests/        Decoder/backend tests; Fixtures/ = container 1.7.1 output from throwaway test
                               containers on public images, scrubbed of host paths and user names
 Tests/BasketAXKitTests/       Lint-rule tests on synthetic AX trees
 Resources/Localization/       Localizable.xcstrings — every UI string, all languages (see Localization)
-scripts/                      build-app.sh, build-e2e-runner.sh, selftest.sh, e2e.sh, sync-strings.sh, check-l10n.sh
+scripts/                      build-app.sh, build-e2e-runner.sh, selftest.sh, e2e.sh, update-e2e.sh, sync-strings.sh, check-l10n.sh
 ```
 
 ## Localization
@@ -99,7 +100,7 @@ replace it later without touching the UI.
 | `BASKET_UPDATE_FEED_URL` | DEBUG builds only (release builds ignore it): `file://` or `https://` URL of a test `latest.json`; archives must sit in the same directory (the only way a `file://` download URL passes validation) |
 | `BASKET_UPDATE_TEST_PUBLIC_KEY` | DEBUG builds only: base64 Ed25519 public key that replaces the built-in list, for archives signed with a throwaway key |
 | `BASKET_UPDATE_ALLOW_UNNOTARIZED` | DEBUG builds only: `1` = an update needs a Developer ID signature of the running app's team but no notarization (the requirement without `and notarized`; local end-to-end test). Compiled out of release builds |
-| `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch, show the update sheet and press Install and Relaunch (local end-to-end test) |
+| `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch and start the install in code (a manual shortcut; `scripts/update-e2e.sh` presses Install and Relaunch through the Accessibility API instead) |
 
 ## Data-safety rules
 
@@ -317,20 +318,20 @@ checks are specified in [updates.md](updates.md). In code (`BasketCore/Update`):
   the new one into place, checks it there again (putting the old one back if a check or a rename
   fails), clears quarantine only if present, moves the old app to the Trash and opens the new one.
   Its output goes to `~/Library/Logs/Basket/update.log`.
+- `UpdateQuit` quits Basket once the helper runs: it closes the update sheet and waits for it to
+  detach (AppKit refuses to terminate while a sheet is attached), terminates, and if Basket still
+  runs, ends every sheet and modal session and terminates again, then runs the quit cleanup and
+  exits ([updates.md](updates.md#quitting-to-install)). Its steps are injected, so the order is
+  unit-tested without AppKit.
 - `UpdateController` (app) checks a minute after launch and then daily when Settings ▸ Updates ▸
   “Automatically check for updates” is on (default), and from “Check for Updates…” in the app
   menu and the menu bar extra. Updates are disabled, with the reason shown, for ad-hoc or unsigned
   builds, translocated apps and folders Basket can't write to. A checksum, signature, bundle or
   code-signature mismatch is shown as a security error with no way to install anyway.
 
-Local end-to-end check (no `/Applications`; needs a Developer ID identity, since ad-hoc builds
-can't update): build version A with `scripts/build-app.sh debug` and B with
-`scripts/build-app.sh release` (temporarily raise `VERSION` in `scripts/_common.sh`),
-`ditto -c -k --keepParent` B, sign the zip with a key from `swift scripts/update-keygen.swift
-/tmp/<dir>/test.key` (`swift scripts/update-sign.swift`), write a `latest.json` next to it with a
-`file://` URL, copy A to a temporary folder and run it with `BASKET_UPDATE_FEED_URL`,
-`BASKET_UPDATE_TEST_PUBLIC_KEY`, `BASKET_UPDATE_ALLOW_UNNOTARIZED=1` (local builds aren't
-notarized) and `BASKET_UPDATE_AUTO_INSTALL=1`. The bundle in that folder becomes B and
-relaunches; the old copy is in the Trash as “Basket A.app”, and `~/Library/Logs/Basket/update.log`
-shows the helper's checks. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same run must stop with a
-code-signature security error.
+End-to-end check: `scripts/update-e2e.sh` (no `/Applications`; needs a Developer ID identity,
+since ad-hoc builds can't update, and the Accessibility permission for `BasketE2E.app`) installs
+an update through the real UI — Check for Updates…, the update sheet, “Install and Relaunch”
+pressed through the Accessibility API — and checks that Basket quits, the bundle is swapped and
+the new version relaunches ([updates.md](updates.md#end-to-end-test)). Without
+`BASKET_UPDATE_ALLOW_UNNOTARIZED` the same install must stop with a code-signature security error.

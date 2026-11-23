@@ -55,6 +55,30 @@ the newest non-prerelease release).
    `~/Library/Logs/Basket/update.log`. Otherwise the old app goes to the Trash and the new
    version is relaunched.
 
+## Quitting to install
+
+The helper waits for Basket's process to exit and gives up after 2 minutes ("still running after
+2 minutes; update not installed" in `update.log`), so Basket must quit once the helper runs.
+AppKit refuses to terminate while a window has a sheet attached (the unified log shows "App
+termination blocked by modal sheet") or a modal session runs, and the update sheet itself is
+such a sheet. After launching the helper, Basket therefore (`UpdateQuit`):
+
+1. closes the update sheet and waits up to 2 s until no window has a sheet attached, then
+   terminates;
+2. if it still runs 2.5 s later (another sheet, an alert, a panel or a modal session held the quit
+   up), ends every attached sheet and aborts the modal session, then terminates again;
+3. if it still runs 2.5 s after that, runs the quit cleanup (stops its `container` child
+   processes, writes its settings) and exits.
+
+While it quits, the update sheet can't be shown again, and the "still working" question on quit
+is skipped — installing refuses to start while an import, a recreation or a "Keep only" runs, so
+only work started in that moment is stopped, as "Quit Anyway" would. The helper is not one of
+the child processes the cleanup stops: it is started in its own session and is not a `CLIRunner`
+child, so it outlives Basket.
+
+Versions 0.0.1–0.0.3 lack this and stay at "Installing. Basket quits and opens again…"; force-quit
+Basket (⌥⌘⎋) within 2 minutes and the helper installs the update, or install the DMG.
+
 Updates are disabled for ad-hoc signed builds (development builds and forks) and for apps
 running translocated (from a quarantined download location) — the app asks the user to move
 it to `/Applications` first.
@@ -64,6 +88,32 @@ DEBUG builds only, for the local end-to-end test: `BASKET_UPDATE_ALLOW_UNNOTARIZ
 never notarized can be installed over another one. The switch and its code are compiled out of
 release builds: `strings` on a `swift build -c release` binary finds no
 `BASKET_UPDATE_ALLOW_UNNOTARIZED` (nor the other DEBUG-only `BASKET_UPDATE_*` variables).
+
+## End-to-end test
+
+`scripts/update-e2e.sh` installs an update through the real UI, the way a user does:
+
+1. It builds this checkout (DEBUG, Developer ID signed: ad-hoc builds can't update) and the
+   `BasketE2E.app` runner, copies the app — version A — onto a temporary disk image (never
+   `/Applications`), and makes B: the same build with version A + 1000 (patch), signed again,
+   zipped and signed with a throwaway key from `scripts/update-keygen.swift`, next to a
+   `latest.json` with a `file://` URL.
+2. `basket-ax update-install` launches A with the fixtures backend, `BASKET_UPDATE_FEED_URL`,
+   `BASKET_UPDATE_TEST_PUBLIC_KEY` and `BASKET_UPDATE_ALLOW_UNNOTARIZED=1`, chooses
+   Basket ▸ Check for Updates… in the menu bar, waits for the update sheet and presses
+   “Install and Relaunch” (`update.install`) with AXPress.
+3. It passes when A quits within 10 s of installing (“Installing…” shown or the sheet gone), the
+   bundle on the image is then version B, and B runs from there. B is quit, then the image is
+   detached — the replaced copy, the staging folder and the key go with it. On a failure the
+   swap helper is stopped before A, so no swap can happen later.
+
+It needs the Accessibility permission for `BasketE2E.app` (as `scripts/e2e.sh`) and an unlocked
+screen — it waits up to `BASKET_UNLOCK_WAIT` seconds (default 600) for one. Another Basket, such
+as the copy in `/Applications`, may keep running. Output goes to
+`artifacts/update-e2e/<timestamp>-<pid>/` (`runner.log`, `result.json` and the helper's
+`update.log` lines). Exit code: 0 pass, 1 the update didn't install, 2 setup or runner error,
+3 Accessibility missing. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same install must stop with
+a code-signature security error (a manual check: local builds aren't notarized).
 
 ## Keys
 

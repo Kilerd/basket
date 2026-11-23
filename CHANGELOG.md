@@ -9,6 +9,17 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Updates: installing an update no longer hangs at “Installing. Basket quits and opens again…”
+  (#38). The update sheet kept macOS from quitting Basket, so the installer gave up after 2
+  minutes; now Basket closes the sheet before it quits, closes any other sheet, alert or dialog
+  that still holds the quit up, and as a last resort exits, so the update always installs. A new
+  end-to-end test, `scripts/update-e2e.sh`, installs an update through the real update sheet.
+  Updating **from** 0.0.1, 0.0.2 or 0.0.3 can still stall, because the old version runs the
+  install: when “Installing…” appears, force-quit Basket (⌥⌘⎋) within 2 minutes and the update
+  finishes, or install the DMG instead.
+
 ## [0.0.3] - 2026-11-21
 
 ### Added
