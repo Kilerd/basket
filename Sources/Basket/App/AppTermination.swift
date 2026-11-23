@@ -13,6 +13,14 @@ final class BasketAppDelegate: NSObject, NSApplicationDelegate {
         guard let store = Self.store else { return .terminateNow }
         let work = store.longRunningWork
         guard !work.isEmpty else { return .terminateNow }
+        if store.updates.isInstalling {
+            // The swap helper waits for Basket to exit, so nothing may hold the quit up: no alert
+            // (its Cancel would leave the helper waiting) and no waiting for the work to unwind.
+            // Installing refuses to start while such work runs, so this only covers work started
+            // in the moment since; it is stopped as "Quit Anyway" stops it.
+            store.stopLongRunningWorkNow()
+            return .terminateNow
+        }
         if !store.options.isUITest {
             let alert = NSAlert()
             alert.alertStyle = .warning
@@ -31,9 +39,16 @@ final class BasketAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Anything still running (log follows, stats samples, a cancelled export that didn't stop in
-        // time) would outlive the app otherwise.
+        Self.cleanUpBeforeExit()
+    }
+
+    /// What quitting must do before the process ends; also run by an update's last-resort `exit`
+    /// (`UpdateQuit`). Anything still running (log follows, stats samples, a cancelled export
+    /// that didn't stop in time) would outlive the app otherwise. The update's swap helper is not
+    /// among them: it isn't a `CLIRunner` child and runs in its own session (`UpdateSwap`).
+    static func cleanUpBeforeExit() {
         CLIRunner.terminateAllChildren()
+        UserDefaults.standard.synchronize()
     }
 }
 
@@ -79,6 +94,15 @@ extension AppStore {
         while (migration.hasRunningWork || !slimTasks.isEmpty), ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(100))
         }
+        CLIRunner.terminateAllChildren()
+        OrbStackMigrator.sweepImportDirectories(includingOwn: true)
+    }
+
+    /// `cancelLongRunningWork` without waiting: when Basket must quit right away (an update is
+    /// installing).
+    func stopLongRunningWorkNow() {
+        migration.cancelAll()
+        slimTasks.values.forEach { $0.cancel() }
         CLIRunner.terminateAllChildren()
         OrbStackMigrator.sweepImportDirectories(includingOwn: true)
     }

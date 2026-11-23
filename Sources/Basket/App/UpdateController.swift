@@ -302,9 +302,9 @@ final class UpdateController {
                     throw error
                 }
                 self.logger.notice("installing Basket \(offer.version.description, privacy: .public); quitting")
-                // Let the sheet show "Relaunching…" for a moment.
+                // Let the sheet show "Installing…" for a moment.
                 try? await Task.sleep(for: .milliseconds(300))
-                NSApp.terminate(nil)
+                self.quitToInstall()
             } catch is CancellationError {
                 self?.phase = .available
                 self?.work = nil
@@ -318,6 +318,38 @@ final class UpdateController {
         }
     }
 
+    /// The swap helper waits for Basket to exit: close the sheet (AppKit won't terminate while one is
+    /// attached), terminate, and escalate until Basket is gone (`UpdateQuit`). Runs in its own task,
+    /// so nothing that cancels `work` can cut it short.
+    private func quitToInstall() {
+        let logger = logger
+        let steps = UpdateQuit.Steps(
+            dismissUpdateSheet: { [weak self] in
+                if case .update? = self?.store?.activeSheet { self?.store?.activeSheet = nil }
+            },
+            hasAttachedSheet: { NSApp.windows.contains { $0.attachedSheet != nil } },
+            terminate: {
+                // Deferred, so a modal session started while terminating can't stall the sequence.
+                DispatchQueue.main.async { NSApp.terminate(nil) }
+            },
+            isAlive: { true },
+            endSheetsAndModals: {
+                for window in NSApp.windows {
+                    if let sheet = window.attachedSheet { window.endSheet(sheet) }
+                }
+                if NSApp.modalWindow != nil { NSApp.abortModal() }
+            },
+            exit: {
+                BasketAppDelegate.cleanUpBeforeExit()
+                Darwin.exit(0)
+            },
+            log: { logger.notice("\($0, privacy: .public)") })
+        Task { await UpdateQuit.run(steps) }
+    }
+
+    /// The swap helper runs and Basket is quitting: nothing may cancel that or show the sheet again.
+    var isInstalling: Bool { phase == .relaunching }
+
     /// Menu bar ▸ "Update to Basket X…": the known offer, without checking again.
     func showAvailableUpdate() {
         if offer != nil, !phase.isBusy { phase = .available }
@@ -325,6 +357,7 @@ final class UpdateController {
     }
 
     func cancel() {
+        guard !isInstalling else { return }
         work?.cancel()
         if phase == .checking {
             work = nil
@@ -335,6 +368,7 @@ final class UpdateController {
 
     /// "Later" / "OK" / "Close": the offer stays (menu bar, Settings) until the next check.
     func dismiss() {
+        guard !isInstalling else { return }
         if phase.isBusy { work?.cancel() }
         work = nil
         phase = offer == nil ? .idle : .available
@@ -362,7 +396,7 @@ final class UpdateController {
 
     /// Shows the sheet on the main window (callers open it first), or once another sheet closes.
     func present() {
-        guard let store else { return }
+        guard let store, !isInstalling else { return }
         if case .update? = store.activeSheet { return }
         if store.activeSheet == nil {
             store.activeSheet = .update

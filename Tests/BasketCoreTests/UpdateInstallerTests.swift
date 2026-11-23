@@ -495,6 +495,34 @@ struct UpdateSwapTests {
         #expect(layout.codesignCalls().isEmpty)
     }
 
+    /// Quitting to install must not stop the helper: it runs in its own session and process group
+    /// (no signal to Basket's group or terminal reaches it), and it isn't a `CLIRunner` child, so
+    /// the quit cleanup (`CLIRunner.terminateAllChildren`) never signals it.
+    @Test func theLaunchedHelperRunsInItsOwnSessionAndOutlivesTheApp() async throws {
+        let layout = try Layout()
+        defer { layout.dir.cleanup() }
+        let app = Process()
+        app.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        app.arguments = ["30"]
+        try app.run()
+        defer { if app.isRunning { app.terminate() } }
+        let log = layout.dir.url.appending(path: "update.log")
+        let helper = try UpdateSwap.launchDetached(layout.plan(pid: app.processIdentifier), log: log)
+        #expect(getsid(helper) == helper)
+        #expect(getpgid(helper) == helper)
+        #expect(getsid(helper) != getsid(0))
+        // "Basket" quits; the helper notices, swaps and exits on its own.
+        app.terminate()
+        var status: Int32 = 0
+        let deadline = Date().addingTimeInterval(30)
+        while waitpid(helper, &status, WNOHANG) == 0, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let output = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
+        #expect(UpdateFixtures.version(of: layout.destination) == "0.0.2", "\(output)")
+        #expect(output.contains("installed \(layout.destination.path)"), "\(output)")
+    }
+
     @Test func plansRunTheRealCodesign() {
         #expect(UpdateSwap.codesignTool == "/usr/bin/codesign")
         let plan = UpdateSwap.Plan(pid: 1, destination: URL(fileURLWithPath: "/Applications/Basket.app"),

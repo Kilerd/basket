@@ -66,6 +66,7 @@ swift test                           # unit tests (Core, AXKit)
 scripts/build-app.sh [debug|release] # → build/Basket.app (BASKET_BUILD_DIR to relocate)
 scripts/selftest.sh demo             # in-process accessibility audit + PNGs, no permissions needed
 scripts/e2e.sh demo                  # out-of-process AXUIElement E2E (needs Accessibility for BasketE2E.app)
+scripts/update-e2e.sh                # installs an update through the UI (Developer ID + Accessibility)
 scripts/check-leaks.sh --all         # confidentiality scan of the working tree
 ```
 

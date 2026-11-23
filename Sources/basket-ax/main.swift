@@ -16,6 +16,12 @@ usage:
       --language runs the app in that language (e.g. zh-Hans; -AppleLanguages for this run only),
       --locale with that region format (e.g. zh_CN; -AppleLocale).
       Exit 0 ok, 1 findings, 2 runner failure, 3 Accessibility permission missing.
+  basket-ax update-install --app <Basket.app> --feed <latest.json URL> --public-key <base64>
+                           --expect-version <X.Y.Z> --out <dir> [--fixtures <dir>] [--quit-timeout seconds]
+      The real-UI update test (scripts/update-e2e.sh): launch a DEBUG Basket.app with a test
+      feed, choose Check for Updates…, press Install and Relaunch through AXPress, and check that
+      it quits within --quit-timeout (default 10 s) of installing and comes back as the new version.
+      Exit 0 ok, 1 the update didn't install, 2 runner failure, 3 Accessibility permission missing.
 """
 
 var arguments = Array(CommandLine.arguments.dropFirst())
@@ -33,6 +39,8 @@ case "lint":
     exit(LintCommand.run(rest))
 case "audit":
     exit(await AuditCommand.run(rest))
+case "update-install":
+    exit(await UpdateInstallCommand.run(rest))
 case "capture-demo":  // hidden: verifies SwiftUI → NSAccessibility exposure in-process
     exit(CaptureDemo.run(rest))
 case "-h", "--help", "help":
