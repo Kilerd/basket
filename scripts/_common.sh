@@ -10,6 +10,10 @@ BUILD_DIR="${BASKET_BUILD_DIR:-$ROOT/build}"
 VERSION="0.0.4"
 # A release version: SemVer X.Y.Z, no leading zeros, no pre-release or build suffix (docs/RELEASING.md).
 SEMVER_RE='^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$'
+# Bundle ids: the released product, and debug builds (self-test, E2E), which must never share
+# defaults or LaunchServices identity with an installed Basket (docs/ARCHITECTURE.md).
+PRODUCT_BUNDLE_ID="dev.basket.app"
+DEBUG_BUNDLE_ID="dev.basket.app.debug"
 
 log() { printf '==> %s\n' "$*" >&2; }
 # die <message> [exit-code]
@@ -58,6 +62,35 @@ app_locale() {
     zh-Hant) echo zh_TW ;;
     *) echo "${1//-/_}" ;;
   esac
+}
+
+# app_bundle_id <debug|release> — the bundle id build-app.sh gives Basket.app: $BASKET_BUNDLE_ID
+# (special tests), else dev.basket.app for release builds and dev.basket.app.debug for debug ones.
+app_bundle_id() {
+  local id
+  if [[ -n "${BASKET_BUNDLE_ID:-}" ]]; then id="$BASKET_BUNDLE_ID"
+  elif [[ "$1" == release ]]; then id="$PRODUCT_BUNDLE_ID"
+  else id="$DEBUG_BUNDLE_ID"; fi
+  [[ "$id" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]] \
+    || die "BASKET_BUNDLE_ID must be a reverse-DNS bundle id such as dev.basket.app.test (got '$id')" 64
+  echo "$id"
+}
+
+# bundle_id_of <app> — CFBundleIdentifier of a built app.
+bundle_id_of() {
+  plutil -extract CFBundleIdentifier raw -o - "$1/Contents/Info.plist"
+}
+
+# stage_for_launch <dir> <Basket.app> <fixtures dir> — copies the app and a fixture set into <dir>
+# (a temporary folder) for runs that start Basket through LaunchServices. Such a Basket is its own
+# responsible process for privacy (TCC) checks: reading a checkout in ~/Documents, ~/Desktop or
+# iCloud Drive would make macOS ask "Basket would like to access files in your Documents folder",
+# and Basket waits in that read before its first window (issue #29). Prints nothing.
+stage_for_launch() {
+  local dir="$1"
+  mkdir -p "$dir"
+  ditto "$2" "$dir/$(basename "$2")"
+  ditto "$3" "$dir/fixtures"
 }
 
 # developer_id_identity — the first "Developer ID Application" signing identity, or nothing.
@@ -128,7 +161,7 @@ signing_summary() {
 }
 
 # acquire_gui_lock <what> — one GUI run (self-test or E2E) at a time on this Mac: runs share the
-# screen and the dev.basket.app bundle id, and a second instance never opens its main window.
+# screen (focus, window placement, screenshots) and the debug build's defaults domain.
 # Released on exit; a lock left by a dead process is taken over.
 acquire_gui_lock() {
   local what="$1" waited=0 holder

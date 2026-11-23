@@ -207,6 +207,33 @@ struct UpdateInstallerTests {
         }
     }
 
+    /// Release builds expect the product's id; a DEBUG build's policy names its own id
+    /// (`dev.basket.app.debug`), and then the product's app is the foreign one.
+    @Test func expectsThePolicysBundleIdentifier() async throws {
+        #expect(UpdatePolicy.production.appBundleIdentifier == "dev.basket.app")
+        #expect(UpdatePolicy.testFeed(URL(fileURLWithPath: "/tmp/feed/latest.json")).appBundleIdentifier == "dev.basket.app")
+        let dir = try TemporaryDirectory()
+        defer { dir.cleanup() }
+        let app = try installed(in: dir)
+        var debug = UpdatePolicy.production
+        debug.appBundleIdentifier = "dev.basket.app.debug"
+        for (identifier, accepted) in [("dev.basket.app.debug", true), ("dev.basket.app", false)] {
+            let sub = dir.url.appending(path: UUID().uuidString)
+            let release = try await UpdateFixtures.release(in: sub, version: "0.0.2", identifier: identifier)
+            let staging = sub.appending(path: "staging")
+            try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
+            do {
+                let staged = try await UpdateFixtures.installer(release, policy: debug)
+                    .stage(archive: release.zip, offer: release.offer, replacing: app, currentVersion: current, staging: staging)
+                #expect(accepted, "\(identifier) was staged")
+                #expect(UpdateFixtures.version(of: staged.newApp) == "0.0.2")
+            } catch let error as UpdateError {
+                #expect(!accepted, "\(identifier): \(error)")
+                #expect(kind(error) == .bundleMismatch(""))
+            }
+        }
+    }
+
     @Test func refusesArchivesWithoutExactlyOneApp() async throws {
         let dir = try TemporaryDirectory()
         defer { dir.cleanup() }

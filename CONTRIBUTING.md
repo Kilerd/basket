@@ -49,7 +49,7 @@ list from a repository secret.
 |---|---|
 | `swift build` | Builds every target |
 | `swift test` | Runs the unit tests (swift-testing) for BasketCore and BasketAXKit |
-| `scripts/build-app.sh [debug\|release]` | Bundles and signs `build/Basket.app` |
+| `scripts/build-app.sh [debug\|release]` | Bundles and signs `build/Basket.app`: debug builds are "Basket (Debug)" (`dev.basket.app.debug`, with their own settings, so they run next to an installed Basket), release builds `dev.basket.app` |
 | `scripts/selftest.sh demo\|empty\|stopped` | In-process accessibility audit and screenshots for one fixture set. Needs no permissions |
 | `scripts/e2e.sh demo` | Out-of-process `AXUIElement` end-to-end test. Needs the Accessibility permission for `BasketE2E.app` |
 | `scripts/update-e2e.sh` | Installs an update through the real UI from a local test feed, on a temporary disk image ([docs/updates.md](docs/updates.md#end-to-end-test)). Needs a Developer ID identity and the Accessibility permission for `BasketE2E.app` |

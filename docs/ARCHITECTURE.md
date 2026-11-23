@@ -102,6 +102,22 @@ replace it later without touching the UI.
 | `BASKET_UPDATE_ALLOW_UNNOTARIZED` | DEBUG builds only: `1` = an update needs a Developer ID signature of the running app's team but no notarization (the requirement without `and notarized`; local end-to-end test). Compiled out of release builds |
 | `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch and start the install in code (a manual shortcut; `scripts/update-e2e.sh` presses Install and Relaunch through the Accessibility API instead) |
 
+## Bundle identifiers
+
+| Build | Bundle id | Name |
+|---|---|---|
+| Release (`scripts/build-app.sh release`, every published release) | `dev.basket.app` | Basket |
+| Debug (`scripts/build-app.sh debug`; self-test, E2E and update E2E builds) | `dev.basket.app.debug` | Basket (Debug) |
+
+`BASKET_BUNDLE_ID=<id>` gives `build-app.sh` another id for special tests. Debug builds never share
+an installed Basket's settings (`defaults read dev.basket.app.debug`), saved window state or
+LaunchServices identity, so they run next to it. Code that means "this app" takes the running
+bundle's id (`Bundle.main.bundleIdentifier`, `UserDefaults.standard`); code that means "the
+released product" keeps `dev.basket.app`: the update requirement in release builds
+(`UpdatePolicy.bundleIdentifier`; DEBUG builds expect their own id, see [updates.md](updates.md)),
+the release workflow's checks, and the `docker` shim, a copy in `~/.basket/bin` that reads the
+installed app's `containerCLIPath`.
+
 ## Data-safety rules
 
 Basket manages state the user cares about, so destructive operations follow fixed rules
@@ -144,7 +160,12 @@ The UI is tested the way VoiceOver sees it — through the accessibility tree �
 2. **True E2E (needs Accessibility permission once).** `BasketE2E.app` (the `basket-ax`
    runner, Developer-ID signed so the grant survives rebuilds) launches Basket.app, drives it
    with `AXUIElement` (press sidebar items, buttons), captures the tree out of process and runs
-   the same rules. `scripts/e2e.sh`.
+   the same rules. `scripts/e2e.sh`. Basket starts through LaunchServices, so it is its own
+   responsible process for privacy checks: the script runs a temporary copy of the app with its
+   fixtures next to it, never files in the checkout. Reading a checkout in `~/Documents` would make
+   macOS ask "Basket would like to access files in your Documents folder", and Basket would wait in
+   that read, before its first window, until someone answers (issue #29; the runner then reports
+   that Basket never finished launching). An installed Basket may keep running meanwhile.
 
 Rules (BasketAXKit): every interactive element has an accessible name; no element is outside
 its window; sibling interactive elements don't overlap; hit targets are not tiny; buttons in one
@@ -309,9 +330,10 @@ checks are specified in [updates.md](updates.md). In code (`BasketCore/Update`):
   the app's own volume (`FileManager.url(for: .itemReplacementDirectory…)`), then `UpdateVerifier`
   checks SHA-256 and the Ed25519 signature against any of `trustedPublicKeysBase64` (a list, so the
   key can be rotated), `ditto -x -k` extracts it, and the single `.app` inside must have bundle id
-  `dev.basket.app`, the manifest's version and a code signature satisfying
-  `CodeSignature.requirement(teamID:)` — a notarized Developer ID app of the running app's own
-  team (`SecCodeCopySelf`). Any failure deletes the staging directory.
+  `dev.basket.app` (`UpdatePolicy.appBundleIdentifier`; DEBUG builds set their own id), the
+  manifest's version and a code signature satisfying `CodeSignature.requirement(teamID:identifier:)`
+  — a notarized Developer ID app of the running app's own team (`SecCodeCopySelf`). Any failure
+  deletes the staging directory.
 - `UpdateSwap` launches a detached `/bin/sh` helper (paths and the requirement as positional
   parameters) that waits for Basket's pid to exit, runs `codesign --verify --deep --strict -R` with
   the same requirement on the staged app, renames the old app into the staging directory, renames

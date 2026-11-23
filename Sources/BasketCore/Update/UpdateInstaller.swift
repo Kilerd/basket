@@ -117,7 +117,7 @@ public struct UpdateInstaller: Sendable {
         try await Self.extract(archive, into: extracted)
         try? FileManager.default.removeItem(at: archive)
         let app = try Self.singleApp(in: extracted)
-        try Self.checkBundle(app, offer: offer, currentVersion: currentVersion)
+        try Self.checkBundle(app, offer: offer, currentVersion: currentVersion, identifier: policy.appBundleIdentifier)
         do {
             try verifyCode(app)
         } catch let error as UpdateError {
@@ -198,14 +198,16 @@ public struct UpdateInstaller: Sendable {
         return app
     }
 
-    /// Bundle id `dev.basket.app`, version equal to the manifest's and newer than the running one.
-    static func checkBundle(_ app: URL, offer: UpdateOffer, currentVersion: SemanticVersion) throws {
+    /// Bundle id `identifier` (the policy's: `dev.basket.app` in release builds), version equal to
+    /// the manifest's and newer than the running one.
+    static func checkBundle(_ app: URL, offer: UpdateOffer, currentVersion: SemanticVersion,
+                            identifier expected: String = UpdatePolicy.bundleIdentifier) throws {
         let plistURL = app.appending(path: "Contents/Info.plist")
         guard let data = try? Data(contentsOf: plistURL),
               let info = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         else { throw UpdateError.bundleMismatch(String(localized: "it has no readable Info.plist", bundle: .main)) }
         let identifier = info["CFBundleIdentifier"] as? String
-        guard identifier == UpdatePolicy.bundleIdentifier else {
+        guard identifier == expected else {
             throw UpdateError.bundleMismatch(identifier.map { String(localized: "its bundle identifier is “\($0)”", bundle: .main) }
                 ?? String(localized: "it has no bundle identifier", bundle: .main))
         }

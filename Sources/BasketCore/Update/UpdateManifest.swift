@@ -2,6 +2,7 @@ import Foundation
 
 /// Where updates come from and what they may look like (docs/updates.md).
 public struct UpdatePolicy: Sendable, Equatable {
+    /// The released product's bundle id. Debug builds are `dev.basket.app.debug` (scripts/build-app.sh).
     public static let bundleIdentifier = "dev.basket.app"
     public static let productionFeedURL = URL(string: "https://github.com/Kilerd/basket/releases/latest/download/latest.json")!
     public static let productionDownloadPrefix = "https://github.com/Kilerd/basket/releases/download/"
@@ -15,11 +16,17 @@ public struct UpdatePolicy: Sendable, Equatable {
     /// The manifest's `url` must start with one of these.
     public var downloadPrefixes: [String]
     public var maxArchiveBytes: Int64
+    /// The bundle id the update's app must have: always the product's in release builds; the app
+    /// (`UpdateSetup`) sets the running build's own id only in DEBUG builds, for the local update
+    /// end-to-end test.
+    public var appBundleIdentifier: String
 
-    public init(feedURL: URL, downloadPrefixes: [String], maxArchiveBytes: Int64 = UpdatePolicy.defaultMaxArchiveBytes) {
+    public init(feedURL: URL, downloadPrefixes: [String], maxArchiveBytes: Int64 = UpdatePolicy.defaultMaxArchiveBytes,
+                appBundleIdentifier: String = UpdatePolicy.bundleIdentifier) {
         self.feedURL = feedURL
         self.downloadPrefixes = downloadPrefixes
         self.maxArchiveBytes = maxArchiveBytes
+        self.appBundleIdentifier = appBundleIdentifier
     }
 
     public static let production = UpdatePolicy(feedURL: productionFeedURL, downloadPrefixes: [productionDownloadPrefix])

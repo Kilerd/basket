@@ -83,6 +83,11 @@ Updates are disabled for ad-hoc signed builds (development builds and forks) and
 running translocated (from a quarantined download location) — the app asks the user to move
 it to `/Applications` first.
 
+DEBUG builds have their own bundle id, `dev.basket.app.debug` (docs/ARCHITECTURE.md, "Bundle
+identifiers"), and expect it in place of `dev.basket.app` — in the bundle check and in the code
+requirement — so a debug build only ever installs another debug build and never a release.
+Release builds always expect `dev.basket.app`.
+
 DEBUG builds only, for the local end-to-end test: `BASKET_UPDATE_ALLOW_UNNOTARIZED=1` drops
 `and notarized` from the requirement (everything else stays), so a Developer ID build that was
 never notarized can be installed over another one. The switch and its code are compiled out of
@@ -93,12 +98,13 @@ release builds: `strings` on a `swift build -c release` binary finds no
 
 `scripts/update-e2e.sh` installs an update through the real UI, the way a user does:
 
-1. It builds this checkout (DEBUG, Developer ID signed: ad-hoc builds can't update) and the
-   `BasketE2E.app` runner, copies the app — version A — onto a temporary disk image (never
-   `/Applications`), and makes B: the same build with version A + 1000 (patch), signed again,
-   zipped and signed with a throwaway key from `scripts/update-keygen.swift`, next to a
-   `latest.json` with a `file://` URL.
-2. `basket-ax update-install` launches A with the fixtures backend, `BASKET_UPDATE_FEED_URL`,
+1. It builds this checkout (DEBUG, bundle id `dev.basket.app.debug`, Developer ID signed: ad-hoc
+   builds can't update) and the `BasketE2E.app` runner, copies the app — version A — onto a
+   temporary disk image (never `/Applications`), and makes B: the same build with version
+   A + 1000 (patch), signed again, zipped and signed with a throwaway key from
+   `scripts/update-keygen.swift`, next to a `latest.json` with a `file://` URL.
+2. `basket-ax update-install` launches A with the fixtures backend (a copy of `Fixtures/demo` in
+   the temporary folder, outside any privacy-protected folder), `BASKET_UPDATE_FEED_URL`,
    `BASKET_UPDATE_TEST_PUBLIC_KEY` and `BASKET_UPDATE_ALLOW_UNNOTARIZED=1`, chooses
    Basket ▸ Check for Updates… in the menu bar, waits for the update sheet and presses
    “Install and Relaunch” (`update.install`) with AXPress.

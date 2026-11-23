@@ -2,7 +2,10 @@ import Foundation
 
 /// Host-side helpers for the `basket-docker` executable (everything that isn't pure translation).
 public enum DockerShimRuntime {
-    /// The app's defaults domain: the shim honours the `container` path chosen in Basket's settings.
+    /// The installed product's defaults domain: the shim honours the `container` path chosen in
+    /// Basket's settings. It is a copy in `~/.basket/bin` with no app bundle around it, so it reads
+    /// the released app's domain; a debug build's own setting (`dev.basket.app.debug`) isn't seen
+    /// (`BASKET_CONTAINER_CLI` overrides both).
     static let appDefaultsDomain = "dev.basket.app"
 
     /// Finds the `container` CLI the same way the app does (`BASKET_CONTAINER_CLI` → Basket's setting →

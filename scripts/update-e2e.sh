@@ -83,6 +83,8 @@ mkdir "$VOLUME"
 hdiutil attach -nobrowse -noautoopen -mountpoint "$VOLUME" "$WORK/disk.sparseimage" >/dev/null
 mkdir -p "$VOLUME/Applications"
 ditto "$BUILD_DIR/Basket.app" "$APP"
+# A reads its fixtures from here, not from the checkout: see stage_for_launch in _common.sh.
+ditto "$ROOT/Fixtures/demo" "$WORK/fixtures"
 
 B="$WORK/b/Basket.app"
 mkdir -p "$WORK/b" "$WORK/feed"
@@ -105,7 +107,7 @@ UPDATE_LOG="$HOME/Library/Logs/Basket/update.log"
 LOG_START="$(wc -c <"$UPDATE_LOG" 2>/dev/null || echo 0)"
 log "running BasketE2E.app update-install (log: $OUT/runner.log)"
 # Through LaunchServices, so the Accessibility grant of BasketE2E.app applies (scripts/e2e.sh).
-open -W -n "$BUILD_DIR/BasketE2E.app" --args update-install --app "$APP" --fixtures "$ROOT/Fixtures/demo" \
+open -W -n "$BUILD_DIR/BasketE2E.app" --args update-install --app "$APP" --fixtures "$WORK/fixtures" \
   --feed "file://$WORK/feed/latest.json" --public-key "$PUBLIC_KEY" --expect-version "$NEW_VERSION" --out "$OUT"
 
 [[ -f "$OUT/runner.log" ]] && cat "$OUT/runner.log"

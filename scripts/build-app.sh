@@ -2,6 +2,9 @@
 # Builds build/Basket.app from the SwiftPM `Basket` product, with the `basket-docker` shim in
 # Contents/Helpers (DockerShimInstaller copies it to ~/.basket/bin/docker).
 #   scripts/build-app.sh [debug|release]
+# Bundle id: release builds are the product, dev.basket.app ("Basket"); debug builds are
+# dev.basket.app.debug ("Basket (Debug)"), so they never share settings or LaunchServices identity
+# with an installed Basket. BASKET_BUNDLE_ID=<id> overrides either, for special tests.
 # Signing: $BASKET_SIGN_IDENTITY, else the first Developer ID Application identity, else ad-hoc.
 # Hardened runtime; not sandboxed (Basket execs the `container` CLI).
 set -euo pipefail
@@ -9,6 +12,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 CONFIG="${1:-debug}"
 [[ "$CONFIG" == debug || "$CONFIG" == release ]] || die "usage: $0 [debug|release]" 64
+BUNDLE_ID="$(app_bundle_id "$CONFIG")"
+if [[ "$CONFIG" == release ]]; then NAME="Basket"; else NAME="Basket (Debug)"; fi
 
 log "swift build ($CONFIG) Basket"
 BIN="$(swift_build "$CONFIG" Basket)"
@@ -45,7 +50,7 @@ for lproj in "$APP/Contents/Resources"/*.lproj; do
   LOCALIZATIONS+="<string>$(basename "$lproj" .lproj)</string>"
 done
 
-write_info_plist "$APP/Contents/Info.plist" dev.basket.app Basket Basket \
+write_info_plist "$APP/Contents/Info.plist" "$BUNDLE_ID" "$NAME" Basket \
   "  <key>LSApplicationCategoryType</key><string>public.app-category.developer-tools</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleLocalizations</key><array>${LOCALIZATIONS}</array>"
@@ -65,5 +70,5 @@ fi
 log "codesign ($([[ "$IDENTITY" == "-" ]] && echo ad-hoc || echo "$IDENTITY"))"
 sign_app "$APP" "$IDENTITY" "$ENTITLEMENTS"
 
-log "built $APP ($(signing_summary "$APP"))"
+log "built $APP ($BUNDLE_ID, $(signing_summary "$APP"))"
 echo "$APP"
