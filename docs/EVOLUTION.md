@@ -129,6 +129,17 @@ and disk first) → implement → verify. Findings and decisions are logged here
 - CI caught another wall-clock test (5 MB formatting under 3 s): timing tests now check
   scaling ratios, not absolute time.
 
+### 0.0.4 — the update that couldn't quit (2026-11-23)
+- The maintainer's first real in-app update (0.0.1 → 0.0.2) hung at "Installing…". The unified
+  log said it plainly: `App termination blocked by modal sheet` — the update sheet itself stopped
+  `NSApp.terminate`, and the swap helper gave up after 2 minutes, leaving 0.0.1 intact.
+- The local update test had used the DEBUG auto-install path, which never shows the sheet. Now
+  `scripts/update-e2e.sh` presses Install and Relaunch through the Accessibility API; it fails
+  on the old code and passes with the fix (dismiss the sheet, escalate, last-resort exit).
+- Releases ≤ 0.0.3 still run the old install code, so updating from them can stall once more
+  (force-quit within 2 minutes, or install the DMG). From 0.0.4 on, updates quit cleanly.
+- Debugging note: zsh's builtin `log` shadows `/usr/bin/log`.
+
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
   Third-party: `container-compose` (mcrich23), `apple-compose` (Go). Known gap: service-name DNS on
