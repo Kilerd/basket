@@ -1,20 +1,33 @@
 #!/usr/bin/env bash
 # Real-UI end-to-end test of installing an update (docs/updates.md, "End-to-end test").
-#   scripts/update-e2e.sh
+#   scripts/update-e2e.sh        Basket quits by itself after “Install and Relaunch”
+#   scripts/update-e2e.sh kill   Basket is told not to quit (DEBUG BASKET_UPDATE_TEST_BLOCK_QUIT=1)
+#                                and is ended 1 s after “Installing…”: once with SIGKILL, once (a
+#                                fresh copy) with a Force Quit as ⌥⌘⎋ does it; both times the swap
+#                                helper must still install B and relaunch it (#41)
 # Basket A — this checkout's DEBUG build, Developer ID signed — runs from a temporary disk image
 # (never /Applications) with a local test feed offering Basket B: the same build with a higher
 # version, its zip signed with a throwaway update key. BasketE2E.app chooses
 # Basket ▸ Check for Updates…, waits for the update sheet and presses “Install and Relaunch”
 # (update.install) through the Accessibility API. Passes when A quits within 10 s of installing,
 # the bundle on the image is then B, and B runs from there. B is quit and the image detached
-# afterwards, so the replaced copy, the staging folder and the key go with it.
+# afterwards, so the replaced copy, the staging folder and the key go with it. The helper runs as
+# a one-shot launchd job; a job left behind fails the run.
 # Needs a Developer ID Application identity (ad-hoc builds can't update), the Accessibility
 # permission for BasketE2E.app (as scripts/e2e.sh) and an unlocked screen (waits up to
 # BASKET_UNLOCK_WAIT seconds, default 600). Another Basket may keep running meanwhile.
-# Output: artifacts/update-e2e/<timestamp>-<pid>/{runner.log,result.json,update.log}
+# Output: artifacts/update-e2e/<timestamp>-<pid>/{runner.log,result.json,update.log} (kill mode:
+# one such set per method, in sigkill/ and force-quit/)
 # Exit: 0 pass, 1 the update didn't install, 2 setup or runner error, 3 Accessibility missing.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+
+MODE="${1:-normal}"
+case "$MODE" in
+  normal) RUNS=(normal) ;;
+  kill) RUNS=(sigkill force-quit) ;;
+  *) die "usage: $0 [kill]" 64 ;;
+esac
 
 IDENTITY="${BASKET_SIGN_IDENTITY:-$(developer_id_identity)}"
 [[ -n "$IDENTITY" && "$IDENTITY" != "-" ]] \
@@ -82,7 +95,6 @@ hdiutil create -size 2g -fs APFS -volname BasketUpdateE2E -type SPARSE "$WORK/di
 mkdir "$VOLUME"
 hdiutil attach -nobrowse -noautoopen -mountpoint "$VOLUME" "$WORK/disk.sparseimage" >/dev/null
 mkdir -p "$VOLUME/Applications"
-ditto "$BUILD_DIR/Basket.app" "$APP"
 # A reads its fixtures from here, not from the checkout: see stage_for_launch in _common.sh.
 ditto "$ROOT/Fixtures/demo" "$WORK/fixtures"
 
@@ -104,22 +116,58 @@ jq -n --arg version "$NEW_VERSION" --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ
 OUT="$ROOT/artifacts/update-e2e/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$OUT"
 UPDATE_LOG="$HOME/Library/Logs/Basket/update.log"
-LOG_START="$(wc -c <"$UPDATE_LOG" 2>/dev/null || echo 0)"
-log "running BasketE2E.app update-install (log: $OUT/runner.log)"
-# Through LaunchServices, so the Accessibility grant of BasketE2E.app applies (scripts/e2e.sh).
-open -W -n "$BUILD_DIR/BasketE2E.app" --args update-install --app "$APP" --fixtures "$WORK/fixtures" \
-  --feed "file://$WORK/feed/latest.json" --public-key "$PUBLIC_KEY" --expect-version "$NEW_VERSION" --out "$OUT"
 
-[[ -f "$OUT/runner.log" ]] && cat "$OUT/runner.log"
-# The swap helper's lines from this run (it logs only when something is worth saying).
-tail -c +"$((LOG_START + 1))" "$UPDATE_LOG" 2>/dev/null | tee "$OUT/update.log" | sed 's/^/update.log: /' || true
-if [[ ! -f "$OUT/result.json" ]]; then
-  log "no result.json — the runner failed early"
-  exit 2
-fi
-CODE="$(plutil -extract exitCode raw -o - "$OUT/result.json" 2>/dev/null || echo 2)"
-if [[ "$CODE" == 3 ]]; then
-  log "BasketE2E needs the Accessibility permission; see scripts/e2e.sh for how to grant it"
-fi
-echo "result: $OUT/result.json"
-exit "$CODE"
+# The swap helper's launchd jobs (UpdateSwap.launchDetached), one label per line.
+update_jobs() { launchctl list | awk '$3 ~ /^dev\.basket\.app\.update\./ { print $3 }' | sort; }
+
+# run_once <normal|sigkill|force-quit> — installs B over a fresh copy of A. Returns the runner's
+# exit code, or 1 when the update installed but left the helper's launchd job behind.
+run_once() {
+  local run="$1" out="$OUT" args=() code log_start jobs_before leftover="" label
+  if [[ "$run" != normal ]]; then out="$OUT/$run"; args=(--kill "$run"); fi
+  mkdir -p "$out"
+  rm -rf "$APP"
+  ditto "$BUILD_DIR/Basket.app" "$APP"
+  log_start="$(wc -c <"$UPDATE_LOG" 2>/dev/null || echo 0)"
+  jobs_before="$(update_jobs)"
+  log "$run: running BasketE2E.app update-install (log: $out/runner.log)"
+  # Through LaunchServices, so the Accessibility grant of BasketE2E.app applies (scripts/e2e.sh).
+  open -W -n "$BUILD_DIR/BasketE2E.app" --args update-install --app "$APP" --fixtures "$WORK/fixtures" \
+    --feed "file://$WORK/feed/latest.json" --public-key "$PUBLIC_KEY" --expect-version "$NEW_VERSION" \
+    --out "$out" ${args[@]+"${args[@]}"}
+
+  [[ -f "$out/runner.log" ]] && cat "$out/runner.log"
+  # The swap helper's lines from this run (it logs only when something is worth saying).
+  tail -c +"$((log_start + 1))" "$UPDATE_LOG" 2>/dev/null | tee "$out/update.log" | sed 's/^/update.log: /' || true
+  if [[ ! -f "$out/result.json" ]]; then
+    log "$run: no result.json — the runner failed early"
+    return 2
+  fi
+  code="$(plutil -extract exitCode raw -o - "$out/result.json" 2>/dev/null || echo 2)"
+  if [[ "$code" == 3 ]]; then
+    log "BasketE2E needs the Accessibility permission; see scripts/e2e.sh for how to grant it"
+  fi
+  stop_processes
+  # launchd removes the one-shot job as soon as its process has exited.
+  for _ in 1 2 3 4 5 6; do
+    leftover="$(comm -13 <(echo "$jobs_before") <(update_jobs))"
+    [[ -z "$leftover" ]] && break
+    sleep 0.5
+  done
+  for label in $leftover; do
+    log "$run: the swap helper's launchd job $label was left behind; removing it"
+    launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+    if [[ "$code" == 0 ]]; then code=1; fi
+  done
+  echo "result ($run): $out/result.json"
+  return "$code"
+}
+
+STATUS=0
+for run in "${RUNS[@]}"; do
+  code=0
+  run_once "$run" || code=$?
+  if (( code > STATUS )); then STATUS="$code"; fi
+  if [[ "$code" == 3 ]]; then break; fi
+done
+exit "$STATUS"

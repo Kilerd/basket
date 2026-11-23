@@ -96,6 +96,19 @@ enum UpdateFixtures {
                              output: (try? String(contentsOf: output, encoding: .utf8)) ?? "")
     }
 
+    /// Whether this user has a GUI launchd domain (a logged-in session), where the swap helper's
+    /// job runs (`UpdateSwap.launchDetached`).
+    static let hasGUIDomain: Bool = {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        process.arguments = ["print", "gui/\(getuid())"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return false }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }()
+
     /// A signed release: the zip of a fake app and the offer describing it.
     struct Release {
         var zip: URL

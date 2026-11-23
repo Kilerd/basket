@@ -124,7 +124,7 @@ daily (Settings ▸ Updates) and installs only updates whose Ed25519 signature a
 signature check out ([docs/updates.md](docs/updates.md)). Or build from source as described below.
 
 > **Install 0.0.4 or later.** 0.0.1–0.0.3 are not recommended: their updater can stall at
-> “Installing…” (force-quit Basket within 2 minutes to finish, or install the latest DMG).
+> “Installing…” and can't finish on its own — install the latest DMG instead.
 
 ## Build from source
 

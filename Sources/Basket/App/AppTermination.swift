@@ -45,7 +45,7 @@ final class BasketAppDelegate: NSObject, NSApplicationDelegate {
     /// What quitting must do before the process ends; also run by an update's last-resort `exit`
     /// (`UpdateQuit`). Anything still running (log follows, stats samples, a cancelled export
     /// that didn't stop in time) would outlive the app otherwise. The update's swap helper is not
-    /// among them: it isn't a `CLIRunner` child and runs in its own session (`UpdateSwap`).
+    /// among them: launchd runs it as a job of its own, not as a child of Basket (`UpdateSwap`).
     static func cleanUpBeforeExit() {
         CLIRunner.terminateAllChildren()
         UserDefaults.standard.synchronize()

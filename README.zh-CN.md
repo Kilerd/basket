@@ -78,7 +78,7 @@ Apple 的 [`container`](https://github.com/apple/container) 让**每个容器运
 
 从[最新版本](https://github.com/Kilerd/basket/releases/latest)下载 `Basket-X.Y.Z.dmg`，打开后把 Basket 拖到“应用程序”文件夹。发布版本使用 Developer ID 签名、经过 Apple 公证，并附带构建来源证明（build provenance attestation）；可以用 `SHA256SUMS` 校验下载的文件（[方法](docs/RELEASING.md#verifying-a-download)）。之后 Basket 会自动保持最新：它每天检查一次（设置 ▸ 更新），只安装 Ed25519 签名和经过公证的代码签名都校验通过的更新（[docs/updates.md](docs/updates.md)）。也可以按下文从源代码构建。
 
-> **请安装 0.0.4 或更高版本。** 不推荐 0.0.1–0.0.3：它们的更新程序可能停在“正在安装…”（出现后 2 分钟内强制退出 Basket 即可完成更新，或直接安装最新的 DMG）。
+> **请安装 0.0.4 或更高版本。** 不推荐 0.0.1–0.0.3：它们的更新程序可能停在“正在安装…”，且无法自行完成——请直接安装最新的 DMG。
 
 ## 从源代码构建
 

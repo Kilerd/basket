@@ -142,8 +142,9 @@ and disk first) → implement → verify. Findings and decisions are logged here
 - The local update test had used the DEBUG auto-install path, which never shows the sheet. Now
   `scripts/update-e2e.sh` presses Install and Relaunch through the Accessibility API; it fails
   on the old code and passes with the fix (dismiss the sheet, escalate, last-resort exit).
-- Releases ≤ 0.0.3 still run the old install code, so updating from them can stall once more
-  (force-quit within 2 minutes, or install the DMG). From 0.0.4 on, updates quit cleanly.
+- Releases ≤ 0.0.3 still run the old install code, so updating from them can stall once more:
+  install the DMG. (The notes first said force-quitting finishes the update; it doesn't — the
+  force quit stops the helper too, #41.) From 0.0.4 on, updates quit cleanly.
 - Debugging note: zsh's builtin `log` shadows `/usr/bin/log`.
 
 ## Research notes

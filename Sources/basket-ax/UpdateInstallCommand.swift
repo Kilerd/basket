@@ -7,11 +7,21 @@ import BasketAXKit
 /// (`update.install`) with AXPress — the path a user takes. Passes when A quits within
 /// `--quit-timeout` seconds of starting the install, the bundle at `--app` is then version
 /// `--expect-version`, and that version runs from there; the relaunched copy is quit again.
+/// With `--kill`, Basket is told not to quit (DEBUG `BASKET_UPDATE_TEST_BLOCK_QUIT=1`, as
+/// 0.0.1–0.0.3 couldn't) and the runner ends it 1 s after “Installing…” with SIGKILL or a Force
+/// Quit: the swap helper must survive that and still install and relaunch the update (#41).
 /// Only ever touches processes running from `--app`. Writes `result.json` and `runner.log`.
 /// When A doesn't quit it is left running: the script stops the swap helper first, so that
 /// killing A can't let a late swap happen.
 @MainActor
 enum UpdateInstallCommand {
+    /// How `--kill` ends Basket once it shows “Installing…”.
+    enum Kill: String {
+        case sigkill
+        /// LaunchServices' force quit, as ⌥⌘⎋, the Dock and Activity Monitor do it.
+        case forceQuit = "force-quit"
+    }
+
     struct Options {
         var app: URL
         var fixtures: URL?
@@ -21,6 +31,7 @@ enum UpdateInstallCommand {
         var out: URL
         var quitTimeout: Double = 10
         var deadline: Double = 180
+        var kill: Kill?
     }
 
     static func parse(_ args: [String]) throws -> Options {
@@ -28,7 +39,7 @@ enum UpdateInstallCommand {
         var i = 0
         while i < args.count {
             let key = args[i]
-            guard ["--app", "--fixtures", "--feed", "--public-key", "--expect-version", "--out", "--quit-timeout", "--deadline"]
+            guard ["--app", "--fixtures", "--feed", "--public-key", "--expect-version", "--out", "--quit-timeout", "--deadline", "--kill"]
                 .contains(key) else { throw AuditCommand.UsageError(description: "unknown argument \(key)") }
             guard i + 1 < args.count else { throw AuditCommand.UsageError(description: "\(key) needs a value") }
             values[key] = args[i + 1]
@@ -49,6 +60,10 @@ enum UpdateInstallCommand {
         if let text = values["--deadline"] {
             guard let seconds = Double(text), seconds > 0 else { throw AuditCommand.UsageError(description: "--deadline needs seconds") }
             options.deadline = seconds
+        }
+        if let text = values["--kill"] {
+            guard let kill = Kill(rawValue: text) else { throw AuditCommand.UsageError(description: "--kill needs sigkill or force-quit") }
+            options.kill = kill
         }
         return options
     }
@@ -141,8 +156,9 @@ final class UpdateInstallRunner {
             let relaunched = try await waitForRelaunch()
             result.relaunchedPid = relaunched.processIdentifier
             await quit(relaunched)
-            result.message = String(format: "Basket (pid %d) quit %.1f s after Install was pressed (%.1f s after installing started); "
-                                    + "%@ is now %@ and ran as pid %d", pid, toQuit, fromInstalling,
+            let ended = options.kill.map { "was ended (\($0.rawValue))" } ?? "quit"
+            result.message = String(format: "Basket (pid %d) %@ %.1f s after Install was pressed (%.1f s after installing started); "
+                                    + "%@ is now %@ and ran as pid %d", pid, ended, toQuit, fromInstalling,
                                     options.app.path, options.expectVersion, relaunched.processIdentifier)
         } catch let failure as Failure {
             result.exitCode = failure.code
@@ -169,6 +185,7 @@ final class UpdateInstallRunner {
         env["BASKET_UPDATE_FEED_URL"] = options.feed
         env["BASKET_UPDATE_TEST_PUBLIC_KEY"] = options.publicKey
         env["BASKET_UPDATE_ALLOW_UNNOTARIZED"] = "1"
+        if options.kill != nil { env["BASKET_UPDATE_TEST_BLOCK_QUIT"] = "1" }
         let config = NSWorkspace.OpenConfiguration()
         config.environment = env
         config.createsNewApplicationInstance = true
@@ -250,6 +267,7 @@ final class UpdateInstallRunner {
         guard pressed == .success else { throw Failure(code: 2, message: "AXPress on update.install failed: \(AXErrorLog.name(pressed))") }
         let start = Date()
         var installingSince: Date?
+        var killed = false
         var lastStatus = ""
         while true {
             if kill(pid, 0) != 0 {
@@ -273,6 +291,10 @@ final class UpdateInstallRunner {
             if installingSince == nil, status.hasPrefix("Installing") || current == nil {
                 installingSince = Date()
             }
+            if let kill = options.kill, !killed, let installingSince, Date().timeIntervalSince(installingSince) >= 1 {
+                killed = true
+                try end(with: kill)
+            }
             if let installingSince, Date().timeIntervalSince(installingSince) > options.quitTimeout {
                 let shown = current.map(texts(in:)) ?? ["no sheet"]
                 throw Failure(code: 1, message: String(
@@ -284,6 +306,20 @@ final class UpdateInstallRunner {
                 throw Failure(code: 1, message: "Basket (pid \(pid)) never started installing within 60 s; the update sheet shows: \(shown.joined(separator: " | "))")
             }
             try? await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
+    /// `--kill`: ends Basket while the swap helper waits for it to exit.
+    private func end(with kill: UpdateInstallCommand.Kill) throws {
+        switch kill {
+        case .sigkill:
+            let status = Darwin.kill(pid, SIGKILL)
+            Console.log("sent SIGKILL to Basket (pid \(pid)) → \(status == 0 ? "ok" : String(cString: strerror(errno)))")
+        case .forceQuit:
+            if let error = ForceQuit.application(pid: pid) {
+                throw Failure(code: 2, message: "Force Quit of pid \(pid) failed: \(error)")
+            }
+            Console.log("force-quit Basket (pid \(pid)) through LaunchServices")
         }
     }
 
@@ -350,5 +386,30 @@ final class UpdateInstallRunner {
             if Date() >= deadline { return nil }
             try? await Task.sleep(for: .seconds(interval))
         }
+    }
+}
+
+/// The Force Quit a user does with ⌥⌘⎋, the Dock or Activity Monitor: each calls LaunchServices'
+/// `_LSForceQuitApplication`, which ends every process of the app's coalition, not only the app —
+/// what stopped the swap helper of Basket 0.0.1–0.0.4 (#41). A private function, looked up at run
+/// time; only this test runner uses it, always with the pid it launched itself.
+enum ForceQuit {
+    private typealias CreateASN = @convention(c) (CFAllocator?, Int32) -> Unmanaged<CFTypeRef>?
+    private typealias Completion = @convention(block) (UInt8, CFError?) -> Void
+    private typealias Quit = @convention(c) (Int32, CFTypeRef, CFDictionary?, Completion?) -> UInt8
+
+    /// nil on success, else why it failed.
+    static func application(pid: pid_t) -> String? {
+        guard dlopen("/usr/lib/libLaunchServicesSupport.dylib", RTLD_NOW) != nil,
+              let createSymbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "_LSASNCreateWithPid"),
+              let quitSymbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "_LSForceQuitApplication")
+        else { return "LaunchServices' force quit isn't available" }
+        let createASN = unsafeBitCast(createSymbol, to: CreateASN.self)
+        let quit = unsafeBitCast(quitSymbol, to: Quit.self)
+        guard let asn = createASN(kCFAllocatorDefault, pid)?.takeRetainedValue() else {
+            return "pid \(pid) is not a running application"
+        }
+        // -2: the current session (kLSDefaultSessionID). The completion only reports.
+        return quit(-2, asn, nil, { _, _ in }) != 0 ? nil : "_LSForceQuitApplication refused"
     }
 }
