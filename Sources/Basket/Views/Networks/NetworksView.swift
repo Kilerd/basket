@@ -117,7 +117,7 @@ struct NewNetworkSheet: View {
                     .accessibilityIdentifier("new-network.subnet")
             } footer: {
                 if let error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.callout)
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Color.warningText).font(.callout)
                 }
             }
         } footer: {

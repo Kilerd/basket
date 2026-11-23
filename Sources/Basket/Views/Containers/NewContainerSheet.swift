@@ -91,7 +91,7 @@ struct NewContainerSheet: View {
                 Text("Starting… (the image is pulled first if needed)").foregroundStyle(.secondary).font(.callout)
             } else if let error {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.warningText)
                     .font(.callout)
                     .lineLimit(3)
                     .textSelection(.enabled)

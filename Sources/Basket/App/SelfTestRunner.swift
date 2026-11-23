@@ -3,7 +3,9 @@ import BasketAXKit
 
 /// `BASKET_SELFTEST_DIR`: visits every section, writes `<section>.png` (the window including its
 /// toolbar; see `WindowSnapshot`) and `<section>.ax.json` (the window's accessibility tree), plus
-/// `settings-end` and `settings-language` (see SelfTestRunner+Settings), then quits with status 0.
+/// `settings-end` and `settings-language` (see SelfTestRunner+Settings), then every section in
+/// light and dark (`<section>-light.png`, `<section>-dark.png`; SelfTestRunner+Appearance), then
+/// quits with status 0.
 @MainActor
 struct SelfTestRunner {
     let store: AppStore
@@ -39,6 +41,7 @@ struct SelfTestRunner {
             log("captured \(section.rawValue) (window \(Int(window.frame.width))×\(Int(window.frame.height)))")
             if section == .settings { await captureSettingsStates(window) }
         }
+        if let window = store.mainWindow { await captureAppearances(window) }
         if ProcessInfo.processInfo.environment["BASKET_SELFTEST_EXTRAS"] == "1" {
             await captureExtras()
         }
@@ -108,7 +111,7 @@ struct SelfTestRunner {
         log("timed out waiting for data; capturing anyway (loaded: \(store.loaded.map(\.rawValue).sorted()))")
     }
 
-    private func writePNG(of window: NSWindow, to url: URL) {
+    func writePNG(of window: NSWindow, to url: URL) {
         guard let data = WindowSnapshot.png(of: window) else {
             log("cannot render \(url.lastPathComponent)")
             return

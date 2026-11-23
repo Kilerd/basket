@@ -1,13 +1,11 @@
 import AppKit
-import BasketAXKit
 import BasketCore
-import Synchronization
 
 /// Colours of highlighted JSON. Each token kind takes a system colour, moved toward black (light
 /// mode) or white (dark mode) by the smallest step that reaches WCAG AA, 4.5:1, against the
-/// text background the Inspect view draws (`ContrastRatio.adjusted`), so the hue stays
-/// recognisable and the text stays readable. The colours are dynamic: an appearance change (or
-/// Increase Contrast) resolves them again.
+/// text background the Inspect view draws (`ReadableColor`), so the hue stays recognisable and
+/// the text stays readable. The colours are dynamic: an appearance change (macOS's or Settings ▸
+/// General ▸ Appearance, or Increase Contrast) resolves them again.
 ///
 /// | Token | Base | Light, on #FFFFFF | Dark, on #1E1E1E |
 /// |---|---|---|---|
@@ -36,42 +34,8 @@ enum JSONPalette {
         }
     }
 
-    /// `base` as it resolves in `appearance`, made opaque and adjusted to AA.
-    static func resolve(_ base: NSColor, in appearance: NSAppearance) -> NSColor {
-        var result = base
-        appearance.performAsCurrentDrawingAppearance {
-            guard let color = base.usingColorSpace(.sRGB), let background = srgb(.textBackgroundColor) else { return }
-            let seen = SRGB(red: color.redComponent, green: color.greenComponent, blue: color.blueComponent)
-                .composited(alpha: color.alphaComponent, over: background)
-            let readable = ContrastRatio.adjusted(seen, against: [background])
-            result = NSColor(srgbRed: readable.red, green: readable.green, blue: readable.blue, alpha: 1)
-        }
-        return result
-    }
-
-    private static func srgb(_ color: NSColor) -> SRGB? {
-        color.usingColorSpace(.sRGB).map { SRGB(red: $0.redComponent, green: $0.greenComponent, blue: $0.blueComponent) }
-    }
-
-    /// The text system resolves a colour for every run it draws: remember each appearance's result.
-    private final class Cache: Sendable {
-        let colors = Mutex<[NSAppearance.Name: NSColor]>([:])
-    }
-
-    /// Increase Contrast keeps the appearance's name but matches the high-contrast variants.
-    private static let variants: [NSAppearance.Name] = [
-        .accessibilityHighContrastAqua, .accessibilityHighContrastDarkAqua, .aqua, .darkAqua,
-    ]
-
     private static func accessible(_ base: NSColor) -> NSColor {
-        let cache = Cache()
-        return NSColor(name: nil) { appearance in
-            let key = appearance.bestMatch(from: variants) ?? appearance.name
-            if let known = cache.colors.withLock({ $0[key] }) { return known }
-            let resolved = resolve(base, in: appearance)
-            cache.colors.withLock { $0[key] = resolved }
-            return resolved
-        }
+        ReadableColor.make(base, on: [.textBackgroundColor])
     }
 }
 

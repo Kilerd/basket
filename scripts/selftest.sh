@@ -4,7 +4,11 @@
 #   scripts/selftest.sh [demo|empty|stopped|fresh]
 #   BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo     run the app in another language (and
 #                                                        its region format: app_locale)
-# Output: artifacts/selftest/<set>[-<language>]-<timestamp>/{<section>.png,<section>.ax.json,report.md,report.json,app.log}
+#   BASKET_APPEARANCE=dark scripts/selftest.sh demo      run it light or dark (system|light|dark;
+#                                                        never saved). Every run also writes each
+#                                                        section as <section>-light.png and -dark.png
+# Output: artifacts/selftest/<set>[-<language>][-<appearance>]-<timestamp>/{<section>.png,<section>.ax.json,
+#         <section>-light.png,<section>-dark.png,report.md,report.json,app.log}
 # Exit code: lint's (0 clean, 1 error findings, 2 nothing to lint).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
@@ -14,6 +18,10 @@ FIXTURES="$ROOT/Fixtures/$SET"
 [[ -d "$FIXTURES" ]] || die "no fixture set at $FIXTURES (try: $(ls "$ROOT/Fixtures" | tr '\n' ' '))" 64
 APP_TIMEOUT="${BASKET_SELFTEST_TIMEOUT:-90}"
 LANGUAGE="${BASKET_LANGUAGE:-}"
+# Passed to the app through the environment (BASKET_APPEARANCE): overrides Settings ▸ General ▸
+# Appearance for this run.
+APPEARANCE="${BASKET_APPEARANCE:-}"
+case "$APPEARANCE" in ""|system|light|dark) ;; *) die "BASKET_APPEARANCE must be system, light or dark (got '$APPEARANCE')" 64 ;; esac
 
 "$ROOT/scripts/build-app.sh" debug >/dev/null
 log "swift build (debug) basket-ax"
@@ -22,9 +30,9 @@ check_app_language "$BUILD_DIR/Basket.app" "$LANGUAGE"
 
 acquire_gui_lock "self-test"
 
-OUT="$ROOT/artifacts/selftest/$SET${LANGUAGE:+-$LANGUAGE}-$(date +%Y%m%d-%H%M%S)"
+OUT="$ROOT/artifacts/selftest/$SET${LANGUAGE:+-$LANGUAGE}${APPEARANCE:+-$APPEARANCE}-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
-log "self-test with Fixtures/$SET${LANGUAGE:+ in $LANGUAGE} → $OUT (timeout ${APP_TIMEOUT}s)"
+log "self-test with Fixtures/$SET${LANGUAGE:+ in $LANGUAGE}${APPEARANCE:+ ($APPEARANCE)} → $OUT (timeout ${APP_TIMEOUT}s)"
 
 APP_PID=""
 cleanup() { [[ -n "$APP_PID" ]] && kill -TERM "$APP_PID" 2>/dev/null || true; }

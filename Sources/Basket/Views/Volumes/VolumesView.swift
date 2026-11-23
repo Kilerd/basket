@@ -138,7 +138,7 @@ struct NewVolumeSheet: View {
                     .accessibilityIdentifier("new-volume.size")
             } footer: {
                 if let error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.callout)
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Color.warningText).font(.callout)
                 }
             }
         } footer: {

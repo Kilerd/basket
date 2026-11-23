@@ -33,7 +33,7 @@ struct ContainerLogsView: View {
                 Spacer()
                 Text(error ?? LogStatus.text(lines: document.lineCount, following: follow))
                     .font(.caption)
-                    .foregroundStyle(error == nil ? Color.secondary : Color.orange)
+                    .foregroundStyle(error == nil ? Color.secondary : Color.warningText)
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)

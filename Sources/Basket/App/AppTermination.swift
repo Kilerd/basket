@@ -9,6 +9,11 @@ final class BasketAppDelegate: NSObject, NSApplicationDelegate {
     /// Set by `AppStore.init` (there is one store per process).
     static weak var store: AppStore?
 
+    /// Before the first window, the menu bar extra or an alert exists: the chosen appearance.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        Self.store?.appearance.apply()
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let store = Self.store else { return .terminateNow }
         let work = store.longRunningWork

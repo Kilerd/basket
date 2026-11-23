@@ -16,7 +16,7 @@ struct InspectJSONView: View {
         VStack(spacing: 0) {
             HStack {
                 (error.map { Text(verbatim: $0) } ?? Text("container inspect output", comment: "Caption above raw JSON; `container inspect` is the CLI command and stays untranslated"))
-                    .font(.caption).foregroundStyle(error == nil ? Color.secondary : Color.orange)
+                    .font(.caption).foregroundStyle(error == nil ? Color.secondary : Color.warningText)
                     .lineLimit(1)
                 Spacer()
                 Button(String(localized: "Find", comment: "Button: opens the find bar to search the inspect JSON (⌘F)"),

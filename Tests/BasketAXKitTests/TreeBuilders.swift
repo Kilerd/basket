@@ -80,8 +80,10 @@ func basketWindow(
         content.append(node("AXScrollArea", nil, at(210, 60, 1060, 750), children: [
             AXNode(role: "AXPopUpButton", identifier: "settings.language", title: "Language", value: "System",
                    frame: at(520, 80, 400, 24), isEnabled: true),
+            AXNode(role: "AXPopUpButton", identifier: "settings.appearance", title: "Appearance", value: "System",
+                   frame: at(520, 116, 400, 24), isEnabled: true),
             AXNode(role: "AXCheckBox", identifier: "settings.launch-at-login", title: "Launch Basket at login",
-                   value: "0", frame: at(520, 116, 400, 22), isEnabled: true),
+                   value: "0", frame: at(520, 152, 400, 22), isEnabled: true),
         ]))
     } else {
         content.append(field("\(section).search", at(210, searchY, searchWidth, 24)))

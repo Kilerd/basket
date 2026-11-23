@@ -21,7 +21,7 @@ struct UpdateSettingsSection: View {
             }
             Text(status(updates))
                 .font(.caption)
-                .foregroundStyle(updates.isAvailable ? Color.secondary : Color.orange)
+                .foregroundStyle(updates.isAvailable ? Color.secondary : Color.warningText)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("settings.updates.status")
         }

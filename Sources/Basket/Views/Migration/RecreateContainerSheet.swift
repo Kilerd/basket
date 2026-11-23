@@ -32,7 +32,7 @@ struct RecreateContainerSheet: View {
                     }
                 }
                 if let problem = nameProblem {
-                    Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Color.warningText)
                 }
             }
             Section {
@@ -47,7 +47,7 @@ struct RecreateContainerSheet: View {
             }
             Section {
                 if plan.warnings.isEmpty {
-                    Label("Everything carries over.", systemImage: "checkmark.circle").foregroundStyle(.green)
+                    Label("Everything carries over.", systemImage: "checkmark.circle").foregroundStyle(Color.successText)
                 } else {
                     ForEach(plan.warnings) { warning in
                         WarningRow(warning: warning)
@@ -65,10 +65,10 @@ struct RecreateContainerSheet: View {
                             Text(message)
                         }
                     case .done(let id):
-                        Label("Running in Basket as \(id)", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                        Label("Running in Basket as \(id)", systemImage: "checkmark.circle.fill").foregroundStyle(Color.successText)
                     case .failed(let message):
                         Label(message, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.warningText)
                             .textSelection(.enabled)
                     case .idle:
                         EmptyView()

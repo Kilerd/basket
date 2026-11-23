@@ -81,7 +81,9 @@ positional ones (`%1$@`, `%2$lld`). `scripts/check-l10n.sh` checks this.
 | Settings | 设置 | 設定 | 設定 | Réglages | Einstellungen | |
 | General (settings tab) | 通用 | 一般 | 一般 | Général | Allgemein | |
 | Language | 语言 | 語言 | 言語 | Langue | Sprache | |
-| System (follow macOS) | 系统 | 系統 | システム | Système | System | Language picker: follow the macOS language. |
+| System (follow macOS) | 系统 | 系統 | システム | Système | System | Language and Appearance pickers: follow macOS. Not Apple's “Auto” (自动, 自動, 自動, Automatique, Automatisch): in System Settings ▸ Appearance that switches by time of day, while Basket follows whatever macOS shows. |
+| Appearance (Settings ▸ General) | 外观 | 外觀 | 外観モード | Apparence | Erscheinungsbild | As System Settings ▸ Appearance names the setting. |
+| Light / Dark (appearance) | 浅色 / 深色 | 淺色 / 深色 | ライト / ダーク | Clair / Sombre | Hell / Dunkel | As System Settings ▸ Appearance. |
 | relaunch | 重新打开 | 重新開啟 | 再起動 | relancer | neu starten | Quit and open Basket again. |
 | update | 更新 | 更新項目 | アップデート | mise à jour | Update | “Check for Updates…”: 检查更新…, 檢查更新項目⋯, アップデートを確認…, Rechercher des mises à jour…, Nach Updates suchen … |
 | set up | 设置 | 設定 | 設定 | configurer | einrichten | “Set Up Basket”: 设置 Basket, 設定 Basket, Basketを設定, Configurer Basket, Basket einrichten. |

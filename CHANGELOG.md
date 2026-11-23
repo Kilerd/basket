@@ -9,6 +9,19 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Added
+
+- Settings ▸ General ▸ Appearance: System, Light or Dark (#46). Basket can stay light or dark
+  whatever macOS uses; the choice applies at once, without a relaunch, to every window, sheet,
+  menu and the menu bar extra, including the charts and the inspect JSON colours. System follows
+  macOS, as before.
+
+### Fixed
+
+- Light mode: the text of tags (“Rosetta”, “8 platforms”, “OrbStack running”, “In Basket”) and
+  orange warnings and green confirmations were hard to read, at about 2:1 contrast; they are now
+  darkened just enough to reach 4.5:1 (WCAG AA). Dark mode is unchanged where it already passed.
+
 ## [0.0.5] - 2026-11-23
 
 **Using 0.0.1, 0.0.2 or 0.0.3? Don't click Install and Relaunch** — those versions' updater

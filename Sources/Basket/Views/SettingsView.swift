@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import BasketCore
 
 /// The Settings section of the main window (sidebar ▸ Settings, ⌘,): one grouped form, General
-/// with the language first.
+/// with the language and the appearance first.
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
     @AppStorage(DefaultsKey.containerCLIPath) private var cliPath = ""
@@ -34,7 +34,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if store.options.explicitCLIPath != nil {
-                    Text("Overridden by BASKET_CONTAINER_CLI for this launch.").font(.caption).foregroundStyle(.orange)
+                    Text("Overridden by BASKET_CONTAINER_CLI for this launch.").font(.caption).foregroundStyle(Color.warningText)
                 }
             }
             SetupSettingsSection()
@@ -99,7 +99,8 @@ extension AppStore {
     }
 }
 
-/// Language first: the setting people look for when Basket isn't in their language.
+/// Language first: the setting people look for when Basket isn't in their language. Appearance
+/// right after it.
 private struct GeneralSettingsSection: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginItemError: String?
@@ -107,11 +108,12 @@ private struct GeneralSettingsSection: View {
     var body: some View {
         Section("General") {
             LanguageSettingsRows()
+            AppearanceSettingsRow()
             Toggle("Launch Basket at login", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
                 .accessibilityIdentifier("settings.launch-at-login")
             if let loginItemError {
-                Text(loginItemError).font(.caption).foregroundStyle(.orange)
+                Text(loginItemError).font(.caption).foregroundStyle(Color.warningText)
             }
         }
     }
@@ -160,6 +162,24 @@ private struct MemorySaverSettingsSection: View {
     }
 }
 
+// MARK: - Appearance
+
+/// Settings ▸ General ▸ Appearance: System, Light or Dark, applied at once to every window, sheet,
+/// alert, menu and the menu bar extra (`AppearanceChoice`).
+private struct AppearanceSettingsRow: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        @Bindable var appearance = store.appearance
+        Picker(selection: $appearance.selection) {
+            ForEach(AppAppearance.allCases) { Text(verbatim: $0.title).tag($0) }
+        } label: {
+            Text("Appearance", comment: "Settings ▸ General: light or dark, as in System Settings ▸ Appearance")
+        }
+        .accessibilityIdentifier("settings.appearance")
+    }
+}
+
 // MARK: - Language
 
 /// Settings ▸ General ▸ Language: Basket's own language, independent of macOS (`AppleLanguages`
@@ -171,7 +191,7 @@ private struct LanguageSettingsRows: View {
     var body: some View {
         @Bindable var language = store.language
         Picker("Language", selection: $language.selection) {
-            Text("System", comment: "Language picker: use the language macOS uses").tag("")
+            Text("System", comment: "Language and Appearance pickers: follow macOS").tag("")
             ForEach(AppLanguage.available, id: \.self) { id in
                 Text(verbatim: AppLanguage.name(of: id)).tag(id)
             }

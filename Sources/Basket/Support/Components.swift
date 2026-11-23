@@ -6,17 +6,30 @@ import BasketCore
 
 extension Color {
     init(light: NSColor, dark: NSColor) {
-        self.init(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-        })
+        self.init(nsColor: NSColor(light: light, dark: dark))
     }
 }
 
 extension NSColor {
+    /// Dynamic: `dark` in dark appearances, `light` otherwise.
+    convenience init(light: NSColor, dark: NSColor) {
+        self.init(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+        }
+    }
+
     convenience init(hex: UInt32) {
         self.init(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
                   blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
     }
+}
+
+/// Status text: the system orange and green, darkened (light mode) or lightened (dark mode) just
+/// enough to read at AA on windows, tables, cards and sheets (`ReadableColor`; plain orange text
+/// is ~2:1 on white). A `Label` takes it for its icon too; standalone icons keep the system colours.
+extension Color {
+    static let warningText = Color(nsColor: ReadableColor.make(.systemOrange, on: ReadableColor.contentBackgrounds))
+    static let successText = Color(nsColor: ReadableColor.make(.systemGreen, on: ReadableColor.contentBackgrounds))
 }
 
 /// Categorical series colours (validated light/dark steps; see the dataviz palette).
@@ -160,10 +173,29 @@ extension NumericCell where Mark == EmptyView {
     }
 }
 
+/// A capsule tag ("Rosetta", "8 platforms", "OrbStack running"): the tint at 12 % behind text in
+/// the tint itself, darkened (light) or lightened (dark) just enough to read at AA on the capsule
+/// wherever it sits (`ReadableColor`); plain `.orange` text on its own tint is ~2:1 in light mode.
 struct Pill: View {
     var text: LocalizedStringKey
     var systemImage: String?
     var tint: Color = .secondary
+
+    private static let fillOpacity = 0.12
+    /// A little above AA: SwiftUI blends the fill in the display's colour space, which lands up to
+    /// a unit away from the sRGB estimate (measured 4.49:1 for blue in dark mode at exactly 4.5).
+    private static let contrastTarget = 4.6
+    /// One dynamic colour per tint, shared by every pill.
+    @MainActor private static var inks: [Color: Color] = [:]
+
+    private var ink: Color {
+        if let known = Self.inks[tint] { return known }
+        let base = NSColor(tint)
+        let ink = Color(nsColor: ReadableColor.make(base, on: ReadableColor.contentBackgrounds,
+                                                    fill: (base, Self.fillOpacity), target: Self.contrastTarget))
+        Self.inks[tint] = ink
+        return ink
+    }
 
     var body: some View {
         HStack(spacing: 3) {
@@ -177,8 +209,8 @@ struct Pill: View {
         // from being reported as cut off.
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
-        .foregroundStyle(tint)
-        .background(tint.opacity(0.12), in: Capsule())
+        .foregroundStyle(ink)
+        .background(tint.opacity(Self.fillOpacity), in: Capsule())
         .fixedSize()
     }
 }
