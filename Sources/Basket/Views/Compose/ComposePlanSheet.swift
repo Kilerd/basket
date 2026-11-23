@@ -26,7 +26,7 @@ struct ComposePlanSheet: View {
             case .failure(let error)?:
                 Section {
                     Label(error.localizedDescription, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.warningText)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("compose-plan.error")
@@ -173,7 +173,7 @@ private struct PlanSections: View {
             }
             if let existing {
                 Label(existing.message, systemImage: existing.blocking ? "exclamationmark.triangle.fill" : "info.circle")
-                    .foregroundStyle(existing.blocking ? Color.orange : Color.secondary)
+                    .foregroundStyle(existing.blocking ? Color.warningText : Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("compose-plan.existing")
             }
@@ -341,10 +341,10 @@ private struct ProgressLines: View {
                     Text("Working…").foregroundStyle(.secondary)
                 }
             case .done:
-                Label("Up and running", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                Label("Up and running", systemImage: "checkmark.circle.fill").foregroundStyle(Color.successText)
             case .failed(let message):
                 Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.warningText)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             case .idle:

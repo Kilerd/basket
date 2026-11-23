@@ -48,10 +48,10 @@ struct PullImageSheet: View {
                         ProgressLog(lines: lines, identifier: "pull-image.progress")
                     case .done:
                         Label("Pulled \(ImageName(reference).display)", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.successText)
                     case .failed(let message):
                         Label(message, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.warningText)
                             .textSelection(.enabled)
                     case .idle:
                         EmptyView()

@@ -110,7 +110,7 @@ struct ReclaimSheet: View {
                     }
                     (unavailable.map { Text(verbatim: $0) } ?? Text(note))
                         .font(.caption)
-                        .foregroundStyle(warning || unavailable != nil ? .orange : .secondary)
+                        .foregroundStyle(warning || unavailable != nil ? Color.warningText : Color.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

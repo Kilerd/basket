@@ -42,10 +42,10 @@ struct ReclaimMemorySheet: View {
                             switch removal {
                             case true?:
                                 Text("Started with --rm: stopping deletes it, so it can't be restarted.")
-                                    .font(.caption).foregroundStyle(.orange)
+                                    .font(.caption).foregroundStyle(Color.warningText)
                             case nil:
                                 Text("Basket can't tell whether it was started with --rm. If so, restarting deletes it.")
-                                    .font(.caption).foregroundStyle(.orange)
+                                    .font(.caption).foregroundStyle(Color.warningText)
                             default:
                                 EmptyView()
                             }

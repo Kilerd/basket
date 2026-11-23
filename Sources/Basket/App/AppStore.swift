@@ -163,6 +163,8 @@ final class AppStore {
     let updates: UpdateController
     /// Settings ▸ General ▸ Language (applies after a relaunch).
     let language: LanguageChoice
+    /// Settings ▸ General ▸ Appearance (applies at once, app-wide).
+    let appearance: AppearanceChoice
 
     // MARK: Window & polling
     @ObservationIgnored weak var mainWindow: NSWindow?
@@ -191,6 +193,7 @@ final class AppStore {
         self.selectedSection = options.initialSection
             ?? (options.isUITest ? nil : AppRelaunch.takeReopenSection()) ?? .overview
         self.language = LanguageChoice(persistent: !options.isUITest)
+        self.appearance = AppearanceChoice(persistent: !options.isUITest, override: options.appearance)
         self.memorySaver = MemorySaverState(persistent: !options.isUITest)
         self.updates = UpdateController(isUITest: options.isUITest)
         migration.store = self

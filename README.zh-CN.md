@@ -47,11 +47,11 @@ Apple 的 [`container`](https://github.com/apple/container) 让**每个容器运
 - **从 OrbStack 迁移**。导入 OrbStack 的镜像（仅本机平台，按内容校验），并把容器重新创建为 `container run` 命令，对无法迁移的设置给出警告。Basket 只读取 OrbStack，且只通过一份只读 `docker` 命令白名单。
 - **`docker` 命令**。可选的 `docker` 垫片会把日常的 `docker` 命令转换为 `container` 命令（[支持范围](docs/docker-shim.md)）；只有你同意后才会启用，并且会先给出要写入的确切 shell 配置行。
 - **引导式设置**。首次启动时检查这台 Mac，安装 `container`（通过 Homebrew 或官方安装器）并启动它，然后提供 OrbStack 迁移和 `docker` 命令。
-- **卷、网络、Linux 机器**（`container machine`）、**菜单栏附加项**，以及边栏底部的**设置**（语言、CLI 路径、刷新间隔、默认内存、登录时打开）。
+- **卷、网络、Linux 机器**（`container machine`）、**菜单栏附加项**，以及边栏底部的**设置**（语言、外观、CLI 路径、刷新间隔、默认内存、登录时打开）。
 - **签名更新**。Basket 每天检查 GitHub Releases（设置 ▸ 更新），只有在验证签名和代码签名之后才安装新版本（[说明](docs/updates.md)）。
 - **从设计上就支持辅助功能**。每个控件都有可读的辅助功能名称和稳定的标识符，界面通过辅助功能树进行测试；参见[界面如何测试](#界面如何测试)。
 
-**六种语言**（自 0.0.2 起）——English、简体中文、繁體中文、日本語、Français 和 Deutsch。Basket 跟随 macOS 的语言，也可以在“设置 ▸ 通用 ▸ 语言”中另选（“设置”位于边栏底部，或按 ⌘,；Basket 重新打开后即切换）。
+**六种语言**（自 0.0.2 起）——English、简体中文、繁體中文、日本語、Français 和 Deutsch。Basket 跟随 macOS 的语言，也可以在“设置 ▸ 通用 ▸ 语言”中另选（“设置”位于边栏底部，或按 ⌘,；Basket 重新打开后即切换）。浅色或深色：“设置 ▸ 通用 ▸ 外观”（“系统”跟随 macOS；立即生效）。
 
 计划中：类似 `*.orb.local` 的 DNS 名称、`container build`、Kubernetes，以及可选的 Docker API 兼容。参见[功能对照表](docs/EVOLUTION.md#orbstack--basket-feature-map)和尚未关闭的 issue。
 
@@ -107,9 +107,10 @@ Basket 按照旁白（VoiceOver）看到的方式测试界面：通过 macOS 辅
    ```sh
    scripts/selftest.sh demo     # 还有：empty、stopped
    BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo   # 用其他语言运行
+   BASKET_APPEARANCE=light scripts/selftest.sh demo   # 浅色或深色，不论 macOS 用哪种
    ```
 
-   应用以夹具后端启动（`Fixtures/<set>`，即内容为合成数据的原始 `container … --format json` 输出）。它依次访问每个部分，在进程内遍历自己的辅助功能树，写出 `<section>.ax.json` 和 `<section>.png`，然后由 `basket-ax lint` 审查这些转储。CI 在每个拉取请求上都会运行它。
+   应用以夹具后端启动（`Fixtures/<set>`，即内容为合成数据的原始 `container … --format json` 输出）。它依次访问每个部分，在进程内遍历自己的辅助功能树，写出 `<section>.ax.json` 和 `<section>.png`，以及 `<section>-light.png` 和 `<section>-dark.png`，然后由 `basket-ax lint` 审查这些转储。CI 在每个拉取请求上都会运行它。
 2. **端到端测试（需要授予一次辅助功能权限）**。
 
    ```sh

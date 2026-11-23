@@ -24,7 +24,7 @@ struct SetupSettingsSection: View {
                 .accessibilityIdentifier("settings.docker-command")
             Text(caption(model))
                 .font(.caption)
-                .foregroundStyle(model.dockerPhase.failure == nil ? .secondary : Color.orange)
+                .foregroundStyle(model.dockerPhase.failure == nil ? Color.secondary : Color.warningText)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .task { await model.loadDocker() }

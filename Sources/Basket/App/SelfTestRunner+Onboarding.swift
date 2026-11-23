@@ -74,19 +74,16 @@ extension SelfTestRunner {
         finish()
     }
 
-    /// Light (with the AX dump) and dark, whatever the Mac's own appearance is.
+    /// Light (with the AX dump) and dark, whatever the Mac's own appearance is (through Settings ▸
+    /// General ▸ Appearance, never saved in UI-test runs).
     private func captureOnboarding(_ window: NSWindow, _ name: String) async {
-        NSApp.appearance = NSAppearance(named: .aqua)
-        try? await Task.sleep(for: .milliseconds(500))
+        let initial = store.appearance.selection
+        await switchAppearance(to: .light, in: window)
         await capture(window, as: "onboarding-\(name)")
-        NSApp.appearance = NSAppearance(named: .darkAqua)
-        try? await Task.sleep(for: .milliseconds(500))
+        await switchAppearance(to: .dark, in: window)
         window.displayIfNeeded()
-        if let png = WindowSnapshot.png(of: window) {
-            try? png.write(to: directory.appending(path: "onboarding-\(name)-dark.png"))
-        }
-        NSApp.appearance = nil
-        try? await Task.sleep(for: .milliseconds(300))
+        writePNG(of: window, to: directory.appending(path: "onboarding-\(name)-dark.png"))
+        await switchAppearance(to: initial, in: window)
     }
 
     private func waitFor(seconds: Double = 10, _ condition: () -> Bool) async {

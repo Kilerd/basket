@@ -75,6 +75,27 @@ French and German; terms and typography are in [l10n/glossary.md](l10n/glossary.
   for that run only, so screenshots show the language's number and date formats ("4,21 Go"); the
   E2E runner takes `--language <id> --locale <id>`.
 
+## Appearance
+
+Settings ▸ General ▸ Appearance (`settings.appearance`, right after Language) offers System, Light
+and Dark (`AppAppearance`, state in `AppearanceChoice`). Unlike the language it applies at once and
+app-wide: it sets `NSApp.appearance` (nil, `.aqua`, `.darkAqua`), so every window, sheet, alert,
+menu, the Settings section and the menu bar extra follow it. The choice is saved as `appearance`
+(`system` is the absent key) in Basket's own defaults, the running bundle's domain, and applied in
+`applicationWillFinishLaunching`, before the first window. UI-test runs neither read nor write it
+and start at System; `BASKET_APPEARANCE=system|light|dark` sets one run's appearance without
+saving it. “System” is the Language picker's word for “follow macOS”, not Apple's “Auto”, which
+in System Settings switches by time of day; Basket follows whatever macOS shows, Auto included.
+
+A live switch only works with dynamic colours: system colours, `Color(light:dark:)` (the chart and
+meter series) and `ReadableColor`, which resolves a colour per appearance and moves it toward black
+or white just far enough to reach WCAG AA (4.5:1) on the surfaces it sits on: the inspect JSON
+palette (`JSONPalette`), the text of tinted capsules (`Pill`: “Rosetta”, “8 platforms”) and status
+text (`Color.warningText`, `Color.successText`); plain orange or green text is about 2:1 on a light
+background. Never store a colour resolved once (`cgColor`, `usingColorSpace` outside a dynamic
+provider): it keeps the appearance it was resolved in. The self-test captures every section in
+both appearances through the setting itself (`<section>-light.png`, `<section>-dark.png`).
+
 ## Why the CLI and not ContainerClient/XPC
 
 `container … --format json` is the documented, versioned interface; linking `ContainerClient`
@@ -91,7 +112,8 @@ replace it later without touching the UI.
 | `BASKET_CONTAINER_CLI` | explicit path to the `container` binary |
 | `BASKET_UI_TEST` | `1` = deterministic UI: fixed 1280×820 window, no animations, no polling jitter |
 | `BASKET_INITIAL_SECTION` | sidebar section to open first (`overview`, `containers`, …, `settings`) |
-| `BASKET_SELFTEST_DIR` | self-test: visit every section, write `<section>.png` + `<section>.ax.json` (plus `settings-end`, the end of the Settings form, and `settings-language`, the relaunch prompt after a language change; UI-test runs never save the language), then quit |
+| `BASKET_SELFTEST_DIR` | self-test: visit every section, write `<section>.png` + `<section>.ax.json` (plus `settings-end`, the end of the Settings form, and `settings-language`, the relaunch prompt after a language change; UI-test runs never save the language), then every section again as `<section>-light.png` and `<section>-dark.png` (switched through Settings ▸ General ▸ Appearance, never saved), then quit |
+| `BASKET_APPEARANCE` | `system`, `light` or `dark`: this run's appearance instead of the one chosen in Settings, never saved (`scripts/selftest.sh` passes it on; the E2E runner keeps the system appearance) |
 | `BASKET_DOCKER_CLI` | explicit path to the `docker` binary used to read OrbStack (default: OrbStack's own) |
 | `BASKET_ONBOARDING` | `1` = open "Set Up Basket" at launch even in UI-test/self-test runs (otherwise it opens only on first launch or when the CLI is missing, and never in UI tests); with `BASKET_SELFTEST_DIR` the self-test walks every step first (`onboarding-<step>[-<state>].png/.ax.json`, plus `-dark.png`) |
 | `BASKET_FAKE_BREW` | UI-test/fixture runs only: `1` = pretend Homebrew is installed so the onboarding shows "Install with Homebrew" (a simulated install); fixture runs never look at the real Homebrew |
@@ -196,7 +218,7 @@ and Japanese text is checked for truncation from two characters on).
 | Card actions | `overview.action.<verb>` — e.g. `reclaim` (disk), `reclaim-memory`, `stop-idle` |
 | Sheets | `sheet.<name>` (e.g. `sheet.reclaim-memory`); its controls `<name>.<control>` (`reclaim-memory.action.confirm`, `reclaim-memory.container.<id>`) |
 | Disk reclaim / image recovery | `sheet.reclaim` with items `reclaim.{containers,images,volumes}.item.<id>`; Images recovery strip `images.recovery`, `images.recovery.{restore,delete}.<archive file>` |
-| Settings section | root `section.settings` (title “Settings”, ⌘, and the app menu's and menu bar's “Settings…” select it); controls `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`); General ▸ Language: picker `settings.language` (System + every shipped language, each named in itself) and, after a change, the prompt `settings.language-pending` with `settings.language-relaunch` (“Relaunch Now”) |
+| Settings section | root `section.settings` (title “Settings”, ⌘, and the app menu's and menu bar's “Settings…” select it); controls `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`); General ▸ Language: picker `settings.language` (System + every shipped language, each named in itself) and, after a change, the prompt `settings.language-pending` with `settings.language-relaunch` (“Relaunch Now”); General ▸ Appearance: picker `settings.appearance` (System, Light, Dark; applied at once) |
 | Compose | header rows `containers.group.<project>` (disclosure `containers.group.<project>.toggle`), service rows keep `containers.row.<id>`; `containers.action.compose-up` (toolbar, ⇧⌘O), project detail `containers.detail` with `containers.action.project-{start,stop,restart,down,reveal}`; sheet `sheet.compose-plan` with `compose-plan.{file,memory,cpus,service-names,existing,services,service.<name>,warning.<n>,commands,progress,error,copy,cancel,up,show,done}` |
 | Onboarding (“Set Up Basket” window) | window `onboarding.window`; one step root `onboarding.step.<welcome|install|system|orbstack|docker|done>`; every button/link `onboarding.action.<verb>` (`back`, `continue`, `skip`, `later`, `not-now`, `install-brew`, `cancel`, `download`, `check-again`, `choose-cli`, `start-system`, `migrate`, `enable-docker`, `disable-docker`, `docs`, `open-basket`); other elements `onboarding.<control>` (`progress`, `title`, `status`, `log`, `error`, `requirement.<name>`, `compare.<memory|disk>`, `planned-change`, `summary`, `memory-saver`). Linted with this contract instead of `basket.main`. Settings: `settings.run-setup`, `settings.docker-command` |
 | Updates | sheet `sheet.update`: title `update.version` (“Basket X.Y.Z is available”), `update.notes`, `update.progress`, `update.error`, buttons `update.{install,later,skip,cancel,retry,done,releases}`; checking / up to date / unavailable / failed-check title `update.status`. Settings: `settings.updates.{automatic,check,status}` |
@@ -312,11 +334,12 @@ UTF-16 units appear as plain text first and get their colours when ready. Keys, 
 `true`/`false`/`null` and punctuation take `systemPurple`, `systemTeal`, `systemOrange`,
 `systemBlue` and `secondaryLabelColor`, each moved toward black or white just far enough to reach
 WCAG AA (4.5:1) against `textBackgroundColor`, which the text view draws itself
-(`ContrastRatio` in BasketAXKit; the measured table is in `JSONPalette`). The colours are dynamic,
-so appearance changes apply at once. The NSTextView (TextKit 2) is read-only and selectable, with
-the find bar (⌘F, also the Find button) and no line wrapping: `NoWrapScrollView` sizes it to the
-widest line, because an unbounded text container makes TextKit 2 lay out the whole document (seconds
-for a few MB) instead of the visible part. Copy JSON copies the formatted text.
+(`ContrastRatio` in BasketAXKit, through `ReadableColor`; the measured table is in `JSONPalette`).
+The colours are dynamic, so appearance changes (macOS's or Settings ▸ General ▸ Appearance) apply
+at once. The NSTextView (TextKit 2) is read-only and selectable, with the find bar (⌘F, also the
+Find button) and no line wrapping: `NoWrapScrollView` sizes it to the widest line, because an
+unbounded text container makes TextKit 2 lay out the whole document (seconds for a few MB) instead
+of the visible part. Copy JSON copies the formatted text.
 
 ## Updates
 

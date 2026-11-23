@@ -235,9 +235,9 @@ struct NewMachineSheet: View {
                 Section("Progress") {
                     switch phase {
                     case .creating: ProgressLog(lines: lines, identifier: "new-machine.progress")
-                    case .done: Label("Machine is ready", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    case .done: Label("Machine is ready", systemImage: "checkmark.circle.fill").foregroundStyle(Color.successText)
                     case .failed(let message):
-                        Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).textSelection(.enabled)
+                        Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Color.warningText).textSelection(.enabled)
                     case .idle: EmptyView()
                     }
                 }

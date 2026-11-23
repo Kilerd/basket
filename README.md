@@ -78,8 +78,8 @@ Available in `0.0.1`:
 - **Guided setup.** First launch checks the Mac, installs `container` (Homebrew or the official
   installer), starts it, offers OrbStack migration and the `docker` command.
 - **Volumes, networks, Linux machines** (`container machine`), a **menu bar extra** and
-  **Settings** at the bottom of the sidebar (language, CLI path, refresh interval, default
-  memory, launch at login).
+  **Settings** at the bottom of the sidebar (language, appearance, CLI path, refresh interval,
+  default memory, launch at login).
 - **Signed updates.** Basket checks GitHub Releases daily (Settings ▸ Updates) and installs a
   new version only after verifying its signature and code signature ([how](docs/updates.md)).
 - **Accessible by construction.** Every control has an accessible name and a stable
@@ -89,6 +89,7 @@ Available in `0.0.1`:
 **Six languages** (since 0.0.2) — English, 简体中文, 繁體中文, 日本語, Français and
 Deutsch. Basket follows the macOS language, or the one chosen in Settings ▸ General ▸ Language
 (Settings is at the bottom of the sidebar, or press ⌘,; Basket relaunches to switch).
+Light or dark: Settings ▸ General ▸ Appearance (System follows macOS; applies at once).
 
 Planned: `*.orb.local`-style DNS names, `container build`, Kubernetes and
 optional Docker API compatibility. See the
@@ -159,11 +160,13 @@ deterministic fixture data. There is no pixel matching and no XCUITest.
    ```sh
    scripts/selftest.sh demo     # also: empty, stopped
    BASKET_LANGUAGE=de scripts/selftest.sh demo   # in another language
+   BASKET_APPEARANCE=light scripts/selftest.sh demo   # light or dark, whatever macOS uses
    ```
 
    The app starts with the fixture backend (`Fixtures/<set>`, raw `container … --format json`
    output with synthetic content). It visits every section, walks its own accessibility tree
-   in-process, and writes `<section>.ax.json` and `<section>.png`. Then
+   in-process, and writes `<section>.ax.json` and `<section>.png`, plus `<section>-light.png`
+   and `<section>-dark.png`. Then
    `basket-ax lint` audits the dumps. CI runs this on every pull request.
 2. **End-to-end test (needs Accessibility permission once).**
 

@@ -68,6 +68,8 @@ struct LaunchOptions: Sendable {
     var isUITest: Bool
     var initialSection: AppSection?
     var selfTestDirectory: URL?
+    /// `BASKET_APPEARANCE=system|light|dark`: this run's appearance, never saved.
+    var appearance: AppAppearance? = nil
 
     static func fromProcess(_ env: [String: String] = ProcessInfo.processInfo.environment) -> LaunchOptions {
         let backend: BackendKind
@@ -87,7 +89,8 @@ struct LaunchOptions: Sendable {
             explicitCLIPath: env["BASKET_CONTAINER_CLI"].flatMap { $0.isEmpty ? nil : $0 },
             isUITest: env["BASKET_UI_TEST"] == "1" || selfTest != nil,
             initialSection: env["BASKET_INITIAL_SECTION"].flatMap { AppSection(rawValue: $0.lowercased()) },
-            selfTestDirectory: selfTest
+            selfTestDirectory: selfTest,
+            appearance: env["BASKET_APPEARANCE"].flatMap { AppAppearance(rawValue: $0.lowercased()) }
         )
     }
 
@@ -115,4 +118,6 @@ enum DefaultsKey {
     static let refreshInterval = "refreshInterval"
     static let defaultCPUs = "defaultCPUs"
     static let defaultMemoryMB = "defaultMemoryMB"
+    /// Settings ▸ General ▸ Appearance (`AppAppearance` raw value; absent = System).
+    static let appearance = "appearance"
 }
