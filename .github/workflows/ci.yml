@@ -117,11 +117,12 @@ jobs:
 
       # The self-test opens the app's window in the runner's GUI session. Restored window state
       # (from an earlier launch in this job) can leave the main window closed, which would stall
-      # the self-test, so state restoration is turned off for the app's bundle id.
+      # the self-test, so state restoration is turned off for the bundle id of the debug build it
+      # runs (dev.basket.app.debug, scripts/_common.sh).
       - name: Prepare the GUI session
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          defaults write dev.basket.app ApplePersistenceIgnoreState -bool YES
+          defaults write dev.basket.app.debug ApplePersistenceIgnoreState -bool YES
           system_profiler SPDisplaysDataType | grep -E 'Resolution|Display Type' || true
 
       - name: Self-test (demo fixtures)

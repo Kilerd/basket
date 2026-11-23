@@ -124,8 +124,14 @@ and disk first) → implement → verify. Findings and decisions are logged here
   one-click relaunch instead); the Disk card's breakdown now spans the card (#31) and a new AX
   rule, `card-trailing-alignment`, catches value columns that stop short of a card's edge;
   inspect JSON is tidied and highlighted with WCAG-AA system colours and ⌘F (#32).
-- E2E lessons: an installed Basket with the same bundle id makes a second instance hang
-  (issue #29), and a locked screen blocks LaunchServices-launched apps too — both looked alike.
+- E2E lessons: a second Basket that never finished launching was blamed on the installed Basket
+  sharing its bundle id (issue #29), and a locked screen blocks LaunchServices-launched apps too —
+  both looked alike. The real cause of #29, found later with `sample`: the E2E Basket waited in
+  `open()` on a fixture file in the checkout under `~/Documents` while macOS asked "Basket would
+  like to access files in your Documents folder" (tccd: `display_prompt`). A second instance with
+  the same bundle id runs fine. E2E now runs a temporary copy with its fixtures, and debug builds
+  have their own bundle id, `dev.basket.app.debug`, so they no longer share settings with an
+  installed Basket.
 - CI caught another wall-clock test (5 MB formatting under 3 s): timing tests now check
   scaling ratios, not absolute time.
 

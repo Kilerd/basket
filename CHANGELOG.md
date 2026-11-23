@@ -9,6 +9,14 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+### Changed
+
+- Development: debug builds (`scripts/build-app.sh debug`, the self-test and the end-to-end
+  tests) are now “Basket (Debug)” with the bundle id `dev.basket.app.debug`, so they no longer
+  read or write the settings of an installed Basket (#29). `scripts/e2e.sh` runs a temporary copy
+  of the app with its fixtures, so it no longer stalls on a macOS prompt for access to the
+  folder holding the checkout. Release builds keep `dev.basket.app`.
+
 ## [0.0.4] - 2026-11-23
 
 **Upgrading from 0.0.1, 0.0.2 or 0.0.3 — please read.** Those versions have a bug in their

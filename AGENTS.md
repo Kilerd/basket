@@ -70,6 +70,9 @@ scripts/update-e2e.sh                # installs an update through the UI (Develo
 scripts/check-leaks.sh --all         # confidentiality scan of the working tree
 ```
 
+Debug builds (all of the above) are "Basket (Debug)", bundle id `dev.basket.app.debug`: they keep
+their own settings and run next to an installed Basket (`dev.basket.app`), which you leave alone.
+
 Quality gates for UI changes: `selftest.sh demo|empty|stopped` and `e2e.sh demo` end with 0
 errors and 0 warnings, and someone actually looks at the PNGs — clipped, misaligned or
 inconsistent UI fails even when the lint passes. Check alignment at full resolution (crop with

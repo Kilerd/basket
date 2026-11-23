@@ -217,11 +217,13 @@ final class AuditRunner {
             config.arguments += ["-AppleLocale", locale]
             notes.append("region format: \(locale)")
         }
+        let started = Date()
         let launched = try await NSWorkspace.shared.openApplication(at: options.app, configuration: config)
         app = launched
         pid = launched.processIdentifier
         HardDeadline.launchedPid.withLock { $0 = pid }
-        Console.log("launched pid \(pid)")
+        // LaunchServices returns once the app checks in, or after ~30 s if it never does.
+        Console.log(String(format: "launched pid %d (LaunchServices answered after %.1f s)", pid, Date().timeIntervalSince(started)))
         let element = RemoteAXElement.application(pid: pid)
         RemoteAXCapture.setMessagingTimeout(3, for: element)
         appElement = element
@@ -271,6 +273,12 @@ final class AuditRunner {
         }
         guard let window else {
             if kill(pid, 0) != 0 { throw RunnerError(description: "Basket exited during launch (pid \(pid))") }
+            if app?.isFinishedLaunching == false {
+                // Blocked before NSApplication finished launching: no AX, no window, no reply to quit.
+                throw RunnerError(description: "Basket (pid \(pid)) never finished launching within \(Int(options.launchTimeout)) s: "
+                    + "something blocks it before its first window — usually a macOS prompt waiting for an answer "
+                    + "(e.g. “Basket would like to access files in your Documents folder”, issue #29) or a locked screen")
+            }
             throw RunnerError(description: "window “\(AXAuditRules.mainWindowIdentifier)” did not appear within \(Int(options.launchTimeout)) s")
         }
         Console.log("main window found")

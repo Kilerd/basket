@@ -53,7 +53,11 @@ struct UpdateSetup {
     var allowUnnotarized = false
     #endif
 
-    static func fromProcess(_ env: [String: String] = ProcessInfo.processInfo.environment) -> UpdateSetup {
+    /// Release builds update only to the product, `dev.basket.app`. DEBUG builds have their own
+    /// bundle id (`dev.basket.app.debug`, scripts/build-app.sh) and update only to a build with
+    /// that same id: the local end-to-end test installs one debug build over another.
+    static func fromProcess(_ env: [String: String] = ProcessInfo.processInfo.environment,
+                            bundle: Bundle = .main) -> UpdateSetup {
         var setup = UpdateSetup()
         #if DEBUG
         if let feed = env["BASKET_UPDATE_FEED_URL"].flatMap(URL.init(string:)), feed.scheme == "file" || feed.scheme == "https" {
@@ -64,6 +68,7 @@ struct UpdateSetup {
             setup.trustedPublicKeysBase64 = [key]
         }
         setup.allowUnnotarized = env["BASKET_UPDATE_ALLOW_UNNOTARIZED"] == "1"
+        if let identifier = bundle.bundleIdentifier { setup.policy.appBundleIdentifier = identifier }
         #endif
         return setup
     }
@@ -71,9 +76,11 @@ struct UpdateSetup {
     /// The code requirement an update of `team` must satisfy (docs/updates.md, step 3).
     func requirement(team: String) throws -> String {
         #if DEBUG
-        if allowUnnotarized { return try CodeSignature.requirementAllowingUnnotarized(teamID: team) }
+        if allowUnnotarized {
+            return try CodeSignature.requirementAllowingUnnotarized(teamID: team, identifier: policy.appBundleIdentifier)
+        }
         #endif
-        return try CodeSignature.requirement(teamID: team)
+        return try CodeSignature.requirement(teamID: team, identifier: policy.appBundleIdentifier)
     }
 }
 
@@ -110,7 +117,8 @@ final class UpdateController {
     @ObservationIgnored private var work: Task<Void, Never>?
     /// The sheet waits for another sheet to close.
     @ObservationIgnored private var presentWhenFree = false
-    @ObservationIgnored private let logger = Logger(subsystem: UpdatePolicy.bundleIdentifier, category: "updates")
+    @ObservationIgnored private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? UpdatePolicy.bundleIdentifier,
+                                                    category: "updates")
 
     static let launchDelay: Duration = .seconds(60)
     static let checkInterval: TimeInterval = 24 * 3600
@@ -128,7 +136,7 @@ final class UpdateController {
         currentVersion = version
         var reason: String?
         var team: String?
-        if bundle.bundleURL.pathExtension != "app" || bundle.bundleIdentifier != UpdatePolicy.bundleIdentifier || version == nil {
+        if bundle.bundleURL.pathExtension != "app" || bundle.bundleIdentifier != setup.policy.appBundleIdentifier || version == nil {
             reason = AppLocation.problem(with: bundle.bundleURL)
                 ?? String(localized: "This build of Basket has no release version, so it can't update itself.")
         } else {

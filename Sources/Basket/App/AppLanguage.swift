@@ -52,8 +52,9 @@ enum AppLanguage {
 }
 
 /// Settings ▸ General ▸ Language: what the picker shows and whether a relaunch is pending.
-/// UI-test runs share the installed app's defaults domain, so there the choice is never written
-/// (the self-test sets it to capture the relaunch prompt).
+/// UI-test runs use the defaults domain of the build under test (the debug build's,
+/// `dev.basket.app.debug`, which a developer also runs by hand), so there the choice is never
+/// written (the self-test sets it to capture the relaunch prompt).
 @Observable @MainActor
 final class LanguageChoice {
     /// "" = follow macOS, else a shipped localization id.
