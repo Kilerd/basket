@@ -103,7 +103,8 @@ release builds: `strings` on a `swift build -c release` binary finds no
    temporary disk image (never `/Applications`), and makes B: the same build with version
    A + 1000 (patch), signed again, zipped and signed with a throwaway key from
    `scripts/update-keygen.swift`, next to a `latest.json` with a `file://` URL.
-2. `basket-ax update-install` launches A with the fixtures backend, `BASKET_UPDATE_FEED_URL`,
+2. `basket-ax update-install` launches A with the fixtures backend (a copy of `Fixtures/demo` in
+   the temporary folder, outside any privacy-protected folder), `BASKET_UPDATE_FEED_URL`,
    `BASKET_UPDATE_TEST_PUBLIC_KEY` and `BASKET_UPDATE_ALLOW_UNNOTARIZED=1`, chooses
    Basket ▸ Check for Updates… in the menu bar, waits for the update sheet and presses
    “Install and Relaunch” (`update.install`) with AXPress.
