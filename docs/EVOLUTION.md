@@ -147,6 +147,25 @@ and disk first) → implement → verify. Findings and decisions are logged here
   force quit stops the helper too, #41.) From 0.0.4 on, updates quit cleanly.
 - Debugging note: zsh's builtin `log` shadows `/usr/bin/log`.
 
+### 0.0.5 — the helper that died with the app (2026-11-23)
+- The 0.0.4 notes told 0.0.1–0.0.3 users to force-quit a stuck update; the maintainer tried it and
+  nothing installed. A force quit (⌥⌘⎋, the Dock, Activity Monitor — LaunchServices'
+  `_LSForceQuitApplication`) ends every process in the app's *coalition*, and the helper stayed
+  in Basket's coalition despite `POSIX_SPAWN_SETSID`; plain `kill` didn't, which is why tests
+  missed it. The helper is now a one-shot launchd job (its own coalition), like Sparkle's
+  installer; `update-e2e.sh kill` proves it survives SIGKILL and a force quit (#41). Published
+  release pages were corrected the same day; 0.0.5's notes replace 0.0.4's in older versions'
+  update sheet.
+- The long-running "E2E hangs when the screen is locked or another Basket runs" mystery was a
+  macOS privacy prompt: an app launched through LaunchServices is checked under its own bundle
+  id, and the fixtures live under `~/Documents`. E2E now stages app + fixtures in a temp folder,
+  and debug builds are "Basket (Debug)", `dev.basket.app.debug` — no shared settings with an
+  installed Basket (#29).
+- Lesson: verify a user-facing workaround on a real reproduction before publishing it; when
+  two explanations both fit, keep looking for the one that explains every observation.
+- CI flagged two more wall-clock bounds (#44): termination tests now compare against the child's
+  own runtime.
+
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
   Third-party: `container-compose` (mcrich23), `apple-compose` (Go). Known gap: service-name DNS on
