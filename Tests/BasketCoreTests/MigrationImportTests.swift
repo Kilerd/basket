@@ -203,7 +203,8 @@ struct MigrationImportTests {
         let start = ContinuousClock.now
         consumer.cancel()
         _ = await consumer.result
-        #expect(ContinuousClock.now - start < .seconds(5))
+        // The fake export sleeps 30 s: well under that proves cancellation stopped it.
+        #expect(ContinuousClock.now - start < .seconds(15))
         #expect(try await waitForExit(pid))
         // The import task removes its directory as it unwinds, just after the consumer saw the end.
         #expect(try await waitUntil { scratchIsEmpty(directory) })

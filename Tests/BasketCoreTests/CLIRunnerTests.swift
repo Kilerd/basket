@@ -32,25 +32,27 @@ struct CLIRunnerTests {
         #expect(path.hasSuffix(":/nonexistent"))
     }
 
+    // These two prove the child is stopped, not how fast a busy machine does it: the child would
+    // run 60 s, so finishing well under that is the signal (a CI runner took 5.7 s once).
     @Test func timeoutTerminatesTheProcess() async throws {
         let start = ContinuousClock.now
         await #expect {
-            _ = try await shell.run(["-c", "sleep 10"], timeout: .milliseconds(300))
+            _ = try await shell.run(["-c", "sleep 60"], timeout: .milliseconds(300))
         } throws: { error in
             guard case BackendError.commandFailed(_, let code, let stderr) = error else { return false }
             return code == 124 && stderr.contains("Timed out")
         }
-        #expect(ContinuousClock.now - start < .seconds(5))
+        #expect(ContinuousClock.now - start < .seconds(30))
     }
 
     @Test func taskCancellationTerminatesRun() async throws {
         let start = ContinuousClock.now
-        let task = Task { try await shell.run(["-c", "sleep 10"], timeout: nil) }
+        let task = Task { try await shell.run(["-c", "sleep 60"], timeout: nil) }
         try await Task.sleep(for: .milliseconds(200))
         task.cancel()
         let result = await task.result
         #expect(throws: CancellationError.self) { try result.get() }
-        #expect(ContinuousClock.now - start < .seconds(5))
+        #expect(ContinuousClock.now - start < .seconds(30))
     }
 
     @Test func streamSplitsOnNewlineAndCarriageReturn() async throws {
