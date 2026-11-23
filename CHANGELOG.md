@@ -9,9 +9,13 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
-**Using 0.0.1, 0.0.2 or 0.0.3?** Download the latest `Basket-X.Y.Z.dmg` and drag it to
-Applications. These versions' updater can't finish an update on its own: it stays at
-“Installing…”, and force-quitting Basket doesn't help (see below).
+## [0.0.5] - 2026-11-23
+
+**Using 0.0.1, 0.0.2 or 0.0.3? Don't click Install and Relaunch** — those versions' updater
+stays at “Installing…” and can't finish, and force-quitting Basket doesn't help (see below).
+Download `Basket-0.0.5.dmg` from <https://github.com/Kilerd/basket/releases/latest> instead,
+quit Basket and drag the new one to Applications. **On 0.0.4,** update as usual: Install and
+Relaunch takes a few seconds and needs no permission prompts.
 
 ### Changed
 
@@ -164,7 +168,8 @@ The first public version.
   discovered at build time and never hard-coded. Terminal shells open through self-deleting
   `.command` files with shell-quoted arguments.
 
-[Unreleased]: https://github.com/Kilerd/basket/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/Kilerd/basket/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/Kilerd/basket/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/Kilerd/basket/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/Kilerd/basket/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/Kilerd/basket/compare/v0.0.1...v0.0.2
