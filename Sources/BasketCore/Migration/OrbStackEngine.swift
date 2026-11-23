@@ -9,14 +9,15 @@ public enum OrbStackEngine {
     public static var socketPath: String { NSHomeDirectory() + "/.orbstack/run/docker.sock" }
 
     /// The VM manager (`OrbStack Helper vmgr`) runs, and only then: the docker socket accepts a
-    /// connection. The socket is never touched while the VM manager is down.
-    public static func isUp(socketPath: String = socketPath) -> Bool {
-        vmManagerRunning() && socketAcceptsConnections(socketPath)
+    /// connection. The socket is never touched while the VM manager is down. `appPath`: OrbStack.app
+    /// outside the standard folders (`OrbStackLocator`).
+    public static func isUp(socketPath: String = socketPath, appPath: String? = nil) -> Bool {
+        vmManagerRunning(appPath: appPath) && socketAcceptsConnections(socketPath)
     }
 
     /// `…/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper vmgr …`.
-    static func vmManagerRunning() -> Bool {
-        let prefixes = OrbStackInspector.appPaths.map { $0 + "/" }
+    static func vmManagerRunning(appPath: String? = nil) -> Bool {
+        let prefixes = (OrbStackLocator.standardPaths + [appPath].compactMap { $0 }).map { $0 + "/" }
         return ProcessInspector.allPIDs().contains { pid in
             guard let path = ProcessInspector.executablePath(of: pid), prefixes.contains(where: path.hasPrefix),
                   path.hasSuffix("/OrbStack Helper")

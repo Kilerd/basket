@@ -49,12 +49,13 @@ func basketWindow(
     titleRole: String = "AXHeading",
     withTitle: Bool = true,
     localizedTitle: String? = nil,
-    size: (w: Double, h: Double) = (1280, 820)
+    size: (w: Double, h: Double) = (1280, 820),
+    sidebarSections: [String] = AXAuditRules.sections
 ) -> AXNode {
     let ox = origin.x, oy = origin.y
     func at(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> AXRect { r(ox + x, oy + y, w, h) }
 
-    let sidebarRows = AXAuditRules.sections.enumerated().map { i, s in
+    let sidebarRows = sidebarSections.enumerated().map { i, s in
         node("AXRow", nil, at(8, 60 + Double(i) * 32 + sidebarShift, 180, 32), children: [
             node("AXCell", nil, at(18, 60 + Double(i) * 32 + sidebarShift, 160, 32), children: [
                 text(s.capitalized, at(30, 68 + Double(i) * 32 + sidebarShift, 80, 16), id: "sidebar.\(s)"),

@@ -44,9 +44,9 @@ Apple 的 [`container`](https://github.com/apple/container) 让**每个容器运
 - **看得见、能回收的磁盘空间**。按类别显示磁盘占用和可回收的量；回收时只删除你确认过的项目。默认只拉取这台 Mac 所用平台（`linux/arm64`）的镜像——普通的多平台拉取一个 `alpine` 会存下约 10 个变体——“只保留 linux/arm64”可以在本地精简已有镜像，无需重新拉取。
 - **容器**。状态、端口、CPU、客户机内存和本机内存按列对齐；启动、停止、重新启动、强制停止、删除；可跟随的日志、`inspect`、实时统计、在终端中打开 shell、打开已发布的端口、拷贝 IP；新建容器时默认使用较小的内存。
 - **Docker Compose**。Compose 项目在容器列表中分组显示（与 OrbStack 相同），可对整个项目启动、停止、重新启动、关闭（down），并合并查看日志。*Compose Up…* 读取 `compose.yaml`（Swift 编写的 YAML 解析器，支持 `${VAR}` 插值和 `.env`），先展示包含内存开销的计划，再运行。apple/container 的容器之间没有 DNS，所以 Basket 会把服务名写入每个容器的 `/etc/hosts`。
-- **从 OrbStack 迁移**。导入 OrbStack 的镜像（仅本机平台，按内容校验），并把容器重新创建为 `container run` 命令，对无法迁移的设置给出警告。Basket 只读取 OrbStack，且只通过一份只读 `docker` 命令白名单。
+- **从 OrbStack 迁移**。安装了 OrbStack 时，导入它的镜像（仅本机平台，按内容校验），并把容器重新创建为 `container run` 命令，对无法迁移的设置给出警告。Basket 只读取 OrbStack，且只通过一份只读 `docker` 命令白名单。没有安装 OrbStack 时，Basket 不显示迁移功能。
 - **`docker` 命令**。可选的 `docker` 垫片会把日常的 `docker` 命令转换为 `container` 命令（[支持范围](docs/docker-shim.md)）；只有你同意后才会启用，并且会先给出要写入的确切 shell 配置行。
-- **引导式设置**。首次启动时检查这台 Mac，安装 `container`（通过 Homebrew 或官方安装器）并启动它，然后提供 OrbStack 迁移和 `docker` 命令。
+- **引导式设置**。首次启动时检查这台 Mac，安装 `container`（通过 Homebrew 或官方安装器）并启动它，然后提供 OrbStack 迁移（仅在安装了 OrbStack 时）和 `docker` 命令。
 - **卷、网络、Linux 机器**（`container machine`）、**菜单栏附加项**，以及边栏底部的**设置**（语言、外观、CLI 路径、刷新间隔、默认内存、登录时打开）。
 - **签名更新**。Basket 每天检查 GitHub Releases（设置 ▸ 更新），只有在验证签名和代码签名之后才安装新版本（[说明](docs/updates.md)）。
 - **从设计上就支持辅助功能**。每个控件都有可读的辅助功能名称和稳定的标识符，界面通过辅助功能树进行测试；参见[界面如何测试](#界面如何测试)。

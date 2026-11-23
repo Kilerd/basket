@@ -239,20 +239,22 @@ public struct OrbStackPresence: Sendable {
         self.isRunning = isRunning
     }
 
-    /// OrbStack.app on disk; engine up per `OrbStackEngine.isUp()` (VM manager + live docker socket).
-    public static let host = OrbStackPresence(
-        isInstalled: { OrbStackInspector.appPaths.contains(where: FileManager.default.fileExists(atPath:)) },
-        isRunning: { OrbStackEngine.isUp() })
+    /// OrbStack.app on disk (in the standard folders); engine up per `OrbStackEngine.isUp()` (VM
+    /// manager + live docker socket).
+    public static let host = host(locator: .standardFolders)
+
+    /// OrbStack.app wherever `locator` finds it; engine up per `OrbStackEngine.isUp()`.
+    public static func host(locator: OrbStackLocator) -> OrbStackPresence {
+        OrbStackPresence(
+            isInstalled: { locator.appPath() != nil },
+            isRunning: { OrbStackEngine.isUp(appPath: locator.appPath()) })
+    }
 
     /// From `orbstack.json` (an encoded `OrbStackSnapshot`) in a fixture set.
     public static func fixture(_ directory: URL) -> OrbStackPresence {
-        let snapshot: @Sendable () -> OrbStackSnapshot = {
-            guard let data = try? Data(contentsOf: directory.appendingPathComponent("orbstack.json")),
-                  let snapshot = try? JSONDecoder().decode(OrbStackSnapshot.self, from: data)
-            else { return .notInstalled }
-            return snapshot
-        }
-        return OrbStackPresence(isInstalled: { snapshot().isInstalled }, isRunning: { snapshot().isRunning })
+        OrbStackPresence(
+            isInstalled: { OrbStackInspector.fixtureSnapshot(directory).isInstalled },
+            isRunning: { OrbStackInspector.fixtureSnapshot(directory).isRunning })
     }
 
     public static let always = OrbStackPresence(isInstalled: { true }, isRunning: { true })

@@ -21,7 +21,8 @@ struct SelfTestRunner {
             exit(1)
         }
         await waitForInitialData()
-        for section in AppSection.allCases {
+        // The sections the sidebar shows: no migration without OrbStack (lint checks it's hidden).
+        for section in store.visibleSections {
             store.selectedSection = section
             try? await Task.sleep(for: .milliseconds(300))
             if section == .containers, let first = store.containerRows.first {

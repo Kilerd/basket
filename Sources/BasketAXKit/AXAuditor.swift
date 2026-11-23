@@ -4,8 +4,9 @@ import Foundation
 /// `AXAuditRules`.
 public enum AXAuditor {
     /// Audits one window snapshot. `section` (e.g. `containers`) enables the identifier contract
-    /// for that section; `nil` only requires the main window identifier.
-    public static func audit(window: AXNode, section: String?) -> [AXFinding] {
+    /// for that section; `nil` only requires the main window identifier (or, in “Set Up Basket”,
+    /// the onboarding contract). `expecting`: whether OrbStack's section and setup step belong.
+    public static func audit(window: AXNode, section: String?, expecting: AXSectionExpectation = .everything) -> [AXFinding] {
         let tree = AXTreeIndex(window)
         var findings: [AXFinding] = []
         findings += missingLabels(tree)
@@ -19,7 +20,7 @@ public enum AXAuditor {
         findings += repeatedLabels(tree)
         findings += columnAlignment(tree)
         findings += cardTrailingAlignment(tree)
-        findings += contract(tree, section: section)
+        findings += contract(tree, section: section, expecting: expecting)
         return findings.sortedForReport()
     }
 
@@ -256,10 +257,12 @@ public enum AXAuditor {
         return findings
     }
 
-    static func contract(_ tree: AXTreeIndex, section: String?) -> [AXFinding] {
+    static func contract(_ tree: AXTreeIndex, section: String?, expecting: AXSectionExpectation = .everything) -> [AXFinding] {
         let present = Set(tree.items.compactMap(\.node.identifier))
-        if section == nil, present.contains(AXAuditRules.onboardingWindowIdentifier) { return onboardingContract(tree) }
-        return AXAuditRules.requiredIdentifiers(section: section).compactMap { alternatives in
+        if section == nil, present.contains(AXAuditRules.onboardingWindowIdentifier) {
+            return onboardingContract(tree, expecting: expecting)
+        }
+        var findings = AXAuditRules.requiredIdentifiers(section: section, expecting: expecting).compactMap { alternatives -> AXFinding? in
             guard !alternatives.contains(where: present.contains) else { return nil }
             let what = alternatives.map { "“\($0)”" }.joined(separator: " or ")
             return AXFinding(
@@ -267,6 +270,17 @@ public enum AXAuditor {
                 message: "missing identifier \(what)\(section.map { " in section \($0)" } ?? "") (docs/ARCHITECTURE.md contract)",
                 path: tree.root.path, identifier: alternatives[0])
         }
+        // OrbStack's section exists only while OrbStack is installed: no sidebar item, no root.
+        for hidden in expecting.hiddenSections {
+            for id in ["sidebar.\(hidden)", "section.\(hidden)"] where present.contains(id) {
+                let i = tree.innermost(identifier: id)
+                findings.append(AXFinding(
+                    rule: AXAuditRules.contract, severity: .error,
+                    message: "“\(id)” is shown\(section.map { " in section \($0)" } ?? ""), but OrbStack isn't installed: the \(hidden) section appears only while it is (docs/ARCHITECTURE.md contract)",
+                    path: i.map { tree[$0].path } ?? tree.root.path, identifier: id, frame: i.flatMap { tree[$0].node.frame }))
+            }
+        }
+        return findings
     }
 
     // MARK: - Helpers

@@ -147,6 +147,11 @@ final class AppStore {
     var machinesKnown = false
     var diskUsage: DiskUsage?
     var orbStack: OrbStackSnapshot?
+    /// OrbStack.app is installed: the sidebar then lists "Migrate from OrbStack" (see `isVisible`).
+    /// Decided at launch by a cheap check, then by every OrbStack snapshot.
+    private(set) var orbStackInstalled = false
+    /// OrbStack went away while its section was open: the row is dropped once the Overview shows.
+    @ObservationIgnored private var orbStackRemovalPending = false
     var loaded: Set<DataKind> = []
     /// Resource id → in-flight progress phrase ("Stopping…"), shown next to the row.
     var pending: [String: String] = [:]
@@ -188,10 +193,14 @@ final class AppStore {
         let cliPath = UserDefaults.standard.string(forKey: DefaultsKey.containerCLIPath) ?? ""
         self.backendCLIPath = cliPath
         self.backend = options.makeBackend(settingsCLIPath: cliPath)
-        self.orbInspector = OrbStackInspector(fixturesDirectory: options.fixturesDirectory)
+        self.orbInspector = options.makeOrbStackInspector()
         self.migration = MigrationModel(migrator: options.makeMigrator())
-        self.selectedSection = options.initialSection
+        // Known before the first frame, so the OrbStack group neither flashes nor pops in.
+        let orbStackInstalled = orbInspector.isInstalled()
+        self.orbStackInstalled = orbStackInstalled
+        let requested = options.initialSection
             ?? (options.isUITest ? nil : AppRelaunch.takeReopenSection()) ?? .overview
+        self.selectedSection = requested == .migration && !orbStackInstalled ? .overview : requested
         self.language = LanguageChoice(persistent: !options.isUITest)
         self.appearance = AppearanceChoice(persistent: !options.isUITest, override: options.appearance)
         self.memorySaver = MemorySaverState(persistent: !options.isUITest)
@@ -403,7 +412,9 @@ final class AppStore {
             case .disk:
                 setIfChanged(\.diskUsage, try await backend.diskUsage())
             case .orbstack:
-                setIfChanged(\.orbStack, await orbInspector.snapshot())
+                let snapshot = await orbInspector.snapshot()
+                setIfChanged(\.orbStack, snapshot)
+                orbStackDetected(snapshot.isInstalled)
             }
             if !loaded.contains(kind) { loaded.insert(kind) }
             // A successful list call proves the API server answers; host-side numbers (footprints,
@@ -534,6 +545,47 @@ final class AppStore {
     }
 
     var runningContainers: [ContainerSummary] { containers.filter { $0.state == .running } }
+
+    // MARK: Sections
+
+    /// Whether the sidebar lists `section`: "Migrate from OrbStack" only while OrbStack is installed.
+    func isVisible(_ section: AppSection) -> Bool { section != .migration || orbStackInstalled }
+
+    /// The sidebar's sections in order, Settings last.
+    var visibleSections: [AppSection] { AppSection.allCases.filter(isVisible) }
+
+    /// The View menu's ⌘1… sections. Migration comes last, so hiding it never renumbers the others.
+    var browsableSections: [AppSection] { AppSection.browsable.filter(isVisible) }
+
+    /// OrbStack was installed or removed (an OrbStack snapshot, or the setup assistant's own read).
+    /// An open migration section gives way to the Overview first; its sidebar row goes once the
+    /// Overview shows. Dropping the selected row of the sidebar in the same update as the new
+    /// selection can crash SwiftUI's outline when an accessibility client (VoiceOver) reads the
+    /// sidebar at that moment.
+    func orbStackDetected(_ installed: Bool) {
+        if installed {
+            orbStackRemovalPending = false
+            setIfChanged(\.orbStackInstalled, true)
+            return
+        }
+        guard orbStackInstalled, !orbStackRemovalPending else { return }
+        guard selectedSection == .migration else {
+            orbStackInstalled = false
+            return
+        }
+        orbStackRemovalPending = true
+        Task { await removeOrbStackSectionAfterLeavingIt() }
+    }
+
+    private func removeOrbStackSectionAfterLeavingIt() async {
+        repeat {
+            if selectedSection == .migration { selectedSection = .overview }
+            try? await Task.sleep(for: .milliseconds(500))
+        } while orbStackRemovalPending && selectedSection == .migration
+        guard orbStackRemovalPending else { return }  // OrbStack is back
+        orbStackRemovalPending = false
+        orbStackInstalled = false
+    }
 
     func isLoaded(_ section: AppSection) -> Bool {
         switch section {

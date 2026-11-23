@@ -184,6 +184,15 @@ struct OrbStackInspectorFixtureTests {
         #expect(await OrbStackInspector(fixturesDirectory: TestFixtures.realDirectory).snapshot() == .notInstalled)
     }
 
+    /// The cheap check that decides whether the sidebar lists "Migrate from OrbStack" (#47).
+    @Test func isInstalledFollowsOrbStackJSON() {
+        for (set, installed) in [("demo", true), ("stopped", true), ("fresh", true), ("empty", false), ("fresh-no-orbstack", false)] {
+            #expect(OrbStackInspector(fixturesDirectory: TestFixtures.set(set)).isInstalled() == installed, "\(set)")
+        }
+        // No orbstack.json at all: not installed.
+        #expect(!OrbStackInspector(fixturesDirectory: TestFixtures.realDirectory).isInstalled())
+    }
+
     @Test func dataUsageIsStatBased() throws {
         let directory = try TemporaryDirectory()
         defer { directory.cleanup() }

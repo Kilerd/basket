@@ -10,7 +10,7 @@ extension SelfTestRunner {
         let initial = store.appearance.selection
         for appearance in [AppAppearance.light, .dark] {
             await switchAppearance(to: appearance, in: window)
-            for section in AppSection.allCases {
+            for section in store.visibleSections {
                 store.selectedSection = section
                 try? await Task.sleep(for: .milliseconds(700))
                 window.layoutIfNeeded()

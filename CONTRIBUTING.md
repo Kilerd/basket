@@ -148,7 +148,9 @@ UI:
    `<section>.empty`.
 3. Update the contract table in `docs/ARCHITECTURE.md` and the `contract` audit rule
    (`AXAuditRules.sections` / `listSections` in `Sources/BasketAXKit/AXAuditRules.swift`) in the
-   same PR, along with its tests in `Tests/BasketAXKitTests`.
+   same PR, along with its tests in `Tests/BasketAXKitTests`. A section shown only under a
+   condition (like `migration`, only while OrbStack is installed) also needs that condition in
+   `AXSectionExpectation`, read from the fixture set, and a fixture set for each case.
 4. Add or extend fixtures so the new UI has data in `demo` and a sensible state in `empty` and
    `stopped`. Then run the self-test on all three sets and the end-to-end test, and look at the
    screenshots.

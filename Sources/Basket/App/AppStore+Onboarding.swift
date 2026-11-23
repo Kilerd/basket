@@ -20,6 +20,9 @@ enum OnboardingStep: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// Position in the full flow (hidden steps included).
+    var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
     /// Title in the step list.
     var listTitle: String {
         switch self {
@@ -220,9 +223,13 @@ final class OnboardingModel {
 
     // MARK: Steps
 
-    /// OrbStack's step only exists when OrbStack is installed.
+    /// OrbStack is installed, as the sidebar sees it: known at launch, then updated by every
+    /// OrbStack read (the sidebar's and this window's own).
+    var orbStackInstalled: Bool { store?.orbStackInstalled ?? false }
+
+    /// OrbStack's step only exists when OrbStack is installed; the list is numbered from these.
     var visibleSteps: [OnboardingStep] {
-        OnboardingStep.allCases.filter { $0 != .orbstack || orbStack?.isInstalled == true }
+        OnboardingStep.allCases.filter { $0 != .orbstack || orbStackInstalled }
     }
 
     func isSatisfied(_ step: OnboardingStep) -> Bool {
@@ -252,14 +259,15 @@ final class OnboardingModel {
         }
     }
 
+    /// The next visible step, also from a step that has just been hidden (OrbStack removed).
     func next() {
-        guard let index = visibleSteps.firstIndex(of: step), index + 1 < visibleSteps.count else { return }
-        go(to: visibleSteps[index + 1])
+        guard let target = visibleSteps.first(where: { $0.order > step.order }) else { return }
+        go(to: target)
     }
 
     func back() {
-        guard let index = visibleSteps.firstIndex(of: step), index > 0 else { return }
-        go(to: visibleSteps[index - 1])
+        guard let target = visibleSteps.last(where: { $0.order < step.order }) else { return }
+        go(to: target)
     }
 
     func go(to target: OnboardingStep) {
@@ -434,7 +442,10 @@ final class OnboardingModel {
     // MARK: OrbStack
 
     func loadOrbStack() async {
-        orbStack = await OrbStackInspector(fixturesDirectory: options?.fixturesDirectory).snapshot()
+        guard let store else { return }
+        let snapshot = await store.options.makeOrbStackInspector().snapshot()
+        orbStack = snapshot
+        store.orbStackDetected(snapshot.isInstalled)
     }
 
     /// Basket's side of the comparison: what its container VMs cost right now.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # True out-of-process E2E: BasketE2E.app launches build/Basket.app (the debug build, bundle id
 # dev.basket.app.debug, from a temporary copy) with fixtures, drives it through the Accessibility
-# API (AXUIElement) and audits every section. An installed Basket may keep running.
+# API (AXUIElement) and audits every section the sidebar must show (migration only when the set's
+# orbstack.json has OrbStack installed; `empty` has none). An installed Basket may keep running.
 #   scripts/e2e.sh [demo|empty|stopped]
 #   BASKET_LANGUAGE=de scripts/e2e.sh demo     run the app in another language
 # Output: artifacts/e2e/<timestamp>[-<language>]-<pid>/{report.md,report.json,runner.log,<section>.ax.json,<section>.png}

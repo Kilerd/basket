@@ -29,9 +29,9 @@ public struct OrbStackMigrator: Sendable {
         self.exportStallTimeout = exportStallTimeout
     }
 
-    /// Real OrbStack (docker located via `ProcessDockerClient.locate`).
-    public static func host() -> OrbStackMigrator {
-        OrbStackMigrator(docker: ProcessDockerClient.locate().map(ProcessDockerClient.init), presence: .host)
+    /// Real OrbStack (docker located via `ProcessDockerClient.locate`, the app via `locator`).
+    public static func host(locator: OrbStackLocator = .standardFolders) -> OrbStackMigrator {
+        OrbStackMigrator(docker: ProcessDockerClient.locate().map(ProcessDockerClient.init), presence: .host(locator: locator))
     }
 
     /// Fixture mode: raw docker output from `directory`, OrbStack state from its `orbstack.json`.

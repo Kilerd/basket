@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Permission-free UI check: the app walks its own accessibility tree for every section
-# (BASKET_SELFTEST_DIR), then `basket-ax lint` audits the dumps.
-#   scripts/selftest.sh [demo|empty|stopped|fresh]
+# (BASKET_SELFTEST_DIR), then `basket-ax lint` audits the dumps. The fixture set's orbstack.json
+# tells lint whether the migration section and the OrbStack setup step must be shown or hidden.
+#   scripts/selftest.sh [demo|empty|stopped|fresh|fresh-no-orbstack]
 #   BASKET_LANGUAGE=zh-Hans scripts/selftest.sh demo     run the app in another language (and
 #                                                        its region format: app_locale)
 #   BASKET_APPEARANCE=dark scripts/selftest.sh demo      run it light or dark (system|light|dark;
@@ -73,7 +74,7 @@ if [[ "$APP_STATUS" != 0 ]]; then
 fi
 
 set +e
-"$AX" lint "$OUT"
+"$AX" lint "$OUT" --fixtures "$FIXTURES"
 LINT=$?
 set -e
 echo

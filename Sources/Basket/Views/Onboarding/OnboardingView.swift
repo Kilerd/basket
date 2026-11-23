@@ -38,6 +38,10 @@ struct OnboardingView: View {
             // Closing setup never leaves Basket without a window.
             if store.mainWindow?.isVisible != true { openWindow(id: "main") }
         }
+        .onChange(of: model.visibleSteps) {
+            // OrbStack went away while its step was showing.
+            if !model.visibleSteps.contains(model.step) { model.next() }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Back from Terminal or the installer: notice a freshly installed CLI.
             if model.step == .install, model.cli == nil, !model.installPhase.isRunning {
@@ -154,6 +158,7 @@ private struct StepRow: View {
         .accessibilityAddTraits(mark == .current ? [.isStaticText, .isSelected] : .isStaticText)
         .accessibilityLabel(step.listTitle)
         .accessibilityHint(hint)
+        .accessibilityIdentifier("onboarding.progress.\(step.rawValue)")
     }
 
     private var hint: Text {

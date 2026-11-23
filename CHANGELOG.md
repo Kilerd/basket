@@ -16,6 +16,15 @@ next patch. Expect breaking changes until `0.1.0`.
   menu and the menu bar extra, including the charts and the inspect JSON colours. System follows
   macOS, as before.
 
+### Changed
+
+- OrbStack migration appears only when OrbStack is installed (#47): the sidebar's “OrbStack”
+  group with “Migrate from OrbStack” (and its ⌘7 shortcut in the View menu) and the setup
+  assistant's “From OrbStack” step are hidden otherwise, and the step list is numbered without
+  it. Basket notices OrbStack being installed or removed while it runs and moves from an open
+  migration section to the Overview. OrbStack is found in `/Applications`, `~/Applications` or
+  any other folder macOS knows it in (not the Trash or a mounted disk image).
+
 ### Fixed
 
 - Light mode: the text of tags (“Rosetta”, “8 platforms”, “OrbStack running”, “In Basket”) and

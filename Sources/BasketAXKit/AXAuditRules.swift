@@ -128,18 +128,26 @@ public enum AXAuditRules {
     // MARK: Identifier contract (docs/ARCHITECTURE.md)
     public static let mainWindowIdentifier = "basket.main"
     /// Sidebar order. `settings` (pinned at the bottom) is a form, not a list: it needs only its
-    /// sidebar item and section root.
+    /// sidebar item and section root. `migration` is listed only while OrbStack is installed
+    /// (`orbStackSections`, `AXSectionExpectation`).
     public static let sections = ["overview", "containers", "images", "volumes", "networks", "machines", "migration", "settings"]
     public static let listSections: Set<String> = ["containers", "images", "volumes", "networks", "machines", "migration"]
+    /// Sections the sidebar shows only while OrbStack is installed.
+    public static let orbStackSections: Set<String> = ["migration"]
     /// Section titles that aren't just the capitalized section name.
     public static let sectionTitles = ["migration": "Migrate from OrbStack"]
     public static let overviewRequiredCards = ["memory", "disk", "system"]
 
-    /// Identifiers that must be present (each inner array: at least one of them).
-    public static func requiredIdentifiers(section: String?) -> [[String]] {
+    /// Identifiers that must be present (each inner array: at least one of them): the sidebar
+    /// items of `expecting.requiredSections`, plus the audited section's own.
+    public static func requiredIdentifiers(section: String?, expecting: AXSectionExpectation = .everything) -> [[String]] {
         var required: [[String]] = [[mainWindowIdentifier]]
         guard let section else { return required }
-        required += sections.map { ["sidebar.\($0)"] }
+        var sidebar = expecting.requiredSections
+        if sections.contains(section), !sidebar.contains(section), !expecting.hiddenSections.contains(section) {
+            sidebar.append(section)  // an optional section that is showing
+        }
+        required += sidebar.map { ["sidebar.\($0)"] }
         required.append(["section.\(section)"])
         if listSections.contains(section) {
             required.append(["\(section).search"])

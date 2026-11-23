@@ -20,6 +20,7 @@ extension SelfTestRunner {
     /// run to completion (fixture backends simulate it) with the section afterwards.
     func captureMigrationExtras(_ window: NSWindow) async {
         let model = store.migration
+        guard store.isVisible(.migration) else { return }
         store.selectedSection = .migration
         await refreshMigrationAndWait()
         guard model.status?.isReady == true else { return }
