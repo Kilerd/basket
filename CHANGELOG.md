@@ -11,6 +11,18 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [0.0.4] - 2026-11-23
 
+**Upgrading from 0.0.1, 0.0.2 or 0.0.3 — please read.** Those versions have a bug in their
+updater: after you click **Install and Relaunch**, the update window can stay at “Installing.
+Basket quits and opens again…”. The new version has already been downloaded and verified; the old
+Basket just can't quit on its own.
+
+- **One step to finish:** within 2 minutes of seeing “Installing…”, force-quit Basket
+  (⌥⌘⎋ → Basket → Force Quit). The update then installs and Basket reopens as 0.0.4.
+- **Or** download `Basket-0.0.4.dmg` from this release and drag it to Applications.
+
+From 0.0.4 on, updates install without this step. **0.0.1–0.0.3 are no longer recommended:
+install 0.0.4 or later.**
+
 ### Fixed
 
 - Updates: installing an update no longer hangs at “Installing. Basket quits and opens again…”
@@ -18,9 +30,6 @@ next patch. Expect breaking changes until `0.1.0`.
   minutes; now Basket closes the sheet before it quits, closes any other sheet, alert or dialog
   that still holds the quit up, and as a last resort exits, so the update always installs. A new
   end-to-end test, `scripts/update-e2e.sh`, installs an update through the real update sheet.
-  Updating **from** 0.0.1, 0.0.2 or 0.0.3 can still stall, because the old version runs the
-  install: when “Installing…” appears, force-quit Basket (⌥⌘⎋) within 2 minutes and the update
-  finishes, or install the DMG instead.
 
 ## [0.0.3] - 2026-11-21
 

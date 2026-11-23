@@ -123,6 +123,9 @@ Apple, and carry build provenance attestations; `SHA256SUMS` lets you check the 
 daily (Settings ▸ Updates) and installs only updates whose Ed25519 signature and notarized code
 signature check out ([docs/updates.md](docs/updates.md)). Or build from source as described below.
 
+> **Install 0.0.4 or later.** 0.0.1–0.0.3 are not recommended: their updater can stall at
+> “Installing…” (force-quit Basket within 2 minutes to finish, or install the latest DMG).
+
 ## Build from source
 
 You need Xcode 26 (Swift 6.2 or later) and the macOS 26 SDK. There are no third-party
