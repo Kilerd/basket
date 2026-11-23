@@ -9,6 +9,10 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+**Using 0.0.1, 0.0.2 or 0.0.3?** Download the latest `Basket-X.Y.Z.dmg` and drag it to
+Applications. These versions' updater can't finish an update on its own: it stays at
+“Installing…”, and force-quitting Basket doesn't help (see below).
+
 ### Changed
 
 - Development: debug builds (`scripts/build-app.sh debug`, the self-test and the end-to-end
@@ -17,6 +21,16 @@ next patch. Expect breaking changes until `0.1.0`.
   of the app with its fixtures, so it no longer stalls on a macOS prompt for access to the
   folder holding the checkout. Release builds keep `dev.basket.app`.
 
+### Fixed
+
+- Updates: the installer now survives a crash or force quit of Basket (#41). It ran as a child
+  of Basket, and a Force Quit (⌥⌘⎋, the Dock or Activity Monitor) ends an app together with the
+  processes it started, so the installer stopped too and the update was never installed — which
+  is also why force-quitting a stuck 0.0.1–0.0.3, as the 0.0.4 notes suggested, didn't finish the
+  update. launchd now runs the installer as a one-shot job of its own and removes the job when the
+  installer is done. `scripts/update-e2e.sh kill` ends Basket with SIGKILL and with a Force Quit
+  right after “Installing…” and checks that the update still installs.
+
 ## [0.0.4] - 2026-11-23
 
 **Upgrading from 0.0.1, 0.0.2 or 0.0.3 — please read.** Those versions have a bug in their
@@ -24,9 +38,11 @@ updater: after you click **Install and Relaunch**, the update window can stay at
 Basket quits and opens again…”. The new version has already been downloaded and verified; the old
 Basket just can't quit on its own.
 
-- **One step to finish:** within 2 minutes of seeing “Installing…”, force-quit Basket
-  (⌥⌘⎋ → Basket → Force Quit). The update then installs and Basket reopens as 0.0.4.
-- **Or** download `Basket-0.0.4.dmg` from this release and drag it to Applications.
+- **Install the DMG instead:** download `Basket-0.0.4.dmg` from this release and drag it to
+  Applications.
+
+*Correction:* these notes first said that force-quitting Basket within 2 minutes lets the update
+finish. It doesn't — the force quit stops the installer too (#41).
 
 From 0.0.4 on, updates install without this step. **0.0.1–0.0.3 are no longer recommended:
 install 0.0.4 or later.**

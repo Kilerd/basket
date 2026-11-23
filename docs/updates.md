@@ -48,7 +48,8 @@ the newest non-prerelease release).
    (one line in the code): an Apple-issued chain, the bundle id, the team, a Developer ID
    intermediate and a Developer ID Application leaf certificate, and Apple's notarization.
    `<team>` is read from the running app's own signature, so it is never hard-coded.
-4. Only then is the bundle swapped after Basket quits. A detached `/bin/sh` helper runs
+4. Only then is the bundle swapped after Basket quits. A `/bin/sh` helper, which launchd runs as
+   a job of its own ([The helper outlives Basket](#the-helper-outlives-basket)), runs
    `/usr/bin/codesign --verify --deep --strict -R "=<the same requirement>"` on the staged app
    right before it moves anything and again on the app in its final place; if either check
    fails, or a move fails, the previous version is put back and the reason is logged to
@@ -73,11 +74,42 @@ such a sheet. After launching the helper, Basket therefore (`UpdateQuit`):
 While it quits, the update sheet can't be shown again, and the "still working" question on quit
 is skipped — installing refuses to start while an import, a recreation or a "Keep only" runs, so
 only work started in that moment is stopped, as "Quit Anyway" would. The helper is not one of
-the child processes the cleanup stops: it is started in its own session and is not a `CLIRunner`
-child, so it outlives Basket.
+the child processes the cleanup stops: it isn't a child of Basket at all (next section).
 
-Versions 0.0.1–0.0.3 lack this and stay at "Installing. Basket quits and opens again…"; force-quit
-Basket (⌥⌘⎋) within 2 minutes and the helper installs the update, or install the DMG.
+Versions 0.0.1–0.0.3 lack this and stay at "Installing. Basket quits and opens again…". Their
+update can't finish on its own: install the latest DMG. Force-quitting them doesn't help — it
+stops their helper too (next section), so the 0.0.4 release notes were wrong to suggest it.
+
+## The helper outlives Basket
+
+The helper must finish whatever happens to Basket once it runs: Basket quits, crashes, is killed
+or is force-quit. 0.0.1–0.0.4 started it with `posix_spawn` in a session of its own, which only
+protects it from signals sent to Basket's process group or terminal. A child stays in its parent
+app's process *coalition*, and a Force Quit — ⌥⌘⎋, the Dock's Force Quit and Activity Monitor's
+all call LaunchServices' force quit — sends SIGTERM to every process of the app's coalition. The
+helper died with Basket without writing a line to `update.log` (#41; seen with Activity Monitor
+on the maintainer's Mac, reproduced with the 0.0.3 updater). `kill`, `kill -9` and
+`launchctl kill` on the app reach only the app, and a double fork or `setsid` doesn't leave the
+coalition; only launchd puts a process into a new one.
+
+So `UpdateSwap.launchDetached` hands the helper to launchd: `launchctl bootstrap gui/<uid>` with a
+job (`UpdateSwap.job`) labelled `dev.basket.app.update.<UUID>` — the same `/bin/sh` command line,
+`RunAtLoad`, no `KeepAlive`, `LaunchOnlyOnce` (launchd removes the job as soon as the helper exits,
+however it exits), output appended to `update.log`, `PATH` and `HOME` set. The job file is written
+into the user's temporary folder (launchd refuses a job file whose ownership it can't trust, as on
+a disk image that ignores ownership) and deleted once `bootstrap` returns; nothing is installed in
+`~/Library/LaunchAgents`, and the job never outlives the helper or the login session. If
+`launchctl` fails, installing stops with "the installer couldn't start (…)" and Basket keeps
+running unchanged.
+
+As its own process, the helper isn't covered by Basket's privacy grants, and macOS's App
+Management protection treats it as another app: it may rename an installed, launched Basket
+bundle as a whole — all the swap does (into the staging folder, into place, to the Trash) — but
+not write inside it. That was checked with a notarized Basket that had been launched once: a
+launchd-run `/bin/sh` could not create or rename a file inside it, while the swap script replaced
+it fine. Moving into `~/.Trash` works too. For a Basket kept in a privacy-protected folder
+(Desktop, Documents, Downloads) macOS may refuse the helper access; the swap then fails safely
+("could not move … aside; Basket was not changed") and Basket reopens unchanged.
 
 Updates are disabled for ad-hoc signed builds (development builds and forks) and for apps
 running translocated (from a quarantined download location) — the app asks the user to move
@@ -90,9 +122,11 @@ Release builds always expect `dev.basket.app`.
 
 DEBUG builds only, for the local end-to-end test: `BASKET_UPDATE_ALLOW_UNNOTARIZED=1` drops
 `and notarized` from the requirement (everything else stays), so a Developer ID build that was
-never notarized can be installed over another one. The switch and its code are compiled out of
-release builds: `strings` on a `swift build -c release` binary finds no
-`BASKET_UPDATE_ALLOW_UNNOTARIZED` (nor the other DEBUG-only `BASKET_UPDATE_*` variables).
+never notarized can be installed over another one, and `BASKET_UPDATE_TEST_BLOCK_QUIT=1` keeps
+Basket at "Installing…" after it started the helper, as 0.0.1–0.0.3 did, so the test can end it
+the way a user would. The switches and their code are compiled out of release builds: `strings`
+on a `swift build -c release` binary finds no `BASKET_UPDATE_ALLOW_UNNOTARIZED` or
+`BASKET_UPDATE_TEST_BLOCK_QUIT` (nor the other DEBUG-only `BASKET_UPDATE_*` variables).
 
 ## End-to-end test
 
@@ -109,16 +143,26 @@ release builds: `strings` on a `swift build -c release` binary finds no
    Basket ▸ Check for Updates… in the menu bar, waits for the update sheet and presses
    “Install and Relaunch” (`update.install`) with AXPress.
 3. It passes when A quits within 10 s of installing (“Installing…” shown or the sheet gone), the
-   bundle on the image is then version B, and B runs from there. B is quit, then the image is
-   detached — the replaced copy, the staging folder and the key go with it. On a failure the
-   swap helper is stopped before A, so no swap can happen later.
+   bundle on the image is then version B, B runs from there, and no `dev.basket.app.update.*`
+   launchd job is left. B is quit, then the image is detached — the replaced copy, the staging
+   folder and the key go with it. On a failure the swap helper is stopped before A, so no swap
+   can happen later.
+
+`scripts/update-e2e.sh kill` runs the install twice, each time over a fresh copy of A started with
+`BASKET_UPDATE_TEST_BLOCK_QUIT=1` (`basket-ax update-install --kill …`): 1 s after “Installing…”
+the runner ends A, once with SIGKILL and once with LaunchServices' force quit for A's pid (what
+⌥⌘⎋, the Dock and Activity Monitor do; the only way to reach exactly A while another Basket may
+run). Both must still end with B installed and running. With 0.0.4's `posix_spawn` helper the
+SIGKILL run passed and the Force Quit run failed: nothing ran from the image after 60 s, A was
+unchanged and `update.log` stayed empty.
 
 It needs the Accessibility permission for `BasketE2E.app` (as `scripts/e2e.sh`) and an unlocked
 screen — it waits up to `BASKET_UNLOCK_WAIT` seconds (default 600) for one. Another Basket, such
 as the copy in `/Applications`, may keep running. Output goes to
 `artifacts/update-e2e/<timestamp>-<pid>/` (`runner.log`, `result.json` and the helper's
-`update.log` lines). Exit code: 0 pass, 1 the update didn't install, 2 setup or runner error,
-3 Accessibility missing. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same install must stop with
+`update.log` lines; in kill mode one set each in `sigkill/` and `force-quit/`). Exit code: 0 pass,
+1 the update didn't install (or left its launchd job), 2 setup or runner error, 3 Accessibility
+missing. Without `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same install must stop with
 a code-signature security error (a manual check: local builds aren't notarized).
 
 ## Keys

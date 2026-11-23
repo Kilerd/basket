@@ -52,7 +52,7 @@ list from a repository secret.
 | `scripts/build-app.sh [debug\|release]` | Bundles and signs `build/Basket.app`: debug builds are "Basket (Debug)" (`dev.basket.app.debug`, with their own settings, so they run next to an installed Basket), release builds `dev.basket.app` |
 | `scripts/selftest.sh demo\|empty\|stopped` | In-process accessibility audit and screenshots for one fixture set. Needs no permissions |
 | `scripts/e2e.sh demo` | Out-of-process `AXUIElement` end-to-end test. Needs the Accessibility permission for `BasketE2E.app` |
-| `scripts/update-e2e.sh` | Installs an update through the real UI from a local test feed, on a temporary disk image ([docs/updates.md](docs/updates.md#end-to-end-test)). Needs a Developer ID identity and the Accessibility permission for `BasketE2E.app` |
+| `scripts/update-e2e.sh [kill]` | Installs an update through the real UI from a local test feed, on a temporary disk image ([docs/updates.md](docs/updates.md#end-to-end-test)); `kill` ends Basket with SIGKILL and with a Force Quit right after “Installing…” and expects the update to install anyway. Needs a Developer ID identity and the Accessibility permission for `BasketE2E.app` |
 | `BASKET_LANGUAGE=de scripts/selftest.sh demo` | Either test in another language (`zh-Hans`, `zh-Hant`, `ja`, `fr`, `de`) and its region format (numbers, sizes, dates) |
 | `scripts/sync-strings.sh [--prune]` | Adds new UI strings to the String Catalog and marks (or drops) unused ones |
 | `scripts/check-l10n.sh` | Localization gate: catalog in sync, every language complete, placeholders match |

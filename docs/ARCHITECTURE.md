@@ -101,6 +101,7 @@ replace it later without touching the UI.
 | `BASKET_UPDATE_TEST_PUBLIC_KEY` | DEBUG builds only: base64 Ed25519 public key that replaces the built-in list, for archives signed with a throwaway key |
 | `BASKET_UPDATE_ALLOW_UNNOTARIZED` | DEBUG builds only: `1` = an update needs a Developer ID signature of the running app's team but no notarization (the requirement without `and notarized`; local end-to-end test). Compiled out of release builds |
 | `BASKET_UPDATE_AUTO_INSTALL` | DEBUG builds only, with `BASKET_UPDATE_FEED_URL`: `1` = check 2 s after launch and start the install in code (a manual shortcut; `scripts/update-e2e.sh` presses Install and Relaunch through the Accessibility API instead) |
+| `BASKET_UPDATE_TEST_BLOCK_QUIT` | DEBUG builds only: `1` = after starting the swap helper, stay at “Installing…” instead of quitting (as 0.0.1–0.0.3 did), so `scripts/update-e2e.sh kill` can end Basket with SIGKILL or a Force Quit. Compiled out of release builds |
 
 ## Bundle identifiers
 
@@ -334,8 +335,10 @@ checks are specified in [updates.md](updates.md). In code (`BasketCore/Update`):
   manifest's version and a code signature satisfying `CodeSignature.requirement(teamID:identifier:)`
   — a notarized Developer ID app of the running app's own team (`SecCodeCopySelf`). Any failure
   deletes the staging directory.
-- `UpdateSwap` launches a detached `/bin/sh` helper (paths and the requirement as positional
-  parameters) that waits for Basket's pid to exit, runs `codesign --verify --deep --strict -R` with
+- `UpdateSwap` hands a `/bin/sh` helper (paths and the requirement as positional parameters) to
+  launchd as a one-shot job of its own, so it outlives Basket even when Basket crashes or is
+  force-quit ([updates.md](updates.md#the-helper-outlives-basket)). The helper waits for Basket's
+  pid to exit, runs `codesign --verify --deep --strict -R` with
   the same requirement on the staged app, renames the old app into the staging directory, renames
   the new one into place, checks it there again (putting the old one back if a check or a rename
   fails), clears quarantine only if present, moves the old app to the Trash and opens the new one.
@@ -355,5 +358,6 @@ End-to-end check: `scripts/update-e2e.sh` (no `/Applications`; needs a Developer
 since ad-hoc builds can't update, and the Accessibility permission for `BasketE2E.app`) installs
 an update through the real UI — Check for Updates…, the update sheet, “Install and Relaunch”
 pressed through the Accessibility API — and checks that Basket quits, the bundle is swapped and
-the new version relaunches ([updates.md](updates.md#end-to-end-test)). Without
+the new version relaunches ([updates.md](updates.md#end-to-end-test)); `scripts/update-e2e.sh kill`
+ends Basket with SIGKILL and with a Force Quit instead and expects the same. Without
 `BASKET_UPDATE_ALLOW_UNNOTARIZED` the same install must stop with a code-signature security error.

@@ -18,9 +18,12 @@ usage:
       Exit 0 ok, 1 findings, 2 runner failure, 3 Accessibility permission missing.
   basket-ax update-install --app <Basket.app> --feed <latest.json URL> --public-key <base64>
                            --expect-version <X.Y.Z> --out <dir> [--fixtures <dir>] [--quit-timeout seconds]
+                           [--kill sigkill|force-quit]
       The real-UI update test (scripts/update-e2e.sh): launch a DEBUG Basket.app with a test
       feed, choose Check for Updates…, press Install and Relaunch through AXPress, and check that
       it quits within --quit-timeout (default 10 s) of installing and comes back as the new version.
+      --kill: Basket is told not to quit (BASKET_UPDATE_TEST_BLOCK_QUIT=1) and is ended 1 s after
+      “Installing…” with SIGKILL or a Force Quit; the swap helper must still install the update.
       Exit 0 ok, 1 the update didn't install, 2 runner failure, 3 Accessibility permission missing.
 """
 

@@ -51,6 +51,10 @@ struct UpdateSetup {
     /// DEBUG `BASKET_UPDATE_ALLOW_UNNOTARIZED=1`: the update needs a Developer ID signature of the
     /// same team but no notarization (local end-to-end runs). Release builds always require it.
     var allowUnnotarized = false
+    /// DEBUG `BASKET_UPDATE_TEST_BLOCK_QUIT=1` (the update end-to-end test's kill mode): once the
+    /// swap helper runs, Basket stays at "Installing…" instead of quitting, as 0.0.1–0.0.3 did, so
+    /// the test can end it the way a user would (SIGKILL, Force Quit).
+    var blockQuit = false
     #endif
 
     /// Release builds update only to the product, `dev.basket.app`. DEBUG builds have their own
@@ -68,6 +72,7 @@ struct UpdateSetup {
             setup.trustedPublicKeysBase64 = [key]
         }
         setup.allowUnnotarized = env["BASKET_UPDATE_ALLOW_UNNOTARIZED"] == "1"
+        setup.blockQuit = env["BASKET_UPDATE_TEST_BLOCK_QUIT"] == "1"
         if let identifier = bundle.bundleIdentifier { setup.policy.appBundleIdentifier = identifier }
         #endif
         return setup
@@ -330,6 +335,12 @@ final class UpdateController {
     /// attached), terminate, and escalate until Basket is gone (`UpdateQuit`). Runs in its own task,
     /// so nothing that cancels `work` can cut it short.
     private func quitToInstall() {
+        #if DEBUG
+        if setup.blockQuit {
+            logger.notice("BASKET_UPDATE_TEST_BLOCK_QUIT: not quitting (DEBUG build)")
+            return
+        }
+        #endif
         let logger = logger
         let steps = UpdateQuit.Steps(
             dismissUpdateSheet: { [weak self] in

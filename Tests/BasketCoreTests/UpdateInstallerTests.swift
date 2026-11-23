@@ -522,10 +522,30 @@ struct UpdateSwapTests {
         #expect(layout.codesignCalls().isEmpty)
     }
 
-    /// Quitting to install must not stop the helper: it runs in its own session and process group
-    /// (no signal to Basket's group or terminal reaches it), and it isn't a `CLIRunner` child, so
-    /// the quit cleanup (`CLIRunner.terminateAllChildren`) never signals it.
-    @Test func theLaunchedHelperRunsInItsOwnSessionAndOutlivesTheApp() async throws {
+    /// The helper's launchd job: one run, removed by launchd when it exits, output to the log.
+    @Test func theHelperJobRunsOnceAndIsRemovedAfterwards() throws {
+        let layout = try Layout()
+        defer { layout.dir.cleanup() }
+        let plan = layout.plan(pid: 1)
+        let log = layout.dir.url.appending(path: "update.log")
+        let job = UpdateSwap.job(plan, label: "dev.basket.app.update.TEST", log: log)
+        #expect(job["Label"] as? String == "dev.basket.app.update.TEST")
+        #expect(job["ProgramArguments"] as? [String] == UpdateSwap.arguments(plan))
+        #expect(job["RunAtLoad"] as? Bool == true)
+        #expect(job["LaunchOnlyOnce"] as? Bool == true)
+        #expect(job["KeepAlive"] as? Bool == false)
+        #expect(job["StandardOutPath"] as? String == log.path)
+        #expect(job["StandardErrorPath"] as? String == log.path)
+        #expect((job["EnvironmentVariables"] as? [String: String])?["PATH"] == "/usr/bin:/bin:/usr/sbin:/sbin")
+        #expect(UpdateSwap.job(plan, label: "x", log: nil)["StandardOutPath"] as? String == "/dev/null")
+    }
+
+    /// Quitting to install — or a crash or Force Quit — must not stop the helper: launchd starts it
+    /// as a job of its own (not a child of Basket, so not in Basket's process coalition, which a
+    /// Force Quit ends as a whole), and it isn't a `CLIRunner` child, so the quit cleanup
+    /// (`CLIRunner.terminateAllChildren`) never signals it. launchd removes the job once it exits.
+    /// Needs the user's GUI launchd domain (a logged-in session).
+    @Test(.enabled(if: UpdateFixtures.hasGUIDomain)) func theHelperRunsAsALaunchdJobAndOutlivesTheApp() async throws {
         let layout = try Layout()
         defer { layout.dir.cleanup() }
         let app = Process()
@@ -534,18 +554,40 @@ struct UpdateSwapTests {
         try app.run()
         defer { if app.isRunning { app.terminate() } }
         let log = layout.dir.url.appending(path: "update.log")
-        let helper = try UpdateSwap.launchDetached(layout.plan(pid: app.processIdentifier), log: log)
-        #expect(getsid(helper) == helper)
-        #expect(getpgid(helper) == helper)
-        #expect(getsid(helper) != getsid(0))
-        // "Basket" quits; the helper notices, swaps and exits on its own.
-        app.terminate()
-        var status: Int32 = 0
-        let deadline = Date().addingTimeInterval(30)
-        while waitpid(helper, &status, WNOHANG) == 0, Date() < deadline {
-            try await Task.sleep(for: .milliseconds(50))
+        let label = try UpdateSwap.launchDetached(layout.plan(pid: app.processIdentifier), log: log)
+        #expect(label.hasPrefix(UpdateSwap.jobLabelPrefix))
+        let service = "gui/\(getuid())/\(label)"
+        #expect(!FileManager.default.fileExists(atPath: UpdateSwap.jobFile(label: label).path))
+        // launchd runs it (once spawned, `launchctl print` names its pid): its parent is launchd,
+        // never this process.
+        var printed = UpdateFixtures.ProcessResult(pid: 0, status: -1, output: "")
+        var parent: pid_t?
+        for _ in 0..<50 where parent == nil {
+            printed = try await UpdateFixtures.run("/bin/launchctl", ["print", service])
+            let helper = printed.output.split(separator: "\n").compactMap { line -> pid_t? in
+                let parts = line.split(separator: "=").map { $0.trimmingCharacters(in: .whitespaces) }
+                return parts.count == 2 && parts[0] == "pid" ? pid_t(parts[1]) : nil
+            }.first
+            var info = proc_bsdinfo()
+            if let helper, proc_pidinfo(helper, PROC_PIDTBSDINFO, 0, &info, Int32(MemoryLayout<proc_bsdinfo>.size)) > 0 {
+                parent = pid_t(info.pbi_ppid)
+            } else {
+                try await Task.sleep(for: .milliseconds(100))
+            }
         }
+        #expect(printed.status == 0, "\(printed.output)")
+        #expect(parent == 1, "\(printed.output)")
+        // "Basket" quits; the helper notices, swaps and exits on its own, and its job goes away.
+        app.terminate()
+        let deadline = Date().addingTimeInterval(30)
+        var gone = false
+        while Date() < deadline {
+            if try await UpdateFixtures.run("/bin/launchctl", ["print", service]).status != 0 { gone = true; break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        if !gone { _ = try? await UpdateFixtures.run("/bin/launchctl", ["bootout", service]) }
         let output = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
+        #expect(gone, "the helper's launchd job is still loaded")
         #expect(UpdateFixtures.version(of: layout.destination) == "0.0.2", "\(output)")
         #expect(output.contains("installed \(layout.destination.path)"), "\(output)")
     }
