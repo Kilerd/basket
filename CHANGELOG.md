@@ -9,6 +9,14 @@ next patch. Expect breaking changes until `0.1.0`.
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-11-24
+
+**Using 0.0.1, 0.0.2 or 0.0.3? Don't click Install and Relaunch** — those versions' updater
+stays at “Installing…” and can't finish, and force-quitting Basket doesn't help. Download
+`Basket-0.0.6.dmg` from <https://github.com/Kilerd/basket/releases/latest> instead, quit Basket
+and drag the new one to Applications. **On 0.0.4 or 0.0.5,** update as usual: Install and
+Relaunch takes a few seconds and needs no permission prompts.
+
 ### Added
 
 - Settings ▸ General ▸ Appearance: System, Light or Dark (#46). Basket can stay light or dark
@@ -22,8 +30,9 @@ next patch. Expect breaking changes until `0.1.0`.
   group with “Migrate from OrbStack” (and its ⌘7 shortcut in the View menu) and the setup
   assistant's “From OrbStack” step are hidden otherwise, and the step list is numbered without
   it. Basket notices OrbStack being installed or removed while it runs: the setup assistant
-  follows at once, the sidebar the next time the window opens. OrbStack is found in `/Applications`, `~/Applications` or
-  any other folder macOS knows it in (not the Trash or a mounted disk image).
+  follows at once, the sidebar the next time the window opens. OrbStack is found in
+  `/Applications`, `~/Applications` or any other folder macOS knows it in (not the Trash or a
+  mounted disk image).
 
 ### Fixed
 
@@ -190,7 +199,8 @@ The first public version.
   discovered at build time and never hard-coded. Terminal shells open through self-deleting
   `.command` files with shell-quoted arguments.
 
-[Unreleased]: https://github.com/Kilerd/basket/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/Kilerd/basket/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/Kilerd/basket/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/Kilerd/basket/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/Kilerd/basket/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/Kilerd/basket/compare/v0.0.2...v0.0.3
