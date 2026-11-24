@@ -166,6 +166,23 @@ and disk first) → implement → verify. Findings and decisions are logged here
 - CI flagged two more wall-clock bounds (#44): termination tests now compare against the child's
   own runtime.
 
+### 0.0.6 — appearance, and OrbStack only for OrbStack users (2026-11-24)
+- Maintainer feedback: an Appearance setting (System / Light / Dark, #46) and no "Migrate from
+  OrbStack" for people without OrbStack (#47). The self-test now captures every section in light
+  and dark. Reviewing the light captures turned up tags and orange/green status text at about 2:1
+  contrast; they now reach WCAG AA in both appearances (`ReadableColor`).
+- OrbStack detection: `/Applications`, `~/Applications`, then LaunchServices by bundle id, not
+  counting the Trash or a mounted disk image. The AX contract takes "migration must show / must
+  not show" from the fixture set's `orbstack.json`, and `fresh-no-orbstack` covers the hidden
+  setup flow.
+- Crash found by testing removal live: dropping a SwiftUI sidebar row while an accessibility
+  client (VoiceOver, or the E2E prober) holds the old rows aborts the app (AttributeGraph
+  precondition via `NSTableViewCellMockElement`). Selecting another row first and delaying the
+  removal did not help; it crashed in round 6 of 40 next to a control that crashed in round 9.
+  The sidebar now never adds or drops a row while the window is open; the next window does.
+- Lesson: accept a fix to a racy crash only after it survives the same live run that makes the
+  old code crash.
+
 ## Research notes
 - Compose: apple/container has no official Compose (PR #398 proposes it, unmerged as of 2026-10).
   Third-party: `container-compose` (mcrich23), `apple-compose` (Go). Known gap: service-name DNS on
