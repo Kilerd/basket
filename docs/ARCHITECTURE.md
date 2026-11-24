@@ -277,9 +277,9 @@ minute, and only while Memory Saver is on.
 ## Migrating from OrbStack
 
 **Only for people who have OrbStack** (#47). The sidebar's “OrbStack” group with “Migrate from
-OrbStack”, its View-menu shortcut and the setup step exist only while OrbStack is installed
-(`AppStore.orbStackInstalled`, `isVisible(_:)`, `visibleSections`; the Overview's comparison card
-already followed `OrbStackSnapshot.isInstalled`). `OrbStackLocator` finds OrbStack.app in
+OrbStack”, its View-menu shortcut and the setup step exist only when OrbStack is installed
+(`AppStore.orbStackInstalled`, `listsMigration`, `isVisible(_:)`, `visibleSections`; the Overview's
+comparison card already followed `OrbStackSnapshot.isInstalled`). `OrbStackLocator` finds OrbStack.app in
 `/Applications` or `~/Applications`, else wherever LaunchServices has its bundle id
 `dev.kdrag0n.MacVirt` registered (`NSWorkspace.urlsForApplications(withBundleIdentifier:)`,
 passed in by the app: BasketCore doesn't link AppKit), skipping copies in a Trash or on a
@@ -288,13 +288,17 @@ read-only volume (a mounted disk image); fixture runs read `orbstack.json`. A ch
 neither flashes nor pops in; then every OrbStack snapshot updates it: every 30 s while the window
 is visible (90 s while another app is active; polling restarts, and so re-reads at once, when
 the window reappears or Basket becomes active again), whenever “Set Up Basket” opens and on the
-section's own Refresh. When OrbStack goes away while its section is open, Basket shows the
-Overview first and drops the sidebar row half a second later: removing the selected row in the
-same update as the new selection crashed SwiftUI's sidebar outline (an AttributeGraph precondition
-in `outlineView(_:viewFor:item:)`) when an accessibility client read the sidebar at that moment.
-The View menu numbers
-the visible sections ⌘1…; migration is the last one, so hiding it removes ⌘7 and renumbers
-nothing.
+section's own Refresh. The setup assistant's step list follows each read at once. **The sidebar
+never adds or drops the row while the main window is open** (`listsMigration` changes only while
+no main window exists, and is re-checked as the window closes): removing a sidebar row while an
+accessibility client (VoiceOver) holds the old rows aborts SwiftUI's outline (an AttributeGraph
+precondition in `outlineView(_:viewFor:item:)`, reached from
+`NSTableViewCellMockElement accessibilityChildren`), whatever is selected. So when OrbStack goes
+away while the window is open, the open migration section shows “OrbStack Isn't Installed”, and
+the row is gone the next time the window opens (on the Overview if migration was selected); a
+newly installed OrbStack appears there the same way. The View menu follows the sidebar and
+numbers the visible sections ⌘1…; migration is the last one, so hiding it removes ⌘7 and
+renumbers nothing.
 
 `OrbStackMigrator` (BasketCore/Migration) reads OrbStack's Docker engine and never changes it:
 every docker call is checked against a read-only allowlist (`--context orbstack` + `image ls`,

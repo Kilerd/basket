@@ -223,8 +223,8 @@ final class OnboardingModel {
 
     // MARK: Steps
 
-    /// OrbStack is installed, as the sidebar sees it: known at launch, then updated by every
-    /// OrbStack read (the sidebar's and this window's own).
+    /// OrbStack is installed: known at launch, then updated by every OrbStack read (the main
+    /// window's and this window's own). Unlike the sidebar, the step list follows it at once.
     var orbStackInstalled: Bool { store?.orbStackInstalled ?? false }
 
     /// OrbStack's step only exists when OrbStack is installed; the list is numbered from these.

@@ -21,8 +21,8 @@ next patch. Expect breaking changes until `0.1.0`.
 - OrbStack migration appears only when OrbStack is installed (#47): the sidebar's “OrbStack”
   group with “Migrate from OrbStack” (and its ⌘7 shortcut in the View menu) and the setup
   assistant's “From OrbStack” step are hidden otherwise, and the step list is numbered without
-  it. Basket notices OrbStack being installed or removed while it runs and moves from an open
-  migration section to the Overview. OrbStack is found in `/Applications`, `~/Applications` or
+  it. Basket notices OrbStack being installed or removed while it runs: the setup assistant
+  follows at once, the sidebar the next time the window opens. OrbStack is found in `/Applications`, `~/Applications` or
   any other folder macOS knows it in (not the Trash or a mounted disk image).
 
 ### Fixed
