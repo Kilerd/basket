@@ -69,14 +69,16 @@ Available in `0.0.1`:
   `compose.yaml` (Swift YAML parser, `${VAR}` interpolation, `.env`), shows a plan with the
   memory it will cost, and runs it. apple/container has no DNS between containers, so Basket
   writes service names into each container's `/etc/hosts`.
-- **Migrate from OrbStack.** Imports OrbStack images (host platform only, content-verified)
-  and recreates containers as `container run` commands, with warnings for what doesn't carry
-  over. OrbStack is only read, through an allowlist of read-only `docker` commands.
+- **Migrate from OrbStack.** When OrbStack is installed, imports its images (host platform only,
+  content-verified) and recreates containers as `container run` commands, with warnings for what
+  doesn't carry over. OrbStack is only read, through an allowlist of read-only `docker` commands.
+  Without OrbStack, Basket doesn't show the migration at all.
 - **`docker` command.** Optional `docker` shim that translates everyday `docker` commands to
   `container` ([what's supported](docs/docker-shim.md)); enabled only when you say so, with the
   exact shell lines shown first.
 - **Guided setup.** First launch checks the Mac, installs `container` (Homebrew or the official
-  installer), starts it, offers OrbStack migration and the `docker` command.
+  installer), starts it, offers OrbStack migration (when OrbStack is installed) and the `docker`
+  command.
 - **Volumes, networks, Linux machines** (`container machine`), a **menu bar extra** and
   **Settings** at the bottom of the sidebar (language, appearance, CLI path, refresh interval,
   default memory, launch at login).

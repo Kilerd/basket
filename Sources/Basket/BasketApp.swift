@@ -65,7 +65,8 @@ struct BasketCommands: Commands {
                 .keyboardShortcut("f", modifiers: [.command, .option])
                 .disabled(!store.selectedSection.hasSearch)
             Divider()
-            ForEach(Array(AppSection.browsable.enumerated()), id: \.element) { index, section in
+            // The sidebar's sections only: no ⌘7 while "Migrate from OrbStack" is hidden.
+            ForEach(Array(store.browsableSections.enumerated()), id: \.element) { index, section in
                 Button(section.title) { store.selectedSection = section }
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
             }

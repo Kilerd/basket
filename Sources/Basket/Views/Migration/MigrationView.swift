@@ -146,7 +146,8 @@ struct MigrationView: View {
                                 help: "Read OrbStack again (⌘R)") {
                 Task {
                     await model.refresh()
-                    await store.refresh([.images, .containers])
+                    // `.orbstack` too: OrbStack removed since the last poll closes this section.
+                    await store.refresh([.images, .containers, .orbstack])
                 }
             }
             .disabled(model.isLoading)

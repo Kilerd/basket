@@ -147,6 +147,12 @@ final class AppStore {
     var machinesKnown = false
     var diskUsage: DiskUsage?
     var orbStack: OrbStackSnapshot?
+    /// OrbStack.app is installed. Decided at launch by a cheap check, then by every OrbStack snapshot.
+    private(set) var orbStackInstalled = false
+    /// The sidebar lists "Migrate from OrbStack" (see `isVisible`): `orbStackInstalled` as of when
+    /// the main window opened. It never changes while the window is open: SwiftUI's sidebar outline
+    /// aborts when a row goes while an accessibility client (VoiceOver) still holds the old rows.
+    private(set) var listsMigration = false
     var loaded: Set<DataKind> = []
     /// Resource id → in-flight progress phrase ("Stopping…"), shown next to the row.
     var pending: [String: String] = [:]
@@ -172,6 +178,8 @@ final class AppStore {
     @ObservationIgnored private var windowObservers: [NSObjectProtocol] = []
     @ObservationIgnored private var pollTasks: [Task<Void, Never>] = []
     @ObservationIgnored private var windowVisible = false
+    /// The main window is open (attached and not closed), hidden or not: its sidebar exists.
+    @ObservationIgnored private var mainWindowOpen = false
     @ObservationIgnored private var lastServiceCheck = Date.distantPast
     @ObservationIgnored private var selfTestStarted = false
     @ObservationIgnored private var statsInFlight = false
@@ -188,10 +196,15 @@ final class AppStore {
         let cliPath = UserDefaults.standard.string(forKey: DefaultsKey.containerCLIPath) ?? ""
         self.backendCLIPath = cliPath
         self.backend = options.makeBackend(settingsCLIPath: cliPath)
-        self.orbInspector = OrbStackInspector(fixturesDirectory: options.fixturesDirectory)
+        self.orbInspector = options.makeOrbStackInspector()
         self.migration = MigrationModel(migrator: options.makeMigrator())
-        self.selectedSection = options.initialSection
+        // Known before the first frame, so the OrbStack group neither flashes nor pops in.
+        let orbStackInstalled = orbInspector.isInstalled()
+        self.orbStackInstalled = orbStackInstalled
+        self.listsMigration = orbStackInstalled
+        let requested = options.initialSection
             ?? (options.isUITest ? nil : AppRelaunch.takeReopenSection()) ?? .overview
+        self.selectedSection = requested == .migration && !orbStackInstalled ? .overview : requested
         self.language = LanguageChoice(persistent: !options.isUITest)
         self.appearance = AppearanceChoice(persistent: !options.isUITest, override: options.appearance)
         self.memorySaver = MemorySaverState(persistent: !options.isUITest)
@@ -221,6 +234,7 @@ final class AppStore {
     // MARK: Window tracking
 
     func attach(window: NSWindow) {
+        mainWindowOpen = true
         guard mainWindow !== window else { return }
         for o in windowObservers { NotificationCenter.default.removeObserver(o) }
         mainWindow = window
@@ -239,7 +253,7 @@ final class AppStore {
         windowObservers = [
             center.addObserver(forName: NSWindow.didChangeOcclusionStateNotification, object: window, queue: .main, using: update),
             center.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.setWindowVisible(false) }
+                MainActor.assumeIsolated { self?.mainWindowWillClose() }
             },
             center.addObserver(forName: NSWindow.didMiniaturizeNotification, object: window, queue: .main, using: update),
             center.addObserver(forName: NSWindow.didDeminiaturizeNotification, object: window, queue: .main, using: update),
@@ -260,6 +274,15 @@ final class AppStore {
     private func updateWindowVisibility() {
         guard let window = mainWindow else { return setWindowVisible(false) }
         setWindowVisible(window.isVisible && !window.isMiniaturized && window.occlusionState.contains(.visible))
+    }
+
+    /// The next window builds a fresh sidebar, so it may list or drop "Migrate from OrbStack" again.
+    private func mainWindowWillClose() {
+        mainWindowOpen = false
+        setWindowVisible(false)
+        Task {  // once the window is gone, unless another one opened meanwhile
+            if !mainWindowOpen { setListsMigration(orbInspector.isInstalled()) }
+        }
     }
 
     private func setWindowVisible(_ visible: Bool) {
@@ -403,7 +426,9 @@ final class AppStore {
             case .disk:
                 setIfChanged(\.diskUsage, try await backend.diskUsage())
             case .orbstack:
-                setIfChanged(\.orbStack, await orbInspector.snapshot())
+                let snapshot = await orbInspector.snapshot()
+                setIfChanged(\.orbStack, snapshot)
+                orbStackDetected(snapshot.isInstalled)
             }
             if !loaded.contains(kind) { loaded.insert(kind) }
             // A successful list call proves the API server answers; host-side numbers (footprints,
@@ -534,6 +559,33 @@ final class AppStore {
     }
 
     var runningContainers: [ContainerSummary] { containers.filter { $0.state == .running } }
+
+    // MARK: Sections
+
+    /// Whether the sidebar lists `section`: "Migrate from OrbStack" only when OrbStack was installed
+    /// as the window opened (`listsMigration`).
+    func isVisible(_ section: AppSection) -> Bool { section != .migration || listsMigration }
+
+    /// The sidebar's sections in order, Settings last.
+    var visibleSections: [AppSection] { AppSection.allCases.filter(isVisible) }
+
+    /// The View menu's ⌘1… sections. Migration comes last, so hiding it never renumbers the others.
+    var browsableSections: [AppSection] { AppSection.browsable.filter(isVisible) }
+
+    /// OrbStack was installed or removed (an OrbStack snapshot, or the setup assistant's own read).
+    /// The setup assistant follows at once. The sidebar follows only while the main window is
+    /// closed; an open window keeps its rows until it closes (`mainWindowWillClose`), and its
+    /// migration section shows that OrbStack is gone.
+    func orbStackDetected(_ installed: Bool) {
+        setIfChanged(\.orbStackInstalled, installed)
+        if !mainWindowOpen { setListsMigration(installed) }
+    }
+
+    /// Only while no sidebar exists; the next window opens on the Overview if migration is gone.
+    private func setListsMigration(_ lists: Bool) {
+        setIfChanged(\.listsMigration, lists)
+        if !lists, selectedSection == .migration { selectedSection = .overview }
+    }
 
     func isLoaded(_ section: AppSection) -> Bool {
         switch section {

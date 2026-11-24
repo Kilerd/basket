@@ -8,7 +8,8 @@ enum AppSection: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    /// The sections with a ⌘1…⌘7 shortcut in the View menu (Settings has ⌘, in the app menu).
+    /// The sections with a ⌘1…⌘7 shortcut in the View menu (Settings has ⌘, in the app menu); the
+    /// menu lists only the visible ones (`AppStore.browsableSections`).
     static var browsable: [AppSection] { allCases.filter { $0 != .settings } }
 
     /// List sections have a toolbar search field (⌥⌘F).

@@ -31,6 +31,8 @@ Sources/basket-ax/            E2E runner CLI (`audit` drives Basket.app via AX; 
                               `update-install` installs an update through the UI, for update-e2e.sh)
 Fixtures/demo/                Rich, deterministic raw-CLI JSON used by FixtureBackend in E2E runs
 Fixtures/fresh/               A new Mac: no `container` CLI (`cli-missing`), OrbStack installed — onboarding self-test
+Fixtures/fresh-no-orbstack/   The same Mac without OrbStack: setup without the OrbStack step, sidebar without migration
+Fixtures/empty/, stopped/     Nothing created yet and no OrbStack; the container system stopped (OrbStack installed)
 Tests/BasketCoreTests/        Decoder/backend tests; Fixtures/ = container 1.7.1 output from throwaway test
                               containers on public images, scrubbed of host paths and user names
 Tests/BasketAXKitTests/       Lint-rule tests on synthetic AX trees
@@ -111,8 +113,8 @@ replace it later without touching the UI.
 | `BASKET_FIXTURES_DIR` | directory for `FixtureBackend` (e.g. `Fixtures/demo`) |
 | `BASKET_CONTAINER_CLI` | explicit path to the `container` binary |
 | `BASKET_UI_TEST` | `1` = deterministic UI: fixed 1280×820 window, no animations, no polling jitter |
-| `BASKET_INITIAL_SECTION` | sidebar section to open first (`overview`, `containers`, …, `settings`) |
-| `BASKET_SELFTEST_DIR` | self-test: visit every section, write `<section>.png` + `<section>.ax.json` (plus `settings-end`, the end of the Settings form, and `settings-language`, the relaunch prompt after a language change; UI-test runs never save the language), then every section again as `<section>-light.png` and `<section>-dark.png` (switched through Settings ▸ General ▸ Appearance, never saved), then quit |
+| `BASKET_INITIAL_SECTION` | sidebar section to open first (`overview`, `containers`, …, `settings`; `migration` without OrbStack opens the Overview) |
+| `BASKET_SELFTEST_DIR` | self-test: visit every section the sidebar shows, write `<section>.png` + `<section>.ax.json` (plus `settings-end`, the end of the Settings form, and `settings-language`, the relaunch prompt after a language change; UI-test runs never save the language), then every section again as `<section>-light.png` and `<section>-dark.png` (switched through Settings ▸ General ▸ Appearance, never saved), then quit |
 | `BASKET_APPEARANCE` | `system`, `light` or `dark`: this run's appearance instead of the one chosen in Settings, never saved (`scripts/selftest.sh` passes it on; the E2E runner keeps the system appearance) |
 | `BASKET_DOCKER_CLI` | explicit path to the `docker` binary used to read OrbStack (default: OrbStack's own) |
 | `BASKET_ONBOARDING` | `1` = open "Set Up Basket" at launch even in UI-test/self-test runs (otherwise it opens only on first launch or when the CLI is missing, and never in UI tests); with `BASKET_SELFTEST_DIR` the self-test walks every step first (`onboarding-<step>[-<state>].png/.ax.json`, plus `-dark.png`) |
@@ -205,7 +207,7 @@ and Japanese text is checked for truncation from two characters on).
 | Element | Identifier |
 |---|---|
 | Main window | `basket.main` |
-| Sidebar items | `sidebar.<section>` — `overview`, `containers`, `images`, `volumes`, `networks`, `machines`, `migration`, and `settings` (pinned at the bottom, above the status footer) |
+| Sidebar items | `sidebar.<section>` — `overview`, `containers`, `images`, `volumes`, `networks`, `machines`, `migration` (only while OrbStack is installed, see below), and `settings` (pinned at the bottom, above the status footer) |
 | Section root | `section.<section>` |
 | Toolbar / header actions | `<section>.action.<verb>` (e.g. `containers.action.new`, `images.action.pull`) |
 | Search field | `<section>.search` |
@@ -220,13 +222,25 @@ and Japanese text is checked for truncation from two characters on).
 | Disk reclaim / image recovery | `sheet.reclaim` with items `reclaim.{containers,images,volumes}.item.<id>`; Images recovery strip `images.recovery`, `images.recovery.{restore,delete}.<archive file>` |
 | Settings section | root `section.settings` (title “Settings”, ⌘, and the app menu's and menu bar's “Settings…” select it); controls `settings.<name>` (e.g. `settings.memory-saver`, `settings.memory-saver-idle`); General ▸ Language: picker `settings.language` (System + every shipped language, each named in itself) and, after a change, the prompt `settings.language-pending` with `settings.language-relaunch` (“Relaunch Now”); General ▸ Appearance: picker `settings.appearance` (System, Light, Dark; applied at once) |
 | Compose | header rows `containers.group.<project>` (disclosure `containers.group.<project>.toggle`), service rows keep `containers.row.<id>`; `containers.action.compose-up` (toolbar, ⇧⌘O), project detail `containers.detail` with `containers.action.project-{start,stop,restart,down,reveal}`; sheet `sheet.compose-plan` with `compose-plan.{file,memory,cpus,service-names,existing,services,service.<name>,warning.<n>,commands,progress,error,copy,cancel,up,show,done}` |
-| Onboarding (“Set Up Basket” window) | window `onboarding.window`; one step root `onboarding.step.<welcome|install|system|orbstack|docker|done>`; every button/link `onboarding.action.<verb>` (`back`, `continue`, `skip`, `later`, `not-now`, `install-brew`, `cancel`, `download`, `check-again`, `choose-cli`, `start-system`, `migrate`, `enable-docker`, `disable-docker`, `docs`, `open-basket`); other elements `onboarding.<control>` (`progress`, `title`, `status`, `log`, `error`, `requirement.<name>`, `compare.<memory|disk>`, `planned-change`, `summary`, `memory-saver`). Linted with this contract instead of `basket.main`. Settings: `settings.run-setup`, `settings.docker-command` |
+| Onboarding (“Set Up Basket” window) | window `onboarding.window`; one step root `onboarding.step.<welcome|install|system|orbstack|docker|done>`; every button/link `onboarding.action.<verb>` (`back`, `continue`, `skip`, `later`, `not-now`, `install-brew`, `cancel`, `download`, `check-again`, `choose-cli`, `start-system`, `migrate`, `enable-docker`, `disable-docker`, `docs`, `open-basket`); other elements `onboarding.<control>` (`progress` — the step list, one row `onboarding.progress.<step>` per listed step — `title`, `status`, `log`, `error`, `requirement.<name>`, `compare.<memory|disk>`, `planned-change`, `summary`, `memory-saver`). Linted with this contract instead of `basket.main`. Settings: `settings.run-setup`, `settings.docker-command` |
 | Updates | sheet `sheet.update`: title `update.version` (“Basket X.Y.Z is available”), `update.notes`, `update.progress`, `update.error`, buttons `update.{install,later,skip,cancel,retry,done,releases}`; checking / up to date / unavailable / failed-check title `update.status`. Settings: `settings.updates.{automatic,check,status}` |
 | Migration | `section.migration` (title “Migrate from OrbStack”), `migration.tabs`, `migration.summary`, `migration.action.{import,recreate,refresh,select-all,select-none,copy-cleanup}`, rows `migration.row.<image reference or container name>`; sheets `sheet.migration-import` (`migration.import.{cancel,done}`), `sheet.migration-recreate` (`migration.recreate.{name,command,copy,run}`) |
 
 Every list section (`containers`, `images`, `volumes`, `networks`, `machines`, `migration`) must expose
 `<section>.search`, `<section>.action.refresh`, and either `<section>.list` or `<section>.empty`.
 `settings` is a form, not a list: it needs only `sidebar.settings` and `section.settings`.
+
+**OrbStack's section and step are conditional.** `migration` (sidebar item and section) and the
+onboarding step `orbstack` (shown step and its `onboarding.progress.orbstack` row) exist only while
+OrbStack is installed. The contract takes that from the fixture set, not from the app
+(`AXSectionExpectation` in BasketAXKit, read from `orbstack.json`; a missing file means not
+installed): installed → they are required like every other section; not installed → they must be
+absent, and a snapshot of the hidden section fails; no fixtures (a live run) → optional.
+`scripts/selftest.sh` passes the set to `basket-ax lint --fixtures`, the E2E runner reads its
+`--fixtures` and visits only the sections the sidebar must show, adding the check “the sidebar
+lists/hides `sidebar.migration`”. The self-test visits the sections the app shows
+(`AppStore.visibleSections`). `demo`, `stopped` and `fresh` have OrbStack; `empty` and
+`fresh-no-orbstack` don't.
 
 ## First run (“Set Up Basket”)
 
@@ -237,10 +251,12 @@ Steps: requirements (macOS 26+, Apple silicon) → install `container` (`brew in
 streamed and cancellable when Homebrew exists, else Apple's installer + Check Again, or pick the
 binary → `containerCLIPath`) → `container system start --enable-kernel-install` (streamed; the first
 start downloads ~650 MB of kernel files) → OrbStack comparison and “Migrate Images & Containers…”
-(only when OrbStack is installed) → the `docker` command (`DockerShimInstaller`: shows the detected
-shell, what `docker` resolves to today and the exact rc-file text before Enable) → summary with the
-Memory Saver switch. Fixture runs (`Fixtures/fresh`: `cli-missing` marker, `docker-shim.json`)
-simulate the install, the start and the docker command; they never touch Homebrew or the real home.
+(only when OrbStack is installed: otherwise the step isn't listed and the steps are numbered 1–5;
+if OrbStack goes away while its step shows, setup moves on to the next one) → the `docker` command
+(`DockerShimInstaller`: shows the detected shell, what `docker` resolves to today and the exact
+rc-file text before Enable) → summary with the Memory Saver switch. Fixture runs (`Fixtures/fresh`
+and `Fixtures/fresh-no-orbstack`: `cli-missing` marker, `docker-shim.json`) simulate the install,
+the start and the docker command; they never touch Homebrew or the real home.
 
 ## Memory insights and Memory Saver
 
@@ -259,6 +275,30 @@ whose `--rm` status is unknown only if the user opted in. With the window closed
 minute, and only while Memory Saver is on.
 
 ## Migrating from OrbStack
+
+**Only for people who have OrbStack** (#47). The sidebar's “OrbStack” group with “Migrate from
+OrbStack”, its View-menu shortcut and the setup step exist only when OrbStack is installed
+(`AppStore.orbStackInstalled`, `listsMigration`, `isVisible(_:)`, `visibleSections`; the Overview's
+comparison card already followed `OrbStackSnapshot.isInstalled`). `OrbStackLocator` finds OrbStack.app in
+`/Applications` or `~/Applications`, else wherever LaunchServices has its bundle id
+`dev.kdrag0n.MacVirt` registered (`NSWorkspace.urlsForApplications(withBundleIdentifier:)`,
+passed in by the app: BasketCore doesn't link AppKit), skipping copies in a Trash or on a
+read-only volume (a mounted disk image); fixture runs read `orbstack.json`. A cheap check
+(`OrbStackInspector.isInstalled()`) decides at launch, before the first frame, so the group
+neither flashes nor pops in; then every OrbStack snapshot updates it: every 30 s while the window
+is visible (90 s while another app is active; polling restarts, and so re-reads at once, when
+the window reappears or Basket becomes active again), whenever “Set Up Basket” opens and on the
+section's own Refresh. The setup assistant's step list follows each read at once. **The sidebar
+never adds or drops the row while the main window is open** (`listsMigration` changes only while
+no main window exists, and is re-checked as the window closes): removing a sidebar row while an
+accessibility client (VoiceOver) holds the old rows aborts SwiftUI's outline (an AttributeGraph
+precondition in `outlineView(_:viewFor:item:)`, reached from
+`NSTableViewCellMockElement accessibilityChildren`), whatever is selected. So when OrbStack goes
+away while the window is open, the open migration section shows “OrbStack Isn't Installed”, and
+the row is gone the next time the window opens (on the Overview if migration was selected); a
+newly installed OrbStack appears there the same way. The View menu follows the sidebar and
+numbers the visible sections ⌘1…; migration is the last one, so hiding it removes ⌘7 and
+renumbers nothing.
 
 `OrbStackMigrator` (BasketCore/Migration) reads OrbStack's Docker engine and never changes it:
 every docker call is checked against a read-only allowlist (`--context orbstack` + `image ls`,

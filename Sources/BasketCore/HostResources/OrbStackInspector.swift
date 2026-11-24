@@ -33,33 +33,42 @@ public struct OrbStackSnapshot: Sendable, Hashable, Codable {
 /// while OrbStack is already running (a docker call can otherwise auto-launch it).
 public struct OrbStackInspector: Sendable {
     public let fixturesDirectory: URL?
+    /// Where to look for OrbStack.app on the host.
+    public let locator: OrbStackLocator
 
     /// With `fixturesDirectory` containing `orbstack.json` (an encoded `OrbStackSnapshot`), `snapshot()`
-    /// returns that instead of inspecting the host.
-    public init(fixturesDirectory: URL? = nil) {
+    /// returns that instead of inspecting the host; a missing or unreadable file means not installed.
+    public init(fixturesDirectory: URL? = nil, locator: OrbStackLocator = .standardFolders) {
         self.fixturesDirectory = fixturesDirectory
+        self.locator = locator
     }
 
-    static let appPaths = ["/Applications/OrbStack.app", NSHomeDirectory() + "/Applications/OrbStack.app"]
     static let dataDirectory = NSHomeDirectory() + "/Library/Group Containers/HUAQ24HBR6.dev.orbstack/data"
 
-    public func snapshot() async -> OrbStackSnapshot {
-        if let fixturesDirectory {
-            let url = fixturesDirectory.appendingPathComponent("orbstack.json")
-            if let data = try? Data(contentsOf: url),
-               let snapshot = try? JSONDecoder().decode(OrbStackSnapshot.self, from: data) {
-                return snapshot
-            }
-            return .notInstalled
-        }
+    /// Whether OrbStack is installed, without measuring anything (the fixture's `orbstack.json`, or
+    /// `locator`): cheap enough to decide at launch whether to show the migration section.
+    public func isInstalled() -> Bool {
+        if let fixturesDirectory { return Self.fixtureSnapshot(fixturesDirectory).isInstalled }
+        return locator.appPath() != nil
+    }
 
-        let fileManager = FileManager.default
-        let appPath = Self.appPaths.first { fileManager.fileExists(atPath: $0) }
+    /// `orbstack.json` of a fixture set; `.notInstalled` when it is missing or unreadable.
+    static func fixtureSnapshot(_ directory: URL) -> OrbStackSnapshot {
+        guard let data = try? Data(contentsOf: directory.appendingPathComponent("orbstack.json")),
+              let snapshot = try? JSONDecoder().decode(OrbStackSnapshot.self, from: data)
+        else { return .notInstalled }
+        return snapshot
+    }
+
+    public func snapshot() async -> OrbStackSnapshot {
+        if let fixturesDirectory { return Self.fixtureSnapshot(fixturesDirectory) }
+
+        let appPath = locator.appPath()
         let (isRunning, footprint) = Self.processFootprint(appPath: appPath)
         let data = Self.dataUsage()
         // Any process in OrbStack.app counts as "running" here; docker is only called when the
         // engine itself is up (a call against a stopped engine might start it).
-        let images = isRunning && OrbStackEngine.isUp() ? await Self.dockerImageCount() : nil
+        let images = isRunning && OrbStackEngine.isUp(appPath: appPath) ? await Self.dockerImageCount() : nil
         return OrbStackSnapshot(
             isInstalled: appPath != nil, isRunning: isRunning, memoryFootprintBytes: footprint,
             dataPath: data?.path, dataAllocatedBytes: data?.bytes, dockerImageCount: images)

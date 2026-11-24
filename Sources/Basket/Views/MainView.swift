@@ -102,8 +102,11 @@ private struct SidebarView: View {
             Section("Linux") {
                 SidebarItem(section: .machines)
             }
-            Section("OrbStack") {
-                SidebarItem(section: .migration)
+            // Only for people who have OrbStack (#47).
+            if store.isVisible(.migration) {
+                Section("OrbStack") {
+                    SidebarItem(section: .migration)
+                }
             }
         }
         .listStyle(.sidebar)

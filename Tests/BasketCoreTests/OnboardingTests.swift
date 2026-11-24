@@ -46,6 +46,21 @@ struct OnboardingTests {
         }
     }
 
+    /// A new Mac that never had OrbStack: setup skips the OrbStack step, the sidebar has no migration.
+    @Test func freshSetWithoutOrbStack() async throws {
+        let directory = TestFixtures.set("fresh-no-orbstack")
+        let backend = FixtureBackend(directory: directory)
+        #expect(await backend.isCLIInstalled == false)
+        await backend.simulateCLIInstall()
+        #expect(try await backend.systemStatus().isRunning == false)
+        try await backend.startSystem()
+        #expect(try await backend.listContainers().isEmpty)
+        #expect(try await backend.listImages().isEmpty)
+        #expect(await OrbStackInspector(fixturesDirectory: directory).snapshot() == .notInstalled)
+        #expect(!OrbStackInspector(fixturesDirectory: directory).isInstalled())
+        #expect(await OrbStackMigrator.fixtures(directory).status() == .notInstalled)
+    }
+
     @Test func freshSetHasOrbStackRunning() async {
         let snapshot = await OrbStackInspector(fixturesDirectory: TestFixtures.set("fresh")).snapshot()
         #expect(snapshot.isInstalled && snapshot.isRunning)

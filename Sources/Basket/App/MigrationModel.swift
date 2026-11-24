@@ -600,13 +600,24 @@ extension MigrationModel {
     }
 }
 
+extension OrbStackLocator {
+    /// The standard folders, then wherever LaunchServices has OrbStack's bundle id registered.
+    static let live = OrbStackLocator { NSWorkspace.shared.urlsForApplications(withBundleIdentifier: $0) }
+}
+
 extension LaunchOptions {
     /// Fixture sets read OrbStack from `orbstack-*.json`; preview mode has no OrbStack.
     func makeMigrator() -> OrbStackMigrator {
         switch backend {
         case .fixtures(let directory): .fixtures(directory)
         case .preview: OrbStackMigrator(docker: nil, presence: .absent)
-        case .cli: .host()
+        case .cli: .host(locator: .live)
         }
+    }
+
+    /// OrbStack's state for the sidebar, the Overview comparison and the setup assistant: the
+    /// fixture set's `orbstack.json`, else the host.
+    func makeOrbStackInspector() -> OrbStackInspector {
+        OrbStackInspector(fixturesDirectory: fixturesDirectory, locator: .live)
     }
 }

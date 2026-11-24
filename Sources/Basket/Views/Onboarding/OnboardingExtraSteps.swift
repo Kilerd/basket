@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import BasketCore
 
-// Steps 4–6: OrbStack comparison, the `docker` command, summary.
+// The last steps: OrbStack comparison (only when OrbStack is installed), the `docker` command, summary.
 
 struct OrbStackStep: View {
     var model: OnboardingModel
@@ -203,7 +203,7 @@ struct DoneStep: View {
                 } else {
                     OnboardingStatusRow(status: .neutral, title: "docker command off", detail: "Turn it on in Settings when you want it.")
                 }
-                if model.orbStack?.isInstalled == true {
+                if model.orbStackInstalled {
                     OnboardingRowDivider()
                     OnboardingStatusRow(status: .neutral, title: "OrbStack left as it is", detail: "Migrate any time from the sidebar.")
                 }

@@ -1,15 +1,29 @@
 import Foundation
 import BasketAXKit
 
-/// `basket-ax lint <dir>`: audits `<section>.ax.json` snapshots written by the app's self-test.
+/// `basket-ax lint <dir> [--fixtures <dir>]`: audits `<section>.ax.json` snapshots written by the
+/// app's self-test. With `--fixtures` (the set the self-test ran on), its `orbstack.json` decides
+/// whether the migration section and the OrbStack setup step must be shown or hidden.
 enum LintCommand {
+    static let usage = "usage: basket-ax lint <dir> [--fixtures <dir>]"
+
     @MainActor static func run(_ args: [String]) -> Int32 {
-        guard args.count == 1, let path = args.first, !path.hasPrefix("-") else {
-            Console.error("usage: basket-ax lint <dir>")
+        var rest = args
+        var expectation = AXSectionExpectation.unknown
+        if let flag = rest.firstIndex(of: "--fixtures") {
+            guard flag + 1 < rest.count else {
+                Console.error(usage)
+                return 64
+            }
+            expectation = .fixtures(URL(fileURLWithPath: rest[flag + 1]))
+            rest.removeSubrange(flag...(flag + 1))
+        }
+        guard rest.count == 1, let path = rest.first, !path.hasPrefix("-") else {
+            Console.error(usage)
             return 64
         }
         let dir = URL(fileURLWithPath: path).standardizedFileURL
-        let report = lint(directory: dir)
+        let report = lint(directory: dir, expecting: expectation)
         do {
             try report.write(to: dir)
         } catch {
@@ -20,7 +34,7 @@ enum LintCommand {
         return report.exitCode
     }
 
-    static func lint(directory dir: URL) -> AXAuditReport {
+    static func lint(directory dir: URL, expecting expectation: AXSectionExpectation = .unknown) -> AXAuditReport {
         let names: [String]
         do {
             names = AXAuditor.orderedSections(try AXSnapshotIO.sections(in: dir))
@@ -43,7 +57,8 @@ enum LintCommand {
                 if known { trees[name] = node }
                 sections.append(.init(name: name, snapshot: snapshot, screenshot: screenshot,
                                       nodeCount: node.nodeCount,
-                                      findings: AXAuditor.audit(window: node, section: known ? name : nil)))
+                                      findings: AXAuditor.audit(window: node, section: known ? name : nil,
+                                                                expecting: expectation)))
             } catch {
                 let finding = AXFinding(rule: "snapshot-unreadable", severity: .error,
                                         message: "cannot decode \(snapshot): \(error)", path: snapshot)
@@ -51,8 +66,8 @@ enum LintCommand {
                                       nodeCount: 0, findings: [finding]))
             }
         }
-        var notes: [String] = []
-        let missing = AXAuditRules.sections.filter { trees[$0] == nil }
+        var notes = [expectation.summary]
+        let missing = expectation.requiredSections.filter { trees[$0] == nil }
         if !missing.isEmpty { notes.append("sections without a snapshot: \(missing.joined(separator: ", "))") }
         return AXAuditReport(mode: .selftest, sections: sections,
                              consistency: AXAuditor.auditConsistency(sections: trees), notes: notes)

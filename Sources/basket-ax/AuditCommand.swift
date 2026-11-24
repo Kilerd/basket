@@ -11,7 +11,10 @@ enum AuditCommand {
         var app: URL
         var fixtures: URL?
         var out: URL
+        /// The sections to visit: `--sections`, else the ones the fixtures' sidebar must show.
         var sections: [String] = AXAuditRules.sections
+        /// Whether OrbStack's section belongs, from the fixtures' `orbstack.json` (unknown without).
+        var expectation: AXSectionExpectation = .unknown
         var launchTimeout: Double = 30
         var stepTimeout: Double = 10
         /// Whole-run budget (seconds). Past it the runner stops, writes a runner-error report and
@@ -67,6 +70,10 @@ enum AuditCommand {
         guard let out else { throw UsageError(description: "--out is required") }
         var options = Options(app: app.standardizedFileURL, fixtures: fixtures?.standardizedFileURL,
                               out: out.standardizedFileURL)
+        if let fixtures = options.fixtures {
+            options.expectation = .fixtures(fixtures)
+            options.sections = options.expectation.requiredSections
+        }
         if let sections, !sections.isEmpty { options.sections = sections }
         if let deadlineOverride { options.deadline = deadlineOverride }
         options.language = language
@@ -160,10 +167,13 @@ final class AuditRunner {
         do {
             try await launch()
             _ = try await waitForMainWindow()
+            notes.append(options.expectation.summary)
             for section in options.sections {
                 try checkDeadline()
                 await auditSection(section)
             }
+            try checkDeadline()
+            checkOrbStackSections()
             if options.sections.contains("containers") {
                 try checkDeadline()
                 await checkContainerDetail()
@@ -329,6 +339,11 @@ final class AuditRunner {
             notes.append("[\(section)] main window lost")
             return
         }
+        if options.expectation.orbStackInstalled == nil, AXAuditRules.orbStackSections.contains(section),
+           RemoteAXCapture.find(identifier: "sidebar.\(section)", in: window) == nil {
+            notes.append("[\(section)] not in the sidebar (no OrbStack on this Mac?) — skipped")
+            return
+        }
         if let item = RemoteAXCapture.find(identifier: "sidebar.\(section)", in: window) {
             let how = activate(item)
             Console.log("  sidebar.\(section) activated via \(how ?? "nothing (no AXPress, row not selectable)")")
@@ -359,7 +374,7 @@ final class AuditRunner {
             return
         }
         trees[section] = node
-        let findings = AXAuditor.audit(window: node, section: section)
+        let findings = AXAuditor.audit(window: node, section: section, expecting: options.expectation)
         Console.log("  \(node.nodeCount) nodes, \(AXFindingCounts(findings).errors) errors, \(AXFindingCounts(findings).warnings) warnings")
         sections.append(.init(name: section, snapshot: section + AXSnapshotIO.snapshotSuffix,
                               screenshot: await screenshot(name: section, window: node),
@@ -447,6 +462,24 @@ final class AuditRunner {
 
     // MARK: Interaction checks
 
+    /// The live sidebar lists OrbStack's section exactly when the fixtures say OrbStack is installed.
+    private func checkOrbStackSections() {
+        guard let installed = options.expectation.orbStackInstalled else { return }
+        let sections = AXAuditRules.sections.filter(AXAuditRules.orbStackSections.contains)
+        let name = installed
+            ? "OrbStack is installed (orbstack.json): the sidebar lists \(sections.map { "sidebar.\($0)" }.joined(separator: ", "))"
+            : "OrbStack isn't installed (orbstack.json): the sidebar hides \(sections.map { "sidebar.\($0)" }.joined(separator: ", "))"
+        guard let window = mainWindow else {
+            checks.append(.init(name: name, passed: false, message: "main window lost"))
+            return
+        }
+        let wrong = sections.filter { (RemoteAXCapture.find(identifier: "sidebar.\($0)", in: window) != nil) != installed }
+        checks.append(.init(name: name, passed: wrong.isEmpty,
+                            message: wrong.isEmpty
+                                ? (installed ? "shown" : "hidden")
+                                : "\(wrong.map { "sidebar.\($0)" }.joined(separator: ", ")) \(installed ? "missing" : "shown")"))
+    }
+
     private func checkContainerDetail() async {
         let name = "containers: selecting the first row shows containers.detail"
         guard let window = await showSection("containers") else {
@@ -454,7 +487,12 @@ final class AuditRunner {
             return
         }
         guard let row = RemoteAXCapture.find(in: window, where: { $0.identifier?.hasPrefix("containers.row.") == true }) else {
-            checks.append(.init(name: name, passed: false, message: "no containers.row.* element (are the fixtures empty?)"))
+            if RemoteAXCapture.find(identifier: "containers.empty", in: window) != nil {
+                // A set without containers (empty, stopped) has no row to select.
+                notes.append("[containers] the section shows its empty state — no row to select, detail check skipped")
+                return
+            }
+            checks.append(.init(name: name, passed: false, message: "no containers.row.* element and no containers.empty state"))
             return
         }
         let rowID = row.identifier ?? "?"
@@ -467,7 +505,8 @@ final class AuditRunner {
             return
         }
         let node = await capture(name: "containers-detail", of: window)
-        let findings = newFindings(AXAuditor.audit(window: node, section: "containers"), comparedTo: "containers")
+        let findings = newFindings(AXAuditor.audit(window: node, section: "containers", expecting: options.expectation),
+                                   comparedTo: "containers")
         checks.append(.init(name: name, passed: !findings.hasErrors,
                             message: "selected \(rowID) via \(how ?? "?"); containers.detail appeared"
                                 + (findings.isEmpty ? "" : "; \(findings.count) new findings in the detail state (check-containers-detail.json)"),
